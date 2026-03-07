@@ -1,16 +1,17 @@
 <div align="center">
 
-# 🏔️ mcp-swiss
+<img src="assets/icon.svg" width="120" height="120" alt="mcp-swiss" />
 
-**Swiss open data for AI assistants — zero config, zero API keys**
+# mcp-swiss
 
-[![npm version](https://img.shields.io/npm/v/mcp-swiss.svg)](https://www.npmjs.com/package/mcp-swiss)
-[![CI](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml/badge.svg)](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MCP](https://img.shields.io/badge/MCP-compatible-blue.svg)](https://modelcontextprotocol.io)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
+**Swiss open data for AI — zero config, zero API keys**
 
-[Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources) · [Contributing](#contributing)
+[![npm](https://img.shields.io/npm/v/mcp-swiss.svg?style=flat-square)](https://www.npmjs.com/package/mcp-swiss)
+[![CI](https://img.shields.io/github/actions/workflow/status/vikramgorla/mcp-swiss/ci.yml?style=flat-square&label=CI)](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://opensource.org/licenses/MIT)
+[![MCP](https://img.shields.io/badge/MCP-compatible-D52B1E?style=flat-square)](https://modelcontextprotocol.io)
+
+[Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources)
 
 </div>
 
@@ -42,7 +43,7 @@ That's it. No API keys, no `.env` files, no accounts. Pick your client below and
 
 ---
 
-### <img src="https://cdn.simpleicons.org/anthropic" height="16" /> Claude Desktop
+### Claude Desktop
 
 Edit your config file:
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -64,7 +65,7 @@ Restart Claude Desktop after saving.
 
 ---
 
-### <img src="https://cdn.simpleicons.org/anthropic" height="16" /> Claude Code (CLI)
+### Claude Code (CLI)
 
 ```bash
 claude mcp add swiss -- npx -y mcp-swiss
@@ -74,7 +75,7 @@ That's it — Claude Code will use it in your next session.
 
 ---
 
-### <img src="https://cdn.simpleicons.org/cursor" height="16" /> Cursor
+### Cursor
 
 > Requires Cursor 0.45.6+
 
@@ -112,7 +113,7 @@ That's it — Claude Code will use it in your next session.
 
 ---
 
-### <img src="https://cdn.simpleicons.org/visualstudiocode" height="16" /> VS Code (GitHub Copilot)
+### VS Code (GitHub Copilot)
 
 #### One-click Install
 
@@ -161,7 +162,7 @@ Or add to `.vscode/mcp.json` in your workspace (shareable with your team):
 
 ---
 
-### <img src="https://codeium.com/favicon.ico" height="16" /> Windsurf
+### Windsurf
 
 Add to `~/.codeium/windsurf/model_config.json`:
 
@@ -178,7 +179,7 @@ Add to `~/.codeium/windsurf/model_config.json`:
 
 ---
 
-### <img src="https://cdn.simpleicons.org/cline" height="16" /> Cline (VS Code)
+### Cline (VS Code)
 
 Open VS Code `settings.json` and add:
 
@@ -330,7 +331,7 @@ See [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the full workflow including
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 20+
 - No API keys or accounts needed
 
 ## License
