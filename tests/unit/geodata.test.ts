@@ -54,7 +54,8 @@ describe('geocode', () => {
     vi.stubGlobal('fetch', fetchMock);
     await handleGeodata('geocode', { address: 'Bern Bahnhof' });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(decodeURIComponent(calledUrl)).toContain('Bern Bahnhof');
+    const parsed = new URL(calledUrl);
+    expect(parsed.searchParams.get('searchText')).toBe('Bern Bahnhof');
   });
 
   it('returns empty results when not found', async () => {
@@ -104,7 +105,8 @@ describe('search_places', () => {
     vi.stubGlobal('fetch', fetchMock);
     await handleGeodata('search_places', { query: 'Matterhorn' });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(decodeURIComponent(calledUrl)).toContain('Matterhorn');
+    const parsed = new URL(calledUrl);
+    expect(parsed.searchParams.get('searchText')).toBe('Matterhorn');
   });
 });
 
@@ -192,7 +194,8 @@ describe('get_municipality', () => {
     vi.stubGlobal('fetch', fetchMock);
     await handleGeodata('get_municipality', { name: 'Lugano' });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(decodeURIComponent(calledUrl)).toContain('Lugano');
+    const parsed = new URL(calledUrl);
+    expect(parsed.searchParams.get('searchText')).toBe('Lugano');
   });
 });
 

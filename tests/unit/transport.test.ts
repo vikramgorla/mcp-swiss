@@ -43,7 +43,8 @@ describe('search_stations', () => {
     await handleTransport('search_stations', { query: 'Zürich HB' });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
     expect(calledUrl).toContain('query=');
-    expect(decodeURIComponent(calledUrl)).toContain('Zürich HB');
+    const parsed = new URL(calledUrl);
+    expect(parsed.searchParams.get('query')).toBe('Zürich HB');
   });
 
   it('propagates network errors', async () => {
