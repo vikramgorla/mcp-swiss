@@ -1,0 +1,568 @@
+{
+  "version": "0.1.0",
+  "server": "mcp-swiss",
+  "description": "Swiss open data MCP server — transport, weather, geodata, companies. Zero API keys.",
+  "tools": [
+    {
+      "name": "search_stations",
+      "module": "transport",
+      "description": "Search for Swiss public transport stations/stops by name or coordinates",
+      "apiSource": "https://transport.opendata.ch/v1/locations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Station name to search for" },
+          "x": { "type": "number", "description": "Longitude (WGS84)" },
+          "y": { "type": "number", "description": "Latitude (WGS84)" },
+          "type": { "type": "string", "description": "Filter: all, station, poi, address" }
+        }
+      },
+      "outputExample": [
+        {
+          "id": "8503000",
+          "name": "Zürich HB",
+          "score": null,
+          "coordinate": { "type": "WGS84", "x": 8.540192, "y": 47.378177 },
+          "distance": null
+        }
+      ],
+      "notes": "At least one of query or x+y coordinates should be provided. id is the SBB/UIC station code."
+    },
+    {
+      "name": "get_connections",
+      "module": "transport",
+      "description": "Get train/bus connections between two Swiss locations",
+      "apiSource": "https://transport.opendata.ch/v1/connections",
+      "inputSchema": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "type": "string", "description": "Departure station/address" },
+          "to": { "type": "string", "description": "Arrival station/address" },
+          "date": { "type": "string", "description": "Date YYYY-MM-DD (default: today)" },
+          "time": { "type": "string", "description": "Time HH:MM (default: now)" },
+          "limit": { "type": "number", "description": "Number of connections (1-16, default: 4)" },
+          "isArrivalTime": { "type": "boolean", "description": "True if time is arrival time" }
+        }
+      },
+      "outputExample": [
+        {
+          "from": {
+            "station": { "id": "8503000", "name": "Zürich HB" },
+            "departure": "2024-03-07T10:02:00+0100",
+            "delay": 0,
+            "platform": "7"
+          },
+          "to": {
+            "station": { "id": "8501008", "name": "Bern" },
+            "arrival": "2024-03-07T10:58:00+0100",
+            "delay": 0,
+            "platform": "5"
+          },
+          "duration": "00d00:56:00",
+          "transfers": 0,
+          "sections": []
+        }
+      ],
+      "notes": "delay is in minutes. sections array contains each leg with vehicle details."
+    },
+    {
+      "name": "get_departures",
+      "module": "transport",
+      "description": "Get live departures from a Swiss transport station",
+      "apiSource": "https://transport.opendata.ch/v1/stationboard",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station"],
+        "properties": {
+          "station": { "type": "string", "description": "Station name" },
+          "limit": { "type": "number", "description": "Number of departures (default: 10)" },
+          "datetime": { "type": "string", "description": "DateTime YYYY-MM-DDTHH:MM (default: now)" }
+        }
+      },
+      "outputExample": {
+        "station": { "id": "8503000", "name": "Zürich HB" },
+        "departures": [
+          {
+            "stop": { "departure": "2024-03-07T10:00:00+0100", "delay": 2, "platform": "7" },
+            "name": "IC 1",
+            "category": "IC",
+            "number": "1",
+            "operator": "SBB",
+            "to": "Genève-Aéroport"
+          }
+        ]
+      },
+      "notes": "platform may be null for bus/tram. delay is in minutes, null if no real-time data."
+    },
+    {
+      "name": "get_arrivals",
+      "module": "transport",
+      "description": "Get live arrivals at a Swiss transport station",
+      "apiSource": "https://transport.opendata.ch/v1/stationboard",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station"],
+        "properties": {
+          "station": { "type": "string", "description": "Station name" },
+          "limit": { "type": "number", "description": "Number of arrivals (default: 10)" },
+          "datetime": { "type": "string", "description": "DateTime YYYY-MM-DDTHH:MM (default: now)" }
+        }
+      },
+      "outputExample": {
+        "station": { "id": "8503000", "name": "Zürich HB" },
+        "arrivals": [
+          {
+            "stop": { "arrival": "2024-03-07T10:58:00+0100", "delay": 0, "platform": "5" },
+            "name": "IC 1",
+            "category": "IC",
+            "operator": "SBB",
+            "to": "Zürich HB"
+          }
+        ]
+      },
+      "notes": "Same API endpoint as get_departures but uses type=arrival."
+    },
+    {
+      "name": "get_nearby_stations",
+      "module": "transport",
+      "description": "Find Swiss public transport stations near given coordinates",
+      "apiSource": "https://transport.opendata.ch/v1/locations",
+      "inputSchema": {
+        "type": "object",
+        "required": ["x", "y"],
+        "properties": {
+          "x": { "type": "number", "description": "Longitude (WGS84)" },
+          "y": { "type": "number", "description": "Latitude (WGS84)" },
+          "limit": { "type": "number", "description": "Number of results (default: 10)" },
+          "distance": { "type": "number", "description": "Max distance in meters" }
+        }
+      },
+      "outputExample": [
+        {
+          "id": "8503000",
+          "name": "Zürich HB",
+          "coordinate": { "type": "WGS84", "x": 8.540192, "y": 47.378177 },
+          "distance": 42
+        }
+      ],
+      "notes": "Results sorted by distance ascending. distance is in meters."
+    },
+    {
+      "name": "get_weather",
+      "module": "weather",
+      "description": "Get current weather conditions at a Swiss MeteoSwiss station",
+      "apiSource": "https://api.existenz.ch/apiv1/smn/latest",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station"],
+        "properties": {
+          "station": { "type": "string", "description": "Station code (e.g. BER, SMA, LUG, GVE, KLO)" }
+        }
+      },
+      "outputExample": {
+        "payload": [
+          { "loc": "BER", "date": "2024-03-07T09:00:00Z", "par": "tt", "val": 8.4 },
+          { "loc": "BER", "date": "2024-03-07T09:00:00Z", "par": "rr", "val": 0.2 },
+          { "loc": "BER", "date": "2024-03-07T09:00:00Z", "par": "ff", "val": 12.6 },
+          { "loc": "BER", "date": "2024-03-07T09:00:00Z", "par": "rh", "val": 78.0 }
+        ]
+      },
+      "notes": "Station codes: BER=Bern/Zollikofen, SMA=Zürich/Fluntern, KLO=Zürich/Kloten, LUG=Lugano, GVE=Geneva, REH=Zürich/Affoltern. Params: tt=temperature°C, rr=precipitation mm, ss=sunshine min/h, rh=humidity%, ff=wind km/h, fu=gusts km/h, p0=pressure hPa."
+    },
+    {
+      "name": "list_weather_stations",
+      "module": "weather",
+      "description": "List all available MeteoSwiss weather stations in Switzerland",
+      "apiSource": "https://api.existenz.ch/apiv1/smn/locations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputExample": {
+        "payload": [
+          { "code": "BER", "name": "Bern / Zollikofen", "altitude": 552, "lat": 46.9908, "lon": 7.4633, "canton": "BE" },
+          { "code": "SMA", "name": "Zürich / Fluntern", "altitude": 556, "lat": 47.3775, "lon": 8.5660, "canton": "ZH" }
+        ]
+      },
+      "notes": "Returns ~160 MeteoSwiss observation stations. Use code with get_weather and get_weather_history."
+    },
+    {
+      "name": "get_weather_history",
+      "module": "weather",
+      "description": "Get historical weather data for a Swiss station",
+      "apiSource": "https://api.existenz.ch/apiv1/smn/daterange",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station", "start_date", "end_date"],
+        "properties": {
+          "station": { "type": "string", "description": "Station code (e.g. BER)" },
+          "start_date": { "type": "string", "description": "Start date YYYY-MM-DD" },
+          "end_date": { "type": "string", "description": "End date YYYY-MM-DD" }
+        }
+      },
+      "outputExample": {
+        "payload": [
+          { "loc": "BER", "date": "2024-03-01T00:00:00Z", "par": "tt", "val": 5.2 },
+          { "loc": "BER", "date": "2024-03-01T00:00:00Z", "par": "rr", "val": 1.4 }
+        ]
+      },
+      "notes": "Returns daily values for all parameters. Historical data from ~1980 onwards."
+    },
+    {
+      "name": "get_water_level",
+      "module": "weather",
+      "description": "Get current river or lake water level and temperature at a Swiss hydrological station",
+      "apiSource": "https://api.existenz.ch/apiv1/hydro/latest",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station"],
+        "properties": {
+          "station": { "type": "string", "description": "Hydro station ID (e.g. 2135 for Aare/Bern, 2243 for Rhine/Basel)" }
+        }
+      },
+      "outputExample": {
+        "payload": [
+          { "loc": "2135", "date": "2024-03-07T09:00:00Z", "par": "Pegel", "val": 124.5 },
+          { "loc": "2135", "date": "2024-03-07T09:00:00Z", "par": "Wassertemperatur", "val": 9.1 },
+          { "loc": "2135", "date": "2024-03-07T09:00:00Z", "par": "AbflussMittelwert", "val": 148.3 }
+        ]
+      },
+      "notes": "Station 2135=Aare/Bern, 2243=Rhine/Basel. Params: Pegel=water level(cm), Wassertemperatur=temp(°C), AbflussMittelwert=discharge(m³/s)."
+    },
+    {
+      "name": "list_hydro_stations",
+      "module": "weather",
+      "description": "List all available BAFU hydrological monitoring stations in Switzerland",
+      "apiSource": "https://api.existenz.ch/apiv1/hydro/locations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputExample": {
+        "payload": [
+          { "code": "2135", "name": "Aare - Bern, Schönau", "altitude": 490, "lat": 46.9368, "lon": 7.4500, "canton": "BE" },
+          { "code": "2243", "name": "Rhein - Basel, Rheinhalle", "altitude": 245, "lat": 47.5553, "lon": 7.5924, "canton": "BS" }
+        ]
+      },
+      "notes": "Returns 400+ BAFU monitoring stations. Use code with get_water_level and get_water_history."
+    },
+    {
+      "name": "get_water_history",
+      "module": "weather",
+      "description": "Get historical river/lake water level data for a Swiss hydrological station",
+      "apiSource": "https://api.existenz.ch/apiv1/hydro/daterange",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station", "start_date", "end_date"],
+        "properties": {
+          "station": { "type": "string", "description": "Hydro station ID" },
+          "start_date": { "type": "string", "description": "Start date YYYY-MM-DD" },
+          "end_date": { "type": "string", "description": "End date YYYY-MM-DD" }
+        }
+      },
+      "outputExample": {
+        "payload": [
+          { "loc": "2135", "date": "2024-08-01T00:00:00Z", "par": "Wassertemperatur", "val": 21.3 },
+          { "loc": "2135", "date": "2024-08-01T00:00:00Z", "par": "Pegel", "val": 118.2 }
+        ]
+      },
+      "notes": "Useful for seasonal analysis e.g. Aare swimming conditions year over year."
+    },
+    {
+      "name": "geocode",
+      "module": "geodata",
+      "description": "Convert a Swiss address or place name to coordinates (swisstopo)",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/SearchServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["address"],
+        "properties": {
+          "address": { "type": "string", "description": "Swiss address or place name" }
+        }
+      },
+      "outputExample": {
+        "results": [
+          {
+            "id": 1234567,
+            "weight": 1,
+            "attrs": {
+              "label": "Bundesplatz 3, 3003 Bern",
+              "lat": 46.9469,
+              "lon": 7.4442,
+              "x": 2600539,
+              "y": 1199774
+            }
+          }
+        ]
+      },
+      "notes": "Returns WGS84 (lat/lon) and Swiss LV95 (x/y) coordinates. Up to 10 results."
+    },
+    {
+      "name": "reverse_geocode",
+      "module": "geodata",
+      "description": "Convert coordinates to a Swiss address (swisstopo)",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/SearchServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lng"],
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude (WGS84)" },
+          "lng": { "type": "number", "description": "Longitude (WGS84)" }
+        }
+      },
+      "outputExample": {
+        "results": [
+          {
+            "id": 1234567,
+            "attrs": {
+              "label": "Bundesplatz, 3003 Bern",
+              "lat": 46.9469,
+              "lon": 7.4442
+            }
+          }
+        ]
+      },
+      "notes": "Accuracy varies in rural/mountain areas. Uses coordinate-based search on swisstopo."
+    },
+    {
+      "name": "search_places",
+      "module": "geodata",
+      "description": "Search Swiss place names, localities, mountains, and geographic features",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/SearchServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string", "description": "Place name to search" },
+          "type": { "type": "string", "description": "Type filter: locations, featuresearch" }
+        }
+      },
+      "outputExample": {
+        "results": [
+          {
+            "id": 9876543,
+            "attrs": {
+              "label": "Matterhorn",
+              "lat": 45.9763,
+              "lon": 7.6586,
+              "detail": "Matterhorn, Zermatt, Visp, VS",
+              "origin": "gg25"
+            }
+          }
+        ]
+      },
+      "notes": "Covers peaks, passes, lakes, rivers, districts, localities from SwissNAMES3D."
+    },
+    {
+      "name": "get_solar_potential",
+      "module": "geodata",
+      "description": "Get rooftop solar energy potential for a location in Switzerland",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/all/MapServer/identify",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lng"],
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude (WGS84)" },
+          "lng": { "type": "number", "description": "Longitude (WGS84)" }
+        }
+      },
+      "outputExample": {
+        "results": [
+          {
+            "layerName": "ch.bfe.solarenergie-eignung-daecher",
+            "attributes": {
+              "gstrahlung": 1245,
+              "klasse": "sehr gut geeignet",
+              "flaeche": 124.5,
+              "stromertrag": 21456
+            }
+          }
+        ]
+      },
+      "notes": "gstrahlung=annual solar irradiation kWh/m², stromertrag=estimated annual yield kWh. May return empty in rural areas without mapped buildings."
+    },
+    {
+      "name": "identify_location",
+      "module": "geodata",
+      "description": "Identify geographic features and data layers at a specific Swiss location",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/all/MapServer/identify",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lng"],
+        "properties": {
+          "lat": { "type": "number", "description": "Latitude (WGS84)" },
+          "lng": { "type": "number", "description": "Longitude (WGS84)" },
+          "layers": { "type": "string", "description": "Comma-separated layer ids (default: all visible)" }
+        }
+      },
+      "outputExample": {
+        "results": [
+          {
+            "layerId": "ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill",
+            "layerName": "swissBOUNDARIES3D Gemeindegrenzen",
+            "attributes": {
+              "gemname": "Bern",
+              "bfsnr": 351,
+              "kanton": "BE",
+              "bezirk": "Bern-Mittelland"
+            }
+          }
+        ]
+      },
+      "notes": "Queries all swisstopo map layers at a point. Useful for municipality boundaries, land use, protected areas."
+    },
+    {
+      "name": "get_municipality",
+      "module": "geodata",
+      "description": "Get information about a Swiss municipality by name",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/SearchServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "description": "Municipality name" }
+        }
+      },
+      "outputExample": {
+        "results": [
+          {
+            "id": 7777,
+            "attrs": {
+              "label": "Zermatt",
+              "lat": 46.0207,
+              "lon": 7.7491,
+              "detail": "Zermatt, Visp, VS",
+              "num": 6130
+            }
+          }
+        ]
+      },
+      "notes": "num is the official BFS municipality number (Gemeindenummer). May return multiple matches for common names."
+    },
+    {
+      "name": "search_companies",
+      "module": "companies",
+      "description": "Search Swiss company registry (ZEFIX) by name, canton, or legal form",
+      "apiSource": "https://www.zefix.admin.ch/ZefixREST/api/v1/firm/search.json",
+      "inputSchema": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "description": "Company name or partial name to search" },
+          "canton": { "type": "string", "description": "Canton abbreviation (e.g. ZH, BE, GE, ZG)" },
+          "legal_form": { "type": "string", "description": "Legal form code (e.g. 0106=GmbH, 0101=AG)" },
+          "limit": { "type": "number", "description": "Max results (default: 20)" }
+        }
+      },
+      "outputExample": {
+        "companies": [
+          {
+            "ehraid": 119283,
+            "name": "Nestlé S.A.",
+            "uid": "CHE-116.281.788",
+            "legalSeat": "Vevey",
+            "legalFormCode": "0105",
+            "cantonAbbreviation": "VD",
+            "status": "ACTIVE"
+          }
+        ],
+        "hasMoreResults": false
+      },
+      "notes": "ehraid is the ZEFIX internal integer ID — use this with get_company. uid (CHE-xxx) is for display only. Legal forms: 0101=Sole prop, 0105=AG, 0106=GmbH, 0107=Cooperative, 0108=Association, 0109=Foundation."
+    },
+    {
+      "name": "get_company",
+      "module": "companies",
+      "description": "Get full details of a Swiss company by its ZEFIX internal ID (ehraid). Use search_companies first to find the ehraid.",
+      "apiSource": "https://www.zefix.admin.ch/ZefixREST/api/v1/firm/{ehraid}.json",
+      "inputSchema": {
+        "type": "object",
+        "required": ["ehraid"],
+        "properties": {
+          "ehraid": { "type": "number", "description": "Company internal ZEFIX ID (ehraid integer, e.g. 119283). Returned by search_companies." }
+        }
+      },
+      "outputExample": {
+        "ehraid": 119283,
+        "name": "Nestlé S.A.",
+        "uid": "CHE-116.281.788",
+        "legalFormCode": "0105",
+        "legalSeat": "Vevey",
+        "cantonAbbreviation": "VD",
+        "address": {
+          "street": "Avenue Nestlé",
+          "houseNumber": "55",
+          "swissZipCode": "1800",
+          "town": "Vevey"
+        },
+        "purpose": "Société holding...",
+        "capitalNominal": 322000000,
+        "capitalCurrency": "CHF",
+        "status": "ACTIVE"
+      },
+      "notes": "⚠️ Use ehraid (integer), NOT CHE-xxx.xxx.xxx UID. Get ehraid from search_companies results."
+    },
+    {
+      "name": "search_companies_by_address",
+      "module": "companies",
+      "description": "Search Swiss companies registered at a specific address or locality",
+      "apiSource": "https://www.zefix.admin.ch/ZefixREST/api/v1/firm/search.json",
+      "inputSchema": {
+        "type": "object",
+        "required": ["address"],
+        "properties": {
+          "address": { "type": "string", "description": "Address or locality name" },
+          "limit": { "type": "number", "description": "Max results (default: 20)" }
+        }
+      },
+      "outputExample": {
+        "companies": [
+          {
+            "ehraid": 203847,
+            "name": "Crypto Valley AG",
+            "uid": "CHE-123.456.789",
+            "legalSeat": "Zug",
+            "cantonAbbreviation": "ZG",
+            "status": "ACTIVE"
+          }
+        ],
+        "hasMoreResults": true
+      },
+      "notes": "Uses ZEFIX full-text search on name field. hasMoreResults:true means limit was hit."
+    },
+    {
+      "name": "list_cantons",
+      "module": "companies",
+      "description": "List all Swiss cantons with their codes",
+      "apiSource": "hardcoded",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputExample": [
+        { "code": "ZH", "name": "Zürich" },
+        { "code": "BE", "name": "Bern" },
+        { "code": "GE", "name": "Geneva" },
+        { "code": "ZG", "name": "Zug" }
+      ],
+      "notes": "Returns hardcoded data — ZEFIX /cantons API endpoint returns 403. All 26 cantons included."
+    },
+    {
+      "name": "list_legal_forms",
+      "module": "companies",
+      "description": "List all Swiss company legal forms (AG, GmbH, etc.)",
+      "apiSource": "hardcoded",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputExample": [
+        { "code": "0105", "name": "Aktiengesellschaft (AG)", "nameEn": "Corporation (AG)" },
+        { "code": "0106", "name": "Gesellschaft mit beschränkter Haftung (GmbH)", "nameEn": "Limited liability company (GmbH)" },
+        { "code": "0109", "name": "Stiftung", "nameEn": "Foundation" }
+      ],
+      "notes": "Returns hardcoded data — ZEFIX /legalForms API endpoint returns 403. Use code with search_companies legal_form parameter."
+    }
+  ]
+}

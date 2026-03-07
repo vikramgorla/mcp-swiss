@@ -1,0 +1,135 @@
+name: Bug Report
+description: Report a broken or incorrect tool in mcp-swiss
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much detail as possible.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module affected
+      options:
+        - Transport
+        - Weather
+        - Geodata
+        - Companies
+        - Core/MCP
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Tool affected
+      options:
+        - search_stations
+        - get_connections
+        - get_departures
+        - get_arrivals
+        - get_nearby_stations
+        - get_weather
+        - list_weather_stations
+        - get_weather_history
+        - get_water_level
+        - list_hydro_stations
+        - get_water_history
+        - geocode
+        - reverse_geocode
+        - search_places
+        - get_solar_potential
+        - identify_location
+        - get_municipality
+        - search_companies
+        - get_company
+        - search_companies_by_address
+        - list_cantons
+        - list_legal_forms
+        - N/A (not tool-specific)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A clear description of what the bug is.
+      placeholder: "e.g. get_water_level for station 2135 returns empty payload even though the Aare is flowing fine."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How to trigger the bug. Include the MCP tool call.
+      placeholder: |
+        1. Configure mcp-swiss in Claude Desktop
+        2. Ask: "What is the current water temperature of the Aare in Bern?"
+        3. The tool calls get_water_level with station: "2135"
+        4. Response: { payload: [] }
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Should return payload with temperature, height, and flow values."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior / response received
+      description: Paste the raw tool response if available.
+      render: json
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: mcp-swiss version
+      placeholder: "e.g. 0.1.0 — run: npx mcp-swiss --version"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node
+    attributes:
+      label: Node.js version
+      options:
+        - "18.x"
+        - "20.x"
+        - "22.x"
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I can reproduce this consistently
+          required: false

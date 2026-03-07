@@ -1,4 +1,4 @@
-import { fetchJSON, buildUrl } from "../utils/http.js";
+import { fetchJSON } from "../utils/http.js";
 
 const BASE = "https://www.zefix.admin.ch/ZefixREST/api/v1";
 
