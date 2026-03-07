@@ -182,6 +182,60 @@ describe('get_nearby_stations', () => {
   });
 });
 
+// ── branch coverage: walk sections, isArrivalTime ─────────────────────────────
+
+describe('connection with walk section', () => {
+  it('renders walk sections without line', async () => {
+    mockFetch({
+      connections: [{
+        from: { station: { name: 'Bern' }, departure: '2026-03-07T10:00:00+0100', platform: null },
+        to: { station: { name: 'Zytglogge' }, arrival: '2026-03-07T10:10:00+0100', platform: null },
+        duration: '00d00:10:00',
+        transfers: 0,
+        sections: [{
+          journey: null,
+          walk: { duration: 600 },
+          departure: { station: { name: 'Bern' }, departure: '2026-03-07T10:00:00+0100', platform: null },
+          arrival: { station: { name: 'Zytglogge' }, arrival: '2026-03-07T10:10:00+0100', platform: null },
+        }],
+      }],
+    });
+    const result = JSON.parse(await handleTransport('get_connections', {
+      from: 'Bern', to: 'Zytglogge',
+    }));
+    expect(result[0].sections[0].type).toBe('walk');
+    expect(result[0].sections[0].line).toBeUndefined();
+  });
+});
+
+describe('isArrivalTime parameter', () => {
+  it('passes isArrivalTime=1 when true', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve({ connections: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await handleTransport('get_connections', {
+      from: 'Bern', to: 'Zürich', isArrivalTime: true,
+    });
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('isArrivalTime=1');
+  });
+
+  it('omits isArrivalTime when false', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve({ connections: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await handleTransport('get_connections', {
+      from: 'Bern', to: 'Zürich', isArrivalTime: false,
+    });
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).not.toContain('isArrivalTime');
+  });
+});
+
 // ── unknown tool ──────────────────────────────────────────────────────────────
 
 describe('unknown tool', () => {
