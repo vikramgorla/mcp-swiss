@@ -1,0 +1,28 @@
+{
+  "name": "mcp-swiss",
+  "version": "0.1.0",
+  "description": "Swiss open data MCP server — transport, weather, geodata, companies. Zero API keys.",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-swiss": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["mcp", "switzerland", "swiss", "transport", "weather", "sbb", "geodata"],
+  "author": "Vikram Gorla",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
