@@ -1,12 +1,13 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.vikramgorla/mcp-swiss",
-  "description": "Swiss open data for AI — trains, weather, rivers, maps, and companies. Zero API keys.",
+  "name": "io.github.vikramgorla/swiss",
+  "title": "Swiss Open Data",
+  "description": "Swiss open data MCP server — SBB trains, MeteoSwiss weather, hydrology, Swisstopo geodata, ZEFIX companies. 22 tools, zero API keys.",
   "repository": {
-    "url": "https://github.com/vikramgorla/mcp-swiss.git",
+    "url": "https://github.com/vikramgorla/mcp-swiss",
     "source": "github"
   },
-  "version": "0.1.4",
+  "version": "0.1.7",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/vikramgorla/mcp-swiss/main/assets/icon.svg",
@@ -22,12 +23,11 @@
     {
       "registryType": "npm",
       "identifier": "mcp-swiss",
-      "version": "0.1.4",
+      "version": "0.1.7",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
-      },
-      "environmentVariables": []
+      }
     }
   ]
 }
