@@ -3,71 +3,83 @@ import { describe, it, expect } from 'vitest';
 import { handleGeodata } from '../../src/modules/geodata.js';
 
 describe('Geodata API (live)', () => {
-  it('geocode returns results for Bundesplatz Bern', async () => {
+  it('geocode returns slim results for Bundesplatz Bern', async () => {
     const result = JSON.parse(await handleGeodata('geocode', {
       address: 'Bundesplatz 3, Bern',
     }));
-    expect(result).toHaveProperty('results');
+    expect(result.count).toBeGreaterThan(0);
     expect(Array.isArray(result.results)).toBe(true);
-    expect(result.results.length).toBeGreaterThan(0);
+    // Slim: should have label, lat, lon — not raw attrs
+    const r = result.results[0];
+    expect(r).toHaveProperty('label');
+    expect(r).toHaveProperty('lat');
+    expect(r).toHaveProperty('lon');
+    expect(r.attrs).toBeUndefined(); // Should be flattened
   });
 
-  it('geocode result has lat/lon coordinates', async () => {
+  it('geocode coordinates are in Switzerland', async () => {
     const result = JSON.parse(await handleGeodata('geocode', {
       address: 'Bahnhofstrasse 1, Zürich',
     }));
     if (result.results.length > 0) {
-      const attrs = result.results[0].attrs;
-      expect(typeof attrs.lat).toBe('number');
-      expect(typeof attrs.lon).toBe('number');
-      // Should be roughly in Switzerland
-      expect(attrs.lat).toBeGreaterThan(45);
-      expect(attrs.lat).toBeLessThan(48);
-      expect(attrs.lon).toBeGreaterThan(5);
-      expect(attrs.lon).toBeLessThan(11);
+      const r = result.results[0];
+      expect(r.lat).toBeGreaterThan(45);
+      expect(r.lat).toBeLessThan(48);
+      expect(r.lon).toBeGreaterThan(5);
+      expect(r.lon).toBeLessThan(11);
     }
   });
 
-  it('reverse_geocode returns results for Bern coordinates', async () => {
+  it('reverse_geocode returns slim results', async () => {
     const result = JSON.parse(await handleGeodata('reverse_geocode', {
       lat: 46.9480, lng: 7.4474,
     }));
-    expect(result).toHaveProperty('results');
-    expect(Array.isArray(result.results)).toBe(true);
+    expect(result.count).toBeGreaterThan(0);
+    expect(result.results[0]).toHaveProperty('label');
   });
 
   it('search_places finds Matterhorn', async () => {
     const result = JSON.parse(await handleGeodata('search_places', {
       query: 'Matterhorn',
     }));
-    expect(result).toHaveProperty('results');
-    expect(result.results.length).toBeGreaterThan(0);
-    const matterhorn = result.results.find(
-      (r: { attrs?: { label?: string } }) =>
-        r.attrs?.label?.toLowerCase().includes('matterhorn')
+    expect(result.count).toBeGreaterThan(0);
+    const found = result.results.find(
+      (r: { label?: string }) => r.label?.toLowerCase().includes('matterhorn')
     );
-    expect(matterhorn).toBeDefined();
+    expect(found).toBeDefined();
   });
 
-  it('get_solar_potential returns identify results', async () => {
+  it('get_solar_potential returns buildings with aggregated data', async () => {
     const result = JSON.parse(await handleGeodata('get_solar_potential', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result).toHaveProperty('results');
-    expect(Array.isArray(result.results)).toBe(true);
+    expect(result).toHaveProperty('buildings');
+    expect(Array.isArray(result.buildings)).toBe(true);
+    expect(result.source).toContain('BFE');
+    // Response size: should be well under 50K (was 622K before)
+    const size = JSON.stringify(result).length;
+    expect(size).toBeLessThan(50000);
+    if (result.buildings.length > 0) {
+      const b = result.buildings[0];
+      expect(b).toHaveProperty('totalElectricity_kWh');
+      expect(b).toHaveProperty('totalArea_m2');
+    }
   });
 
-  it('identify_location returns geographic features', async () => {
+  it('identify_location returns slim results', async () => {
     const result = JSON.parse(await handleGeodata('identify_location', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result).toHaveProperty('results');
+    expect(result.count).toBeGreaterThanOrEqual(0);
     expect(Array.isArray(result.results)).toBe(true);
+    if (result.results.length > 0) {
+      expect(result.results[0]).toHaveProperty('layer');
+      expect(result.results[0]).toHaveProperty('layerId');
+    }
   });
 
   it('get_municipality finds Bern', async () => {
     const result = JSON.parse(await handleGeodata('get_municipality', { name: 'Bern' }));
-    expect(result).toHaveProperty('results');
-    expect(result.results.length).toBeGreaterThan(0);
+    expect(result.count).toBeGreaterThan(0);
   });
 });
