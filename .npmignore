@@ -1,0 +1,16 @@
+tests/
+docs/
+specs/
+.specify/
+.github/
+*.test.ts
+vitest.config.ts
+eslint.config.js
+CONTRIBUTING.md
+VERSIONING.md
+CODE_OF_CONDUCT.md
+CHANGELOG.md
+memory/
+TEST_REPORT.md
+run_tests.sh
+test_suite.js

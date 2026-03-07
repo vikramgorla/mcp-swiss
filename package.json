@@ -15,26 +15,47 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration"
+    "test:integration": "vitest run tests/integration",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "validate": "npm run lint && npm run build && npm test"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "switzerland",
     "swiss",
+    "sbb",
     "transport",
     "weather",
-    "sbb",
-    "geodata"
+    "meteoswiss",
+    "swisstopo",
+    "zefix",
+    "opendata",
+    "ai",
+    "claude",
+    "cursor"
   ],
   "author": "Vikram Gorla",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vikramgorla/mcp-swiss.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vikramgorla/mcp-swiss/issues"
+  },
+  "homepage": "https://github.com/vikramgorla/mcp-swiss#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^10.0.3",
     "typescript": "^5.3.0",
+    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
   },
   "engines": {

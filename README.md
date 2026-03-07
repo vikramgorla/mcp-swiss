@@ -1,5 +1,10 @@
 # mcp-swiss 🏔️
 
+[![CI](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml/badge.svg)](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/mcp-swiss.svg)](https://www.npmjs.com/package/mcp-swiss)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![MCP](https://img.shields.io/badge/MCP-compatible-blue.svg)](https://modelcontextprotocol.io)
+
 Swiss open data MCP server for AI assistants. Zero API keys. Zero config. Just works.
 
 ## What is this?
@@ -20,11 +25,60 @@ Swiss open data MCP server for AI assistants. Zero API keys. Zero config. Just w
 npx mcp-swiss
 ```
 
-Or add to your Claude Desktop config:
+## Configuration
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["mcp-swiss"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving.
+
+### Cursor
+
+Create or edit `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` globally):
+
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["mcp-swiss"]
+    }
+  }
+}
+```
+
+### Cline (VSCode)
+
+Open VSCode settings (`Cmd+,`), search for `cline.mcpServers`, and add:
+
+```json
+{
+  "swiss": {
+    "command": "npx",
+    "args": ["mcp-swiss"],
+    "disabled": false,
+    "autoApprove": []
+  }
+}
+```
+
+Or edit `settings.json` directly:
+
+```json
+{
+  "cline.mcpServers": {
     "swiss": {
       "command": "npx",
       "args": ["mcp-swiss"]
@@ -80,7 +134,7 @@ Once connected, try asking your AI:
 | Tool | Description |
 |------|-------------|
 | `search_companies` | Search by name, canton, legal form |
-| `get_company` | Full details by UID (CHE-xxx.xxx.xxx) |
+| `get_company` | Full details by ZEFIX `ehraid` (from search results) |
 | `search_companies_by_address` | Companies at an address |
 | `list_cantons` | All Swiss cantons |
 | `list_legal_forms` | AG, GmbH, and all legal forms |
