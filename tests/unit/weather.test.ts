@@ -197,6 +197,113 @@ describe('get_water_history', () => {
   });
 });
 
+// ── fallback paths (non-array payload) ────────────────────────────────────────
+
+// ── edge cases: null/missing fields ──────────────────────────────────────────
+
+describe('edge cases', () => {
+  it('toISO returns undefined for falsy timestamp', async () => {
+    mockFetch({ payload: [{ timestamp: 0, par: 'tt', val: 5 }] });
+    const result = JSON.parse(await handleWeather('get_weather', { station: 'X' }));
+    expect(result.timestamp).toBeUndefined();
+  });
+
+  it('weather station without canton omits parenthetical', async () => {
+    mockFetch({
+      payload: {
+        TEST: { id: 1, name: 'TEST', details: { id: 'TEST', name: 'Test Station' } },
+      },
+    });
+    const result = JSON.parse(await handleWeather('list_weather_stations', {}));
+    expect(result.stations['TEST']).toBe('Test Station');
+    expect(result.stations['TEST']).not.toContain('(');
+  });
+
+  it('weather station falls back to entry name if details.id missing', async () => {
+    mockFetch({
+      payload: {
+        FALLBACK: { id: 1, name: 'FALLBACK', details: { name: 'Fallback', canton: 'ZH' } },
+      },
+    });
+    const result = JSON.parse(await handleWeather('list_weather_stations', {}));
+    // details.id is undefined → falls back to entry.name as key
+    expect(result.stations['FALLBACK']).toBe('Fallback (ZH)');
+  });
+
+  it('weather station with no details uses entry name', async () => {
+    mockFetch({ payload: { X: { id: 1, name: 'X' } } });
+    const result = JSON.parse(await handleWeather('list_weather_stations', {}));
+    expect(result.stations['X']).toBe('X');
+  });
+
+  it('hydro station without water body info uses name only', async () => {
+    mockFetch({
+      payload: {
+        "9999": { id: 1, name: '9999', details: { id: '9999', name: 'Bare Station' } },
+      },
+    });
+    const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
+    expect(result.stations['9999']).toBe('Bare Station');
+    expect(result.stations['9999']).not.toContain('(');
+  });
+
+  it('hydro station with no details uses entry name', async () => {
+    mockFetch({ payload: { "8888": { id: 1, name: '8888' } } });
+    const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
+    expect(result.stations['8888']).toBe('8888');
+  });
+
+  it('handles null payload gracefully for weather station list', async () => {
+    mockFetch({ payload: null });
+    const result = JSON.parse(await handleWeather('list_weather_stations', {}));
+    expect(result.count).toBe(0);
+  });
+
+  it('handles null payload gracefully for hydro station list', async () => {
+    mockFetch({ payload: null });
+    const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
+    expect(result.count).toBe(0);
+  });
+
+  it('history reading with falsy timestamp returns undefined time', async () => {
+    mockFetch({ payload: [{ timestamp: 0, par: 'tt', val: 5 }] });
+    const result = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'X', start_date: '2026-01-01', end_date: '2026-01-02',
+    }));
+    expect(result.data[0].time).toBeUndefined();
+  });
+});
+
+describe('fallback when payload is not an array', () => {
+  it('get_weather falls back to raw JSON when payload is not array', async () => {
+    mockFetch({ source: 'test', payload: { unexpected: 'format' } });
+    const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
+    expect(result.payload).toEqual({ unexpected: 'format' });
+  });
+
+  it('get_weather_history falls back to raw JSON when payload is not array', async () => {
+    mockFetch({ source: 'test', payload: 'not-an-array' });
+    const result = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-01-01', end_date: '2026-01-02',
+    }));
+    expect(result.payload).toBe('not-an-array');
+  });
+
+  it('get_water_level falls back to raw JSON when payload is not array', async () => {
+    mockFetch({ source: 'test', payload: null });
+    const result = JSON.parse(await handleWeather('get_water_level', { station: '2135' }));
+    expect(result.payload).toBeNull();
+  });
+
+  it('get_water_history falls back to raw JSON when payload is not array', async () => {
+    mockFetch({ source: 'test', payload: {} });
+    const result = JSON.parse(await handleWeather('get_water_history', {
+      station: '2135', start_date: '2026-01-01', end_date: '2026-01-02',
+    }));
+    expect(result.payload).toEqual({});
+  });
+});
+
 // ── unknown tool ──────────────────────────────────────────────────────────────
 
 describe('unknown weather tool', () => {
