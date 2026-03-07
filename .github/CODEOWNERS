@@ -1,0 +1,11 @@
+# Default owner for everything
+* @vikramgorla
+
+# Module owners
+src/modules/transport.ts @vikramgorla
+src/modules/weather.ts @vikramgorla
+src/modules/geodata.ts @vikramgorla
+src/modules/companies.ts @vikramgorla
+
+# CI/CD
+.github/workflows/ @vikramgorla

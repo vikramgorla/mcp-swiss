@@ -1,0 +1,68 @@
+name: Feature Request
+description: Suggest a new tool, module, or enhancement for mcp-swiss
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        mcp-swiss only covers zero-authentication Swiss open data APIs. Please check that your suggestion fits this scope before submitting.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type of request
+      options:
+        - New tool (within an existing module)
+        - New module (entirely new data domain)
+        - Enhancement to existing tool
+        - Documentation improvement
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What Swiss data are you trying to access? What use case does this unlock?
+      placeholder: "e.g. I want to ask Claude about current postal code boundaries in Switzerland, but there's no tool for that."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the tool(s) you'd like to see added.
+      placeholder: |
+        Add a `get_postal_code_info` tool to the Geodata module that returns the municipality, canton, and geographic bounds for a given Swiss postal code.
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example MCP tool call
+      description: How would an AI assistant use this tool?
+      placeholder: |
+        Tool: get_postal_code_info
+        Input: { "postal_code": "3011" }
+        Expected output: { "municipality": "Bern", "canton": "BE", "region": "Mittelland" }
+
+  - type: input
+    id: datasource
+    attributes:
+      label: Data source URL
+      description: Link to the Swiss open data API you're suggesting (must be zero-auth and free).
+      placeholder: "e.g. https://swisspost.opendatasoft.com/api/explore/v2.1/..."
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: This API requires zero authentication (no API key, no OAuth)
+          required: false
+        - label: I am willing to implement this and open a PR
+          required: false
