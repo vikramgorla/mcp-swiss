@@ -62,28 +62,20 @@ describe('get_weather', () => {
 // ── list_weather_stations ─────────────────────────────────────────────────────
 
 describe('list_weather_stations', () => {
-  it('returns count and stations array', async () => {
+  it('returns count and compact stations dict', async () => {
     mockFetch(mockWeatherStations);
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
     expect(result.count).toBe(3);
-    expect(Array.isArray(result.stations)).toBe(true);
+    expect(typeof result.stations).toBe('object');
+    expect(Array.isArray(result.stations)).toBe(false);
   });
 
-  it('stations have code, name, and canton', async () => {
+  it('stations map code to "name (canton)"', async () => {
     mockFetch(mockWeatherStations);
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
-    const ber = result.stations.find((s: any) => s.code === 'BER');
-    expect(ber).toBeDefined();
-    expect(ber.name).toContain('Bern');
-    expect(ber.canton).toBe('BE');
-  });
-
-  it('stations have coordinates', async () => {
-    mockFetch(mockWeatherStations);
-    const result = JSON.parse(await handleWeather('list_weather_stations', {}));
-    const sma = result.stations.find((s: any) => s.code === 'SMA');
-    expect(sma.lat).toBeDefined();
-    expect(sma.lon).toBeDefined();
+    expect(result.stations['BER']).toContain('Bern');
+    expect(result.stations['BER']).toContain('BE');
+    expect(result.stations['LUG']).toContain('Lugano');
   });
 });
 
@@ -157,19 +149,19 @@ describe('get_water_level', () => {
 // ── list_hydro_stations ───────────────────────────────────────────────────────
 
 describe('list_hydro_stations', () => {
-  it('returns count and stations array', async () => {
+  it('returns count and compact stations dict', async () => {
     mockFetch(mockHydroStations);
     const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
     expect(result.count).toBe(2);
-    expect(Array.isArray(result.stations)).toBe(true);
+    expect(typeof result.stations).toBe('object');
+    expect(Array.isArray(result.stations)).toBe(false);
   });
 
-  it('stations have id, name, and waterBody', async () => {
+  it('stations map id to "name (waterBody, type)"', async () => {
     mockFetch(mockHydroStations);
     const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
-    const aare = result.stations.find((s: any) => s.id === '2135');
-    expect(aare).toBeDefined();
-    expect(aare.name).toContain('Aare');
+    expect(result.stations['2135']).toContain('Aare');
+    expect(result.stations['2243']).toContain('Rhein');
   });
 });
 
