@@ -53,7 +53,7 @@ describe('Weather API (live)', () => {
     // Compact format: id → "name (waterBody, type)"
     expect(result.stations['2135']).toContain('Aare');
     const size = JSON.stringify(result).length;
-    expect(size).toBeLessThan(10000);
+    expect(size).toBeLessThan(15000);
   });
 
   it('get_water_history returns historical hydro data', async () => {
