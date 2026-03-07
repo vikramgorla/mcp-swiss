@@ -5,7 +5,7 @@ specs/
 .github/
 *.test.ts
 vitest.config.ts
-eslint.config.js
+eslint.config.mjs
 CONTRIBUTING.md
 VERSIONING.md
 CODE_OF_CONDUCT.md
