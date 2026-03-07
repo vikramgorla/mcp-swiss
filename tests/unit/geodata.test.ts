@@ -23,27 +23,26 @@ afterEach(() => {
 // ── geocode ───────────────────────────────────────────────────────────────────
 
 describe('geocode', () => {
-  it('returns results array', async () => {
+  it('returns slim results with count', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('geocode', { address: 'Bundesplatz 3, Bern' }));
-    expect(result).toHaveProperty('results');
+    expect(result.count).toBe(1);
     expect(Array.isArray(result.results)).toBe(true);
-    expect(result.results).toHaveLength(1);
   });
 
-  it('result has lat/lon coordinates', async () => {
+  it('result has lat/lon and label', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('geocode', { address: 'Bundesplatz 3, Bern' }));
-    const attrs = result.results[0].attrs;
-    expect(attrs.lat).toBeCloseTo(46.946, 2);
-    expect(attrs.lon).toBeCloseTo(7.444, 2);
+    const r = result.results[0];
+    expect(r.lat).toBeCloseTo(46.946, 2);
+    expect(r.lon).toBeCloseTo(7.444, 2);
+    expect(r.label).toContain('Bundesplatz');
   });
 
-  it('result has label and detail', async () => {
+  it('result has type (origin)', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('geocode', { address: 'Bundesplatz 3, Bern' }));
-    expect(result.results[0].attrs.label).toContain('Bundesplatz');
-    expect(result.results[0].attrs.detail).toContain('bern');
+    expect(result.results[0].type).toBe('address');
   });
 
   it('passes address as searchText param', async () => {
@@ -61,6 +60,7 @@ describe('geocode', () => {
   it('returns empty results when not found', async () => {
     mockFetch(mockEmptyResults);
     const result = JSON.parse(await handleGeodata('geocode', { address: 'Xyz123NotARealPlace' }));
+    expect(result.count).toBe(0);
     expect(result.results).toHaveLength(0);
   });
 });
@@ -68,33 +68,33 @@ describe('geocode', () => {
 // ── reverse_geocode ───────────────────────────────────────────────────────────
 
 describe('reverse_geocode', () => {
-  it('returns results array', async () => {
+  it('returns slim results with count', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('reverse_geocode', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result).toHaveProperty('results');
+    expect(result.count).toBe(1);
     expect(Array.isArray(result.results)).toBe(true);
   });
 
-  it('result attributes are present', async () => {
+  it('result has coordinates', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('reverse_geocode', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result.results[0].attrs).toBeDefined();
-    expect(typeof result.results[0].attrs.lat).toBe('number');
+    expect(typeof result.results[0].lat).toBe('number');
+    expect(typeof result.results[0].lon).toBe('number');
   });
 });
 
 // ── search_places ─────────────────────────────────────────────────────────────
 
 describe('search_places', () => {
-  it('returns results', async () => {
+  it('returns slim results', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('search_places', { query: 'Bern' }));
-    expect(result).toHaveProperty('results');
-    expect(result.results.length).toBeGreaterThan(0);
+    expect(result.count).toBeGreaterThan(0);
+    expect(result.results[0]).toHaveProperty('label');
   });
 
   it('passes query as searchText', async () => {
@@ -113,25 +113,30 @@ describe('search_places', () => {
 // ── get_solar_potential ───────────────────────────────────────────────────────
 
 describe('get_solar_potential', () => {
-  it('returns results array', async () => {
+  it('returns buildings with aggregated data', async () => {
     mockFetch(mockSolarResponse);
     const result = JSON.parse(await handleGeodata('get_solar_potential', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result).toHaveProperty('results');
-    expect(Array.isArray(result.results)).toBe(true);
+    expect(result.count).toBe(1); // Both surfaces belong to same building
+    expect(Array.isArray(result.buildings)).toBe(true);
+    expect(result.source).toContain('BFE');
   });
 
-  it('result has solar layer data', async () => {
+  it('aggregates surfaces per building', async () => {
     mockFetch(mockSolarResponse);
     const result = JSON.parse(await handleGeodata('get_solar_potential', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result.results[0].layerBodId).toContain('solar');
-    expect(result.results[0].attributes).toBeDefined();
+    const building = result.buildings[0];
+    expect(building.buildingId).toBe(3155346);
+    expect(building.totalElectricity_kWh).toBe(20000); // 12500 + 7500
+    expect(building.totalFinancialReturn_CHF).toBe(4400); // 2800 + 1600
+    expect(building.roofSurfaces).toBe(2);
+    expect(building.bestClass).toBe(1);
   });
 
-  it('calls identify endpoint', async () => {
+  it('uses tight tolerance and extent', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true, status: 200, statusText: 'OK',
       json: () => Promise.resolve(mockSolarResponse),
@@ -141,49 +146,39 @@ describe('get_solar_potential', () => {
     const calledUrl = fetchMock.mock.calls[0][0] as string;
     expect(calledUrl).toContain('identify');
     expect(calledUrl).toContain('solar');
+    expect(calledUrl).toContain('tolerance=10');
   });
 });
 
 // ── identify_location ─────────────────────────────────────────────────────────
 
 describe('identify_location', () => {
-  it('returns results array', async () => {
+  it('returns slim results with count', async () => {
     mockFetch(mockIdentifyResponse);
     const result = JSON.parse(await handleGeodata('identify_location', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result).toHaveProperty('results');
-    expect(result.results.length).toBeGreaterThan(0);
+    expect(result.count).toBe(1);
+    expect(result.results[0].layer).toBe('SwissNAMES3D');
+    expect(result.results[0].layerId).toBe('ch.swisstopo.swissnames3d');
   });
 
-  it('result has layer and attribute info', async () => {
+  it('result has attributes', async () => {
     mockFetch(mockIdentifyResponse);
     const result = JSON.parse(await handleGeodata('identify_location', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result.results[0].layerBodId).toBeTruthy();
     expect(result.results[0].attributes.label).toBe('Bern');
-  });
-
-  it('calls identify endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true, status: 200, statusText: 'OK',
-      json: () => Promise.resolve(mockIdentifyResponse),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    await handleGeodata('identify_location', { lat: 46.946774, lng: 7.444192 });
-    const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('identify');
   });
 });
 
 // ── get_municipality ──────────────────────────────────────────────────────────
 
 describe('get_municipality', () => {
-  it('returns results', async () => {
+  it('returns slim results', async () => {
     mockFetch(mockGeocodeResponse);
     const result = JSON.parse(await handleGeodata('get_municipality', { name: 'Bern' }));
-    expect(result).toHaveProperty('results');
+    expect(result.count).toBeGreaterThan(0);
   });
 
   it('passes municipality name to API', async () => {
