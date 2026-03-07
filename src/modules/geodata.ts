@@ -128,16 +128,15 @@ export async function handleGeodata(name: string, args: Record<string, unknown>)
     case "get_solar_potential": {
       const lat = args.lat as number;
       const lng = args.lng as number;
-      const { x, y } = wgs84ToLV95(lat, lng);
-      const extent = `${x - 500},${y - 500},${x + 500},${y + 500}`;
-      const url = buildUrl(`${BASE}/rest/services/identify/MapServer`, {
-        geometry: `${x},${y}`,
+      const extent = `${lng - 0.05},${lat - 0.05},${lng + 0.05},${lat + 0.05}`;
+      const url = buildUrl(`${BASE}/rest/services/all/MapServer/identify`, {
+        geometry: `${lng},${lat}`,
         geometryType: "esriGeometryPoint",
         layers: "all:ch.bfe.solarenergie-eignung-daecher",
         mapExtent: extent,
         imageDisplay: "500,500,96",
-        tolerance: 50,
-        sr: 2056,
+        tolerance: 100,
+        sr: 4326,
         returnGeometry: false,
       });
       const data = await fetchJSON<unknown>(url);
@@ -147,19 +146,16 @@ export async function handleGeodata(name: string, args: Record<string, unknown>)
     case "identify_location": {
       const lat = args.lat as number;
       const lng = args.lng as number;
-      const { x, y } = wgs84ToLV95(lat, lng);
-      const extent = `${x - 500},${y - 500},${x + 500},${y + 500}`;
-      const layers = args.layers
-        ? `all:${args.layers}`
-        : "all:ch.swisstopo.swissnames3d,ch.bav.haltestellen-oev,ch.bfe.solarenergie-eignung-daecher";
-      const url = buildUrl(`${BASE}/rest/services/identify/MapServer`, {
-        geometry: `${x},${y}`,
+      const extent = `${lng - 0.05},${lat - 0.05},${lng + 0.05},${lat + 0.05}`;
+      const layers = args.layers ? `all:${args.layers}` : "all";
+      const url = buildUrl(`${BASE}/rest/services/all/MapServer/identify`, {
+        geometry: `${lng},${lat}`,
         geometryType: "esriGeometryPoint",
         layers,
         mapExtent: extent,
         imageDisplay: "500,500,96",
-        tolerance: 50,
-        sr: 2056,
+        tolerance: 5,
+        sr: 4326,
         returnGeometry: false,
       });
       const data = await fetchJSON<unknown>(url);
