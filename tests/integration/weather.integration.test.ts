@@ -3,50 +3,55 @@ import { describe, it, expect } from 'vitest';
 import { handleWeather } from '../../src/modules/weather.js';
 
 describe('Weather API (live)', () => {
-  it('get_weather returns data for BER station', async () => {
+  it('get_weather returns flattened data for BER station', async () => {
     const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
-    expect(result).toHaveProperty('payload');
-    expect(Array.isArray(result.payload)).toBe(true);
-    expect(result.payload.length).toBeGreaterThan(0);
+    expect(result.station).toBe('BER');
+    expect(result.timestamp).toBeDefined();
+    expect(typeof result.temperature_c).toBe('number');
+    expect(result.source).toContain('MeteoSwiss');
   });
 
-  it('weather payload contains temperature reading', async () => {
+  it('weather data contains humidity and wind', async () => {
     const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
-    const tt = result.payload.find((p: { par: string }) => p.par === 'tt');
-    expect(tt).toBeDefined();
-    expect(typeof tt.val).toBe('number');
+    expect(typeof result.humidity_pct).toBe('number');
+    expect(typeof result.wind_speed_m_s).toBe('number');
   });
 
-  it('list_weather_stations returns payload object', async () => {
+  it('list_weather_stations returns count and stations array', async () => {
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
-    expect(result).toHaveProperty('payload');
-    expect(typeof result.payload).toBe('object');
-    // Should have many stations
-    expect(Object.keys(result.payload).length).toBeGreaterThan(5);
+    expect(result.count).toBeGreaterThan(5);
+    expect(Array.isArray(result.stations)).toBe(true);
+    // Spot check a station has expected fields
+    const station = result.stations[0];
+    expect(station).toHaveProperty('code');
+    expect(station).toHaveProperty('name');
   });
 
-  it('get_weather_history returns historical data', async () => {
+  it('get_weather_history returns station and data array', async () => {
     const result = JSON.parse(await handleWeather('get_weather_history', {
       station: 'BER',
       start_date: '2026-03-01',
       end_date: '2026-03-02',
     }));
-    expect(result).toHaveProperty('payload');
-    // May be array or object
-    const payload = result.payload;
-    expect(payload).toBeDefined();
+    expect(result.station).toBe('BER');
+    expect(result.count).toBeGreaterThan(0);
+    expect(Array.isArray(result.data)).toBe(true);
   });
 
-  it('get_water_level returns hydro data for Aare/Bern', async () => {
+  it('get_water_level returns readings for Aare/Bern', async () => {
     const result = JSON.parse(await handleWeather('get_water_level', { station: '2135' }));
-    expect(result).toHaveProperty('payload');
-    expect(Array.isArray(result.payload)).toBe(true);
+    expect(result.station).toBe('2135');
+    expect(Array.isArray(result.readings)).toBe(true);
+    expect(result.readings.length).toBeGreaterThan(0);
   });
 
-  it('list_hydro_stations returns stations payload', async () => {
+  it('list_hydro_stations returns count and stations array', async () => {
     const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
-    expect(result).toHaveProperty('payload');
-    expect(Object.keys(result.payload).length).toBeGreaterThan(5);
+    expect(result.count).toBeGreaterThan(5);
+    expect(Array.isArray(result.stations)).toBe(true);
+    const station = result.stations[0];
+    expect(station).toHaveProperty('id');
+    expect(station).toHaveProperty('name');
   });
 
   it('get_water_history returns historical hydro data', async () => {
@@ -55,6 +60,8 @@ describe('Weather API (live)', () => {
       start_date: '2026-03-01',
       end_date: '2026-03-02',
     }));
-    expect(result).toBeDefined();
+    expect(result.station).toBe('2135');
+    expect(result.count).toBeGreaterThan(0);
+    expect(Array.isArray(result.data)).toBe(true);
   });
 });
