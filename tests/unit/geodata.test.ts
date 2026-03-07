@@ -136,6 +136,38 @@ describe('get_solar_potential', () => {
     expect(building.bestClass).toBe(1);
   });
 
+  it('handles null values in solar attributes gracefully', async () => {
+    mockFetch({
+      results: [{
+        layerBodId: 'ch.bfe.solarenergie-eignung-daecher',
+        layerName: 'Solar',
+        featureId: 9999,
+        id: 9999,
+        attributes: {
+          building_id: 555,
+          klasse: 3,
+          klasse_text: 'wenig geeignet',
+          flaeche: null,
+          ausrichtung: 'N',
+          neigung: 45,
+          stromertrag: null,
+          stromertrag_winterhalbjahr: null,
+          stromertrag_sommerhalbjahr: null,
+          finanzertrag: null,
+          gstrahlung: 800,
+          gwr_egid: null,
+          df_nummer: 1,
+          label: 'Test',
+        },
+      }],
+    });
+    const result = JSON.parse(await handleGeodata('get_solar_potential', {
+      lat: 46.946774, lng: 7.444192,
+    }));
+    expect(result.buildings[0].totalArea_m2).toBe(0);
+    expect(result.buildings[0].totalElectricity_kWh).toBe(0);
+  });
+
   it('uses tight tolerance and extent', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true, status: 200, statusText: 'OK',
@@ -169,6 +201,31 @@ describe('identify_location', () => {
       lat: 46.946774, lng: 7.444192,
     }));
     expect(result.results[0].attributes.label).toBe('Bern');
+  });
+
+  it('passes custom layers param when provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve(mockIdentifyResponse),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await handleGeodata('identify_location', {
+      lat: 46.946774, lng: 7.444192, layers: 'ch.swisstopo.swissnames3d',
+    });
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('layers=all%3Ach.swisstopo.swissnames3d');
+  });
+
+  it('uses "all" layers when none specified', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve(mockIdentifyResponse),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await handleGeodata('identify_location', { lat: 46.946774, lng: 7.444192 });
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('layers=all');
+    expect(calledUrl).not.toContain('layers=all%3A');
   });
 });
 

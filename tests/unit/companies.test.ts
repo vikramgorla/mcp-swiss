@@ -239,6 +239,50 @@ describe('list_legal_forms', () => {
   });
 });
 
+// ── error branches ────────────────────────────────────────────────────────────
+
+describe('search_companies error handling', () => {
+  it('throws on non-404 HTTP error', async () => {
+    mockFetch({}, 500);
+    await expect(handleCompanies('search_companies', { name: 'test' }))
+      .rejects.toThrow('HTTP 500');
+  });
+
+  it('returns empty on API error response', async () => {
+    mockFetch({ error: 'something went wrong', list: null, hasMoreResults: false });
+    const result = JSON.parse(await handleCompanies('search_companies', { name: 'test' }));
+    expect(result.companies).toEqual([]);
+  });
+
+  it('handles missing list/hasMoreResults with defaults', async () => {
+    mockFetch({});
+    const result = JSON.parse(await handleCompanies('search_companies', { name: 'test' }));
+    expect(result.companies).toEqual([]);
+    expect(result.hasMoreResults).toBe(false);
+  });
+});
+
+describe('search_companies_by_address error handling', () => {
+  it('throws on non-404 HTTP error', async () => {
+    mockFetch({}, 500);
+    await expect(handleCompanies('search_companies_by_address', { address: 'test' }))
+      .rejects.toThrow('HTTP 500');
+  });
+
+  it('returns empty on API error response', async () => {
+    mockFetch({ error: 'bad request', list: null, hasMoreResults: false });
+    const result = JSON.parse(await handleCompanies('search_companies_by_address', { address: 'test' }));
+    expect(result.companies).toEqual([]);
+  });
+
+  it('handles missing list/hasMoreResults with defaults', async () => {
+    mockFetch({});
+    const result = JSON.parse(await handleCompanies('search_companies_by_address', { address: 'test' }));
+    expect(result.companies).toEqual([]);
+    expect(result.hasMoreResults).toBe(false);
+  });
+});
+
 // ── unknown tool ──────────────────────────────────────────────────────────────
 
 describe('unknown companies tool', () => {
