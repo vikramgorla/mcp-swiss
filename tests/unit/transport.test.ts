@@ -18,13 +18,15 @@ afterEach(() => {
 // ── search_stations ───────────────────────────────────────────────────────────
 
 describe('search_stations', () => {
-  it('returns station array from API response', async () => {
+  it('returns slim station array', async () => {
     mockFetch(mockStations);
     const result = JSON.parse(await handleTransport('search_stations', { query: 'Bern' }));
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe('Bern');
     expect(result[0].id).toBe('8507000');
+    expect(result[0].lat).toBeDefined();
+    expect(result[0].lon).toBeDefined();
   });
 
   it('returns empty array when no stations found', async () => {
@@ -57,24 +59,25 @@ describe('search_stations', () => {
 // ── get_connections ───────────────────────────────────────────────────────────
 
 describe('get_connections', () => {
-  it('returns connections array', async () => {
+  it('returns slim connections array', async () => {
     mockFetch(mockConnections);
     const result = JSON.parse(await handleTransport('get_connections', {
       from: 'Bern', to: 'Zürich HB',
     }));
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(1);
-    expect(result[0].from.station.name).toBe('Bern');
-    expect(result[0].to.station.name).toBe('Zürich HB');
+    expect(result[0].from).toBe('Bern');
+    expect(result[0].to).toBe('Zürich HB');
   });
 
-  it('includes duration and products', async () => {
+  it('includes duration and sections', async () => {
     mockFetch(mockConnections);
     const result = JSON.parse(await handleTransport('get_connections', {
       from: 'Bern', to: 'Zürich HB',
     }));
     expect(result[0].duration).toBe('00d00:58:00');
-    expect(result[0].products).toContain('IC');
+    expect(result[0].sections).toHaveLength(1);
+    expect(result[0].sections[0].line).toBe('IC1');
   });
 
   it('returns empty array when no connections', async () => {
@@ -90,22 +93,25 @@ describe('get_connections', () => {
 // ── get_departures ────────────────────────────────────────────────────────────
 
 describe('get_departures', () => {
-  it('returns departures array with station info', async () => {
+  it('returns slim departures with station name', async () => {
     mockFetch(mockStationboard);
     const result = JSON.parse(await handleTransport('get_departures', { station: 'Bern' }));
-    expect(result).toHaveProperty('station');
-    expect(result).toHaveProperty('departures');
+    expect(result.station).toBe('Bern');
     expect(Array.isArray(result.departures)).toBe(true);
     expect(result.departures).toHaveLength(2);
   });
 
-  it('departure entries have expected fields', async () => {
+  it('departure entries have slim fields', async () => {
     mockFetch(mockStationboard);
     const result = JSON.parse(await handleTransport('get_departures', { station: 'Bern' }));
     const first = result.departures[0];
-    expect(first.name).toBe('IC 1');
-    expect(first.category).toBe('IC');
+    expect(first.line).toBe('IC1');
     expect(first.to).toBe('Zürich HB');
+    expect(first.departure).toBeDefined();
+    expect(first.platform).toBe('3');
+    expect(first.delay).toBe(0);
+    // Should NOT have passList
+    expect(first.passList).toBeUndefined();
   });
 
   it('passes type=departure to API', async () => {
@@ -123,7 +129,7 @@ describe('get_departures', () => {
 // ── get_arrivals ──────────────────────────────────────────────────────────────
 
 describe('get_arrivals', () => {
-  it('returns arrivals array', async () => {
+  it('returns slim arrivals array', async () => {
     mockFetch(mockStationboard);
     const result = JSON.parse(await handleTransport('get_arrivals', { station: 'Bern' }));
     expect(result).toHaveProperty('arrivals');
@@ -141,23 +147,25 @@ describe('get_arrivals', () => {
     expect(calledUrl).toContain('type=arrival');
   });
 
-  it('includes station info in response', async () => {
+  it('station is string name', async () => {
     mockFetch(mockStationboard);
     const result = JSON.parse(await handleTransport('get_arrivals', { station: 'Bern' }));
-    expect(result.station).toEqual({ id: '8507000', name: 'Bern' });
+    expect(result.station).toBe('Bern');
   });
 });
 
 // ── get_nearby_stations ───────────────────────────────────────────────────────
 
 describe('get_nearby_stations', () => {
-  it('returns station array', async () => {
+  it('returns slim station array', async () => {
     mockFetch(mockStations);
     const result = JSON.parse(await handleTransport('get_nearby_stations', {
       x: 7.439122, y: 46.948825,
     }));
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
+    expect(result[0]).toHaveProperty('name');
+    expect(result[0]).toHaveProperty('lat');
   });
 
   it('passes coordinates to API', async () => {

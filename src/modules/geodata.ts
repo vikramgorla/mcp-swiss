@@ -2,6 +2,91 @@ import { fetchJSON, buildUrl } from "../utils/http.js";
 
 const BASE = "https://api3.geo.admin.ch";
 
+// ── Types ───────────────────────────────────────────────────────────────────
+
+interface SearchResult {
+  id: number;
+  weight: number;
+  attrs: Record<string, unknown>;
+}
+
+interface SearchResponse {
+  results: SearchResult[];
+}
+
+interface SolarAttributes {
+  building_id: number;
+  klasse: number;
+  klasse_text: string;
+  flaeche: number;
+  ausrichtung: string;
+  neigung: number;
+  stromertrag: number;
+  stromertrag_winterhalbjahr: number;
+  stromertrag_sommerhalbjahr: number;
+  finanzertrag: number;
+  gstrahlung: number;
+  gwr_egid: number;
+  df_nummer: number;
+  label: string;
+}
+
+interface IdentifyResult {
+  layerBodId: string;
+  layerName: string;
+  featureId: number;
+  id: number;
+  attributes: Record<string, unknown>;
+}
+
+interface IdentifyResponse {
+  results: IdentifyResult[];
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function slimSearchResult(r: SearchResult) {
+  const a = r.attrs;
+  return {
+    label: a.label,
+    lat: a.lat,
+    lon: a.lon,
+    type: a.origin,
+    detail: a.detail,
+  };
+}
+
+function slimSolarResult(r: IdentifyResult) {
+  const a = r.attributes as unknown as SolarAttributes;
+  return {
+    buildingId: a.building_id,
+    roofSurface: a.df_nummer,
+    class: a.klasse,
+    classText: a.klasse_text,
+    area_m2: a.flaeche,
+    orientation: a.ausrichtung,
+    tilt_deg: a.neigung,
+    electricityYield_kWh: a.stromertrag,
+    winterYield_kWh: a.stromertrag_winterhalbjahr,
+    summerYield_kWh: a.stromertrag_sommerhalbjahr,
+    financialReturn_CHF: a.finanzertrag,
+    radiation_kWh_m2: a.gstrahlung,
+    egid: a.gwr_egid,
+    label: a.label,
+  };
+}
+
+function slimIdentifyResult(r: IdentifyResult) {
+  return {
+    layer: r.layerName,
+    layerId: r.layerBodId,
+    id: r.featureId,
+    attributes: r.attributes,
+  };
+}
+
+// ── Tool definitions ────────────────────────────────────────────────────────
+
 export const geodataTools = [
   {
     name: "geocode",
@@ -76,24 +161,7 @@ export const geodataTools = [
   },
 ];
 
-// Convert WGS84 to LV95 (Swiss projection) — approximate
-function wgs84ToLV95(lat: number, lng: number): { x: number; y: number } {
-  // Approx conversion for API calls that need Swiss coords
-  const phiPrime = (lat * 3600 - 169028.66) / 10000;
-  const lambdaPrime = (lng * 3600 - 26782.5) / 10000;
-  const E = 2600072.37
-    + 211455.93 * lambdaPrime
-    - 10938.51 * lambdaPrime * phiPrime
-    - 0.36 * lambdaPrime * phiPrime ** 2
-    - 44.54 * lambdaPrime ** 3;
-  const N = 1200147.07
-    + 308807.95 * phiPrime
-    + 3745.25 * lambdaPrime ** 2
-    + 76.63 * phiPrime ** 2
-    - 194.56 * lambdaPrime ** 2 * phiPrime
-    + 119.79 * phiPrime ** 3;
-  return { x: E, y: N };
-}
+// ── Handler ─────────────────────────────────────────────────────────────────
 
 export async function handleGeodata(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
@@ -105,48 +173,76 @@ export async function handleGeodata(name: string, args: Record<string, unknown>)
         sr: 4326,
         limit: 10,
       });
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<SearchResponse>(url);
+      return JSON.stringify({
+        count: data.results.length,
+        results: data.results.map(slimSearchResult),
+      });
     }
 
     case "reverse_geocode": {
       const lat = args.lat as number;
       const lng = args.lng as number;
-      const { x, y } = wgs84ToLV95(lat, lng);
-      const extent = `${x - 100},${y - 100},${x + 100},${y + 100}`;
       const url = buildUrl(`${BASE}/rest/services/api/SearchServer`, {
         searchText: `${lat},${lng}`,
         type: "locations",
         sr: 4326,
         limit: 5,
       });
-      void extent; // extent used in identify, not reverse geocode search
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<SearchResponse>(url);
+      return JSON.stringify({
+        count: data.results.length,
+        results: data.results.map(slimSearchResult),
+      });
     }
 
     case "get_solar_potential": {
       const lat = args.lat as number;
       const lng = args.lng as number;
-      const extent = `${lng - 0.05},${lat - 0.05},${lng + 0.05},${lat + 0.05}`;
+      // Use tight tolerance to get only the closest building
+      const extent = `${lng - 0.001},${lat - 0.001},${lng + 0.001},${lat + 0.001}`;
       const url = buildUrl(`${BASE}/rest/services/all/MapServer/identify`, {
         geometry: `${lng},${lat}`,
         geometryType: "esriGeometryPoint",
         layers: "all:ch.bfe.solarenergie-eignung-daecher",
         mapExtent: extent,
         imageDisplay: "500,500,96",
-        tolerance: 100,
+        tolerance: 10,
         sr: 4326,
         returnGeometry: false,
       });
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<IdentifyResponse>(url);
+      const roofs = data.results.map(slimSolarResult);
+
+      // Group by building and summarize
+      const buildingMap = new Map<number, typeof roofs>();
+      for (const r of roofs) {
+        const id = r.buildingId;
+        if (!buildingMap.has(id)) buildingMap.set(id, []);
+        buildingMap.get(id)!.push(r);
+      }
+
+      const buildings = [...buildingMap.entries()].map(([buildingId, surfaces]) => ({
+        buildingId,
+        totalArea_m2: Math.round(surfaces.reduce((s, r) => s + (r.area_m2 ?? 0), 0)),
+        totalElectricity_kWh: Math.round(surfaces.reduce((s, r) => s + (r.electricityYield_kWh ?? 0), 0)),
+        totalFinancialReturn_CHF: Math.round(surfaces.reduce((s, r) => s + (r.financialReturn_CHF ?? 0), 0)),
+        roofSurfaces: surfaces.length,
+        bestClass: Math.min(...surfaces.map((r) => r.class).filter((c) => c != null)),
+        surfaces: surfaces.slice(0, 5), // Cap at 5 surfaces per building
+      }));
+
+      return JSON.stringify({
+        count: buildings.length,
+        buildings: buildings.slice(0, 10), // Cap at 10 buildings
+        source: "Swiss Federal Office of Energy (BFE)",
+      });
     }
 
     case "identify_location": {
       const lat = args.lat as number;
       const lng = args.lng as number;
-      const extent = `${lng - 0.05},${lat - 0.05},${lng + 0.05},${lat + 0.05}`;
+      const extent = `${lng - 0.001},${lat - 0.001},${lng + 0.001},${lat + 0.001}`;
       const layers = args.layers ? `all:${args.layers}` : "all";
       const url = buildUrl(`${BASE}/rest/services/all/MapServer/identify`, {
         geometry: `${lng},${lat}`,
@@ -158,8 +254,11 @@ export async function handleGeodata(name: string, args: Record<string, unknown>)
         sr: 4326,
         returnGeometry: false,
       });
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<IdentifyResponse>(url);
+      return JSON.stringify({
+        count: data.results.length,
+        results: data.results.slice(0, 20).map(slimIdentifyResult),
+      });
     }
 
     case "get_municipality": {
@@ -169,8 +268,11 @@ export async function handleGeodata(name: string, args: Record<string, unknown>)
         sr: 4326,
         limit: 5,
       });
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<SearchResponse>(url);
+      return JSON.stringify({
+        count: data.results.length,
+        results: data.results.map(slimSearchResult),
+      });
     }
 
     default:

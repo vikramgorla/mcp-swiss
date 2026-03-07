@@ -2,6 +2,116 @@ import { fetchJSON, buildUrl } from "../utils/http.js";
 
 const BASE = "https://transport.opendata.ch/v1";
 
+// ── Types ───────────────────────────────────────────────────────────────────
+
+interface Station {
+  id: string | null;
+  name: string | null;
+  score: number | null;
+  coordinate: { type: string; x: number | null; y: number | null };
+  distance: number | null;
+}
+
+interface Prognosis {
+  platform: string | null;
+  arrival: string | null;
+  departure: string | null;
+  capacity1st: number | null;
+  capacity2nd: number | null;
+}
+
+interface Stop {
+  station: Station;
+  arrival: string | null;
+  departure: string | null;
+  delay: number | null;
+  platform: string | null;
+  prognosis: Prognosis | null;
+}
+
+interface BoardEntry {
+  stop: Stop;
+  name: string;
+  category: string;
+  number: string;
+  operator: string;
+  to: string;
+  passList: Stop[];
+  capacity1st: number | null;
+  capacity2nd: number | null;
+}
+
+interface Section {
+  journey: {
+    name: string;
+    category: string;
+    number: string;
+    operator: string;
+    to: string;
+    passList: Stop[];
+    capacity1st: number | null;
+    capacity2nd: number | null;
+  } | null;
+  walk: unknown | null;
+  departure: Stop;
+  arrival: Stop;
+}
+
+interface Connection {
+  from: Stop;
+  to: Stop;
+  duration: string;
+  transfers: number;
+  sections: Section[];
+  capacity1st: number | null;
+  capacity2nd: number | null;
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function slimBoardEntry(entry: BoardEntry) {
+  return {
+    line: `${entry.category}${entry.number}`,
+    to: entry.to,
+    departure: entry.stop.departure,
+    delay: entry.stop.delay,
+    platform: entry.stop.platform,
+    operator: entry.operator,
+  };
+}
+
+function slimConnection(conn: Connection) {
+  return {
+    from: conn.from.station?.name,
+    to: conn.to.station?.name,
+    departure: conn.from.departure,
+    arrival: conn.to.arrival,
+    duration: conn.duration,
+    transfers: conn.transfers,
+    sections: conn.sections.map((s) => ({
+      type: s.journey ? "journey" : "walk",
+      line: s.journey ? `${s.journey.category}${s.journey.number}` : undefined,
+      from: s.departure.station?.name,
+      departure: s.departure.departure,
+      platform: s.departure.platform,
+      to: s.arrival.station?.name,
+      arrival: s.arrival.arrival,
+    })),
+  };
+}
+
+function slimStation(s: Station) {
+  return {
+    id: s.id,
+    name: s.name,
+    lat: s.coordinate?.x,
+    lon: s.coordinate?.y,
+    distance: s.distance,
+  };
+}
+
+// ── Tool definitions ────────────────────────────────────────────────────────
+
 export const transportTools = [
   {
     name: "search_stations",
@@ -74,6 +184,8 @@ export const transportTools = [
   },
 ];
 
+// ── Handler ─────────────────────────────────────────────────────────────────
+
 export async function handleTransport(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
     case "search_stations": {
@@ -83,8 +195,8 @@ export async function handleTransport(name: string, args: Record<string, unknown
         y: args.y as number,
         type: args.type as string,
       });
-      const data = await fetchJSON<{ stations: unknown[] }>(url);
-      return JSON.stringify(data.stations, null, 2);
+      const data = await fetchJSON<{ stations: Station[] }>(url);
+      return JSON.stringify(data.stations.map(slimStation));
     }
 
     case "get_connections": {
@@ -96,8 +208,8 @@ export async function handleTransport(name: string, args: Record<string, unknown
         limit: args.limit as number,
         isArrivalTime: args.isArrivalTime ? 1 : undefined,
       });
-      const data = await fetchJSON<{ connections: unknown[] }>(url);
-      return JSON.stringify(data.connections, null, 2);
+      const data = await fetchJSON<{ connections: Connection[] }>(url);
+      return JSON.stringify(data.connections.map(slimConnection));
     }
 
     case "get_departures": {
@@ -107,8 +219,11 @@ export async function handleTransport(name: string, args: Record<string, unknown
         datetime: args.datetime as string,
         type: "departure",
       });
-      const data = await fetchJSON<{ station: unknown; stationboard: unknown[] }>(url);
-      return JSON.stringify({ station: data.station, departures: data.stationboard }, null, 2);
+      const data = await fetchJSON<{ station: Station; stationboard: BoardEntry[] }>(url);
+      return JSON.stringify({
+        station: data.station?.name,
+        departures: data.stationboard.map(slimBoardEntry),
+      });
     }
 
     case "get_arrivals": {
@@ -118,8 +233,11 @@ export async function handleTransport(name: string, args: Record<string, unknown
         datetime: args.datetime as string,
         type: "arrival",
       });
-      const data = await fetchJSON<{ station: unknown; stationboard: unknown[] }>(url);
-      return JSON.stringify({ station: data.station, arrivals: data.stationboard }, null, 2);
+      const data = await fetchJSON<{ station: Station; stationboard: BoardEntry[] }>(url);
+      return JSON.stringify({
+        station: data.station?.name,
+        arrivals: data.stationboard.map(slimBoardEntry),
+      });
     }
 
     case "get_nearby_stations": {
@@ -128,8 +246,8 @@ export async function handleTransport(name: string, args: Record<string, unknown
         y: args.y as number,
         type: "station",
       });
-      const data = await fetchJSON<{ stations: unknown[] }>(url);
-      return JSON.stringify(data.stations, null, 2);
+      const data = await fetchJSON<{ stations: Station[] }>(url);
+      return JSON.stringify(data.stations.map(slimStation));
     }
 
     default:
