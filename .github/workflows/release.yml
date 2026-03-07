@@ -35,7 +35,7 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -e 'process.stdout.write(require("./package.json").version)')" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: actions/github-script@v7
