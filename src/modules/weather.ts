@@ -133,26 +133,28 @@ function extractReadings(payload: WeatherReading[]) {
   }));
 }
 
-function extractWeatherStations(payload: Record<string, StationEntry>) {
-  return Object.values(payload).map((s) => ({
-    code: s.details?.id ?? s.name,
-    name: s.details?.name ?? s.name,
-    canton: s.details?.canton,
-    alt: s.details?.alt,
-    lat: s.details?.lat,
-    lon: s.details?.lon,
-  }));
+function compactWeatherStations(payload: Record<string, StationEntry>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const s of Object.values(payload)) {
+    const code = s.details?.id ?? s.name;
+    const name = s.details?.name ?? s.name;
+    const canton = s.details?.canton;
+    result[code] = canton ? `${name} (${canton})` : name;
+  }
+  return result;
 }
 
-function extractHydroStations(payload: Record<string, StationEntry>) {
-  return Object.values(payload).map((s) => ({
-    id: s.details?.id ?? s.name,
-    name: s.details?.name,
-    waterBody: s.details?.["water-body-name"],
-    type: s.details?.["water-body-type"],
-    lat: s.details?.lat,
-    lon: s.details?.lon,
-  }));
+function compactHydroStations(payload: Record<string, StationEntry>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const s of Object.values(payload)) {
+    const id = s.details?.id ?? s.name;
+    const name = s.details?.name ?? id;
+    const water = s.details?.["water-body-name"];
+    const type = s.details?.["water-body-type"];
+    const suffix = [water, type].filter(Boolean).join(", ");
+    result[id] = suffix ? `${name} (${suffix})` : name;
+  }
+  return result;
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -188,8 +190,8 @@ export async function handleWeather(name: string, args: Record<string, unknown>)
       const url = buildUrl(`${BASE}/smn/locations`, { app: "mcp-swiss" });
       const data = await fetchJSON<ApiResponse>(url);
       const payload = (data?.payload ?? {}) as Record<string, StationEntry>;
-      const stations = extractWeatherStations(payload);
-      return JSON.stringify({ count: stations.length, stations });
+      const stations = compactWeatherStations(payload);
+      return JSON.stringify({ count: Object.keys(stations).length, stations });
     }
 
     case "get_weather_history": {
@@ -228,8 +230,8 @@ export async function handleWeather(name: string, args: Record<string, unknown>)
       const url = buildUrl(`${BASE}/hydro/locations`, { app: "mcp-swiss" });
       const data = await fetchJSON<ApiResponse>(url);
       const payload = (data?.payload ?? {}) as Record<string, StationEntry>;
-      const stations = extractHydroStations(payload);
-      return JSON.stringify({ count: stations.length, stations });
+      const stations = compactHydroStations(payload);
+      return JSON.stringify({ count: Object.keys(stations).length, stations });
     }
 
     case "get_water_history": {

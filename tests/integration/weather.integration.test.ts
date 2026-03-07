@@ -17,14 +17,15 @@ describe('Weather API (live)', () => {
     expect(typeof result.wind_speed_m_s).toBe('number');
   });
 
-  it('list_weather_stations returns count and stations array', async () => {
+  it('list_weather_stations returns compact dict under 5K', async () => {
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
     expect(result.count).toBeGreaterThan(5);
-    expect(Array.isArray(result.stations)).toBe(true);
-    // Spot check a station has expected fields
-    const station = result.stations[0];
-    expect(station).toHaveProperty('code');
-    expect(station).toHaveProperty('name');
+    expect(typeof result.stations).toBe('object');
+    // Compact format: code → "name (canton)"
+    expect(result.stations['BER']).toContain('Bern');
+    // Size check
+    const size = JSON.stringify(result).length;
+    expect(size).toBeLessThan(5000);
   });
 
   it('get_weather_history returns station and data array', async () => {
@@ -45,13 +46,14 @@ describe('Weather API (live)', () => {
     expect(result.readings.length).toBeGreaterThan(0);
   });
 
-  it('list_hydro_stations returns count and stations array', async () => {
+  it('list_hydro_stations returns compact dict under 10K', async () => {
     const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
     expect(result.count).toBeGreaterThan(5);
-    expect(Array.isArray(result.stations)).toBe(true);
-    const station = result.stations[0];
-    expect(station).toHaveProperty('id');
-    expect(station).toHaveProperty('name');
+    expect(typeof result.stations).toBe('object');
+    // Compact format: id → "name (waterBody, type)"
+    expect(result.stations['2135']).toContain('Aare');
+    const size = JSON.stringify(result).length;
+    expect(size).toBeLessThan(15000);
   });
 
   it('get_water_history returns historical hydro data', async () => {
