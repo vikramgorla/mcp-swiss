@@ -5,9 +5,12 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: write
+
 jobs:
   release:
-    name: Build & Release
+    name: Build, Release & Publish
     runs-on: ubuntu-latest
 
     steps:
@@ -20,8 +23,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          # Uncomment when ready to publish to npm:
-          # registry-url: "https://registry.npmjs.org"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci
@@ -47,8 +49,7 @@ jobs:
               prerelease: tag.includes('-'),
             });
 
-      # Uncomment when ready to publish to npm:
-      # - name: Publish to npm
-      #   run: npm publish --access public
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

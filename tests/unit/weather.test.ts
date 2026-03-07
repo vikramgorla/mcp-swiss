@@ -25,28 +25,26 @@ afterEach(() => {
 // ── get_weather ───────────────────────────────────────────────────────────────
 
 describe('get_weather', () => {
-  it('returns weather data with payload', async () => {
+  it('returns flattened weather data with human-readable keys', async () => {
     mockFetch(mockWeatherResponse);
     const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
-    expect(result).toHaveProperty('payload');
-    expect(Array.isArray(result.payload)).toBe(true);
+    expect(result.station).toBe('BER');
+    expect(result.temperature_c).toBe(11.2);
+    expect(result.humidity_pct).toBe(72);
+    expect(result.source).toContain('MeteoSwiss');
   });
 
-  it('payload contains temperature (tt) reading', async () => {
+  it('includes timestamp as ISO string', async () => {
     mockFetch(mockWeatherResponse);
     const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
-    const tt = result.payload.find((p: { par: string }) => p.par === 'tt');
-    expect(tt).toBeDefined();
-    expect(tt.val).toBe(11.2);
-    expect(tt.loc).toBe('BER');
+    expect(result.timestamp).toBeDefined();
+    expect(result.timestamp).toContain('T'); // ISO format
   });
 
-  it('payload contains humidity (rh) reading', async () => {
+  it('maps wind speed correctly', async () => {
     mockFetch(mockWeatherResponse);
     const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
-    const rh = result.payload.find((p: { par: string }) => p.par === 'rh');
-    expect(rh).toBeDefined();
-    expect(rh.val).toBe(72);
+    expect(result.wind_speed_m_s).toBe(2.1);
   });
 
   it('passes station code to API URL', async () => {
@@ -59,55 +57,62 @@ describe('get_weather', () => {
     const calledUrl = fetchMock.mock.calls[0][0] as string;
     expect(calledUrl).toContain('locations=LUG');
   });
-
-  it('includes source and license info', async () => {
-    mockFetch(mockWeatherResponse);
-    const result = JSON.parse(await handleWeather('get_weather', { station: 'BER' }));
-    expect(result.source).toContain('MeteoSwiss');
-    expect(result.license).toBeTruthy();
-  });
 });
 
 // ── list_weather_stations ─────────────────────────────────────────────────────
 
 describe('list_weather_stations', () => {
-  it('returns stations as object payload', async () => {
+  it('returns count and stations array', async () => {
     mockFetch(mockWeatherStations);
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
-    expect(result).toHaveProperty('payload');
-    expect(typeof result.payload).toBe('object');
+    expect(result.count).toBe(3);
+    expect(Array.isArray(result.stations)).toBe(true);
   });
 
-  it('payload contains known station keys', async () => {
+  it('stations have code, name, and canton', async () => {
     mockFetch(mockWeatherStations);
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
-    expect(result.payload).toHaveProperty('BER');
-    expect(result.payload).toHaveProperty('SMA');
-    expect(result.payload).toHaveProperty('LUG');
+    const ber = result.stations.find((s: any) => s.code === 'BER');
+    expect(ber).toBeDefined();
+    expect(ber.name).toContain('Bern');
+    expect(ber.canton).toBe('BE');
   });
 
-  it('station entries have name and details', async () => {
+  it('stations have coordinates', async () => {
     mockFetch(mockWeatherStations);
     const result = JSON.parse(await handleWeather('list_weather_stations', {}));
-    const ber = result.payload['BER'];
-    expect(ber.details.name).toContain('Bern');
-    expect(ber.details.canton).toBe('BE');
+    const sma = result.stations.find((s: any) => s.code === 'SMA');
+    expect(sma.lat).toBeDefined();
+    expect(sma.lon).toBeDefined();
   });
 });
 
 // ── get_weather_history ───────────────────────────────────────────────────────
 
 describe('get_weather_history', () => {
-  it('returns historical payload array', async () => {
+  it('returns station, count, and data array', async () => {
     mockFetch(mockWeatherHistoryResponse);
     const result = JSON.parse(await handleWeather('get_weather_history', {
       station: 'BER',
       start_date: '2026-03-06',
       end_date: '2026-03-07',
     }));
-    expect(result).toHaveProperty('payload');
-    expect(Array.isArray(result.payload)).toBe(true);
-    expect(result.payload.length).toBeGreaterThan(0);
+    expect(result.station).toBe('BER');
+    expect(result.count).toBe(4);
+    expect(Array.isArray(result.data)).toBe(true);
+  });
+
+  it('data entries have time, param, value', async () => {
+    mockFetch(mockWeatherHistoryResponse);
+    const result = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER',
+      start_date: '2026-03-06',
+      end_date: '2026-03-07',
+    }));
+    const entry = result.data[0];
+    expect(entry.time).toContain('T');
+    expect(entry.param).toBeDefined();
+    expect(entry.value).toBeDefined();
   });
 
   it('passes date params to API', async () => {
@@ -130,61 +135,57 @@ describe('get_weather_history', () => {
 // ── get_water_level ───────────────────────────────────────────────────────────
 
 describe('get_water_level', () => {
-  it('returns hydro data with payload', async () => {
+  it('returns station and readings array', async () => {
     mockFetch(mockHydroResponse);
     const result = JSON.parse(await handleWeather('get_water_level', { station: '2135' }));
-    expect(result).toHaveProperty('payload');
-    expect(Array.isArray(result.payload)).toBe(true);
+    expect(result.station).toBe('2135');
+    expect(Array.isArray(result.readings)).toBe(true);
   });
 
-  it('payload contains temperature reading', async () => {
+  it('readings contain temperature, height, and flow', async () => {
     mockFetch(mockHydroResponse);
     const result = JSON.parse(await handleWeather('get_water_level', { station: '2135' }));
-    const temp = result.payload.find((p: { par: string }) => p.par === 'temperature');
-    expect(temp).toBeDefined();
-    expect(temp.val).toBe(9.18);
-  });
-
-  it('payload contains height and flow readings', async () => {
-    mockFetch(mockHydroResponse);
-    const result = JSON.parse(await handleWeather('get_water_level', { station: '2135' }));
-    const height = result.payload.find((p: { par: string }) => p.par === 'height');
-    const flow = result.payload.find((p: { par: string }) => p.par === 'flow');
-    expect(height?.val).toBe(501.51);
-    expect(flow?.val).toBe(40.99);
+    const temp = result.readings.find((r: any) => r.param === 'temperature');
+    const height = result.readings.find((r: any) => r.param === 'height');
+    const flow = result.readings.find((r: any) => r.param === 'flow');
+    expect(temp.value).toBe(9.18);
+    expect(height.value).toBe(501.51);
+    expect(flow.value).toBe(40.99);
   });
 });
 
 // ── list_hydro_stations ───────────────────────────────────────────────────────
 
 describe('list_hydro_stations', () => {
-  it('returns hydro stations payload', async () => {
+  it('returns count and stations array', async () => {
     mockFetch(mockHydroStations);
     const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
-    expect(result).toHaveProperty('payload');
+    expect(result.count).toBe(2);
+    expect(Array.isArray(result.stations)).toBe(true);
   });
 
-  it('payload has station entries', async () => {
+  it('stations have id, name, and waterBody', async () => {
     mockFetch(mockHydroStations);
     const result = JSON.parse(await handleWeather('list_hydro_stations', {}));
-    expect(result.payload).toHaveProperty('2135');
-    expect(result.payload['2135'].details.river).toBe('Aare');
+    const aare = result.stations.find((s: any) => s.id === '2135');
+    expect(aare).toBeDefined();
+    expect(aare.name).toContain('Aare');
   });
 });
 
 // ── get_water_history ─────────────────────────────────────────────────────────
 
 describe('get_water_history', () => {
-  it('returns historical hydro data', async () => {
+  it('returns station, count, and data array', async () => {
     mockFetch(mockHydroHistoryResponse);
     const result = JSON.parse(await handleWeather('get_water_history', {
       station: '2135',
       start_date: '2026-03-06',
       end_date: '2026-03-07',
     }));
-    expect(result).toHaveProperty('payload');
-    expect(Array.isArray(result.payload)).toBe(true);
-    expect(result.payload.length).toBeGreaterThan(0);
+    expect(result.station).toBe('2135');
+    expect(result.count).toBe(4);
+    expect(Array.isArray(result.data)).toBe(true);
   });
 
   it('passes date params to API', async () => {

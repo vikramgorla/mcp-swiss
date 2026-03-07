@@ -77,14 +77,44 @@ export async function handleWeather(name: string, args: Record<string, unknown>)
         app: "mcp-swiss",
         version: "0.1.0",
       });
-      const data = await fetchJSON<unknown>(url);
+      const data = await fetchJSON<Record<string, unknown>>(url);
+      const payload = (data as any)?.payload;
+      if (Array.isArray(payload)) {
+        const PARAM_NAMES: Record<string, string> = {
+          tt: "temperature_c", rr: "precipitation_mm", ss: "sunshine_min",
+          rad: "radiation_w_m2", rh: "humidity_pct", td: "dewpoint_c",
+          dd: "wind_direction_deg", ff: "wind_speed_m_s", fx: "wind_gust_m_s",
+          qfe: "pressure_station_hpa", qff: "pressure_sea_hpa", qnh: "pressure_qnh_hpa",
+        };
+        const ts = payload[0]?.timestamp;
+        const readings: Record<string, number> = {};
+        for (const p of payload) {
+          const key = PARAM_NAMES[p.par] ?? p.par;
+          readings[key] = p.val;
+        }
+        return JSON.stringify({
+          station: args.station,
+          timestamp: ts ? new Date(ts * 1000).toISOString() : undefined,
+          ...readings,
+          source: "MeteoSwiss via SwissMetNet",
+        });
+      }
       return JSON.stringify(data, null, 2);
     }
 
     case "list_weather_stations": {
       const url = buildUrl(`${BASE}/smn/locations`, { app: "mcp-swiss" });
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<Record<string, unknown>>(url);
+      const payload = (data as any)?.payload ?? {};
+      const stations = Object.values(payload).map((s: any) => ({
+        code: s.details?.id ?? s.name,
+        name: s.details?.name ?? s.name,
+        canton: s.details?.canton,
+        alt: s.details?.alt,
+        lat: s.details?.lat,
+        lon: s.details?.lon,
+      }));
+      return JSON.stringify({ count: stations.length, stations });
     }
 
     case "get_weather_history": {
@@ -95,7 +125,16 @@ export async function handleWeather(name: string, args: Record<string, unknown>)
         app: "mcp-swiss",
         version: "0.1.0",
       });
-      const data = await fetchJSON<unknown>(url);
+      const data = await fetchJSON<Record<string, unknown>>(url);
+      const payload = (data as any)?.payload;
+      if (Array.isArray(payload)) {
+        const records = payload.map((p: any) => ({
+          time: p.timestamp ? new Date(p.timestamp * 1000).toISOString() : p.timestamp,
+          param: p.par,
+          value: p.val,
+        }));
+        return JSON.stringify({ station: args.station, count: records.length, data: records });
+      }
       return JSON.stringify(data, null, 2);
     }
 
@@ -105,14 +144,32 @@ export async function handleWeather(name: string, args: Record<string, unknown>)
         app: "mcp-swiss",
         version: "0.1.0",
       });
-      const data = await fetchJSON<unknown>(url);
+      const data = await fetchJSON<Record<string, unknown>>(url);
+      const payload = (data as any)?.payload;
+      if (Array.isArray(payload)) {
+        const readings = payload.map((p: any) => ({
+          time: p.timestamp ? new Date(p.timestamp * 1000).toISOString() : p.timestamp,
+          param: p.par,
+          value: p.val,
+        }));
+        return JSON.stringify({ station: args.station, readings });
+      }
       return JSON.stringify(data, null, 2);
     }
 
     case "list_hydro_stations": {
       const url = buildUrl(`${BASE}/hydro/locations`, { app: "mcp-swiss" });
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
+      const data = await fetchJSON<Record<string, unknown>>(url);
+      const payload = (data as any)?.payload ?? {};
+      const stations = Object.values(payload).map((s: any) => ({
+        id: s.details?.id ?? s.name,
+        name: s.details?.name,
+        waterBody: s.details?.["water-body-name"],
+        type: s.details?.["water-body-type"],
+        lat: s.details?.lat,
+        lon: s.details?.lon,
+      }));
+      return JSON.stringify({ count: stations.length, stations });
     }
 
     case "get_water_history": {
@@ -123,7 +180,16 @@ export async function handleWeather(name: string, args: Record<string, unknown>)
         app: "mcp-swiss",
         version: "0.1.0",
       });
-      const data = await fetchJSON<unknown>(url);
+      const data = await fetchJSON<Record<string, unknown>>(url);
+      const payload = (data as any)?.payload;
+      if (Array.isArray(payload)) {
+        const records = payload.map((p: any) => ({
+          time: p.timestamp ? new Date(p.timestamp * 1000).toISOString() : p.timestamp,
+          param: p.par,
+          value: p.val,
+        }));
+        return JSON.stringify({ station: args.station, count: records.length, data: records });
+      }
       return JSON.stringify(data, null, 2);
     }
 
