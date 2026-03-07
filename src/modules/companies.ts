@@ -69,12 +69,12 @@ export async function handleCompanies(name: string, args: Record<string, unknown
       if (args.canton) body.cantonAbbreviation = [args.canton as string];
       if (args.legal_form) body.legalFormCode = args.legal_form as string;
 
-      const data = await fetchJSON<unknown>(`${BASE}/firm/search.json`, {
+      const data = await fetchJSON<{ list: unknown[]; hasMoreResults: boolean }>(`${BASE}/firm/search.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      return JSON.stringify(data, null, 2);
+      return JSON.stringify({ companies: data.list, hasMoreResults: data.hasMoreResults }, null, 2);
     }
 
     case "get_company": {
@@ -90,12 +90,12 @@ export async function handleCompanies(name: string, args: Record<string, unknown
         maxEntries: (args.limit as number) ?? 20,
         languageKey: "en",
       };
-      const data = await fetchJSON<unknown>(`${BASE}/firm/search.json`, {
+      const data = await fetchJSON<{ list: unknown[]; hasMoreResults: boolean }>(`${BASE}/firm/search.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      return JSON.stringify(data, null, 2);
+      return JSON.stringify({ companies: data.list, hasMoreResults: data.hasMoreResults }, null, 2);
     }
 
     case "list_cantons": {

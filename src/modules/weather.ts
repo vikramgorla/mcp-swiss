@@ -72,44 +72,56 @@ export const weatherTools = [
 export async function handleWeather(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
     case "get_weather": {
-      const url = buildUrl(`${BASE}/smn/livedata`, { stations: args.station as string });
+      const url = buildUrl(`${BASE}/smn/latest`, {
+        locations: args.station as string,
+        app: "mcp-swiss",
+        version: "0.1.0",
+      });
       const data = await fetchJSON<unknown>(url);
       return JSON.stringify(data, null, 2);
     }
 
     case "list_weather_stations": {
-      const url = `${BASE}/smn/livedata`;
+      const url = buildUrl(`${BASE}/smn/locations`, { app: "mcp-swiss" });
       const data = await fetchJSON<unknown>(url);
       return JSON.stringify(data, null, 2);
     }
 
     case "get_weather_history": {
-      const url = buildUrl(`${BASE}/smn/pop`, {
-        stations: args.station as string,
+      const url = buildUrl(`${BASE}/smn/daterange`, {
+        locations: args.station as string,
         startdt: args.start_date as string,
         enddt: args.end_date as string,
+        app: "mcp-swiss",
+        version: "0.1.0",
       });
       const data = await fetchJSON<unknown>(url);
       return JSON.stringify(data, null, 2);
     }
 
     case "get_water_level": {
-      const url = buildUrl(`${BASE}/hydro/latest`, { stations: args.station as string });
+      const url = buildUrl(`${BASE}/hydro/latest`, {
+        locations: args.station as string,
+        app: "mcp-swiss",
+        version: "0.1.0",
+      });
       const data = await fetchJSON<unknown>(url);
       return JSON.stringify(data, null, 2);
     }
 
     case "list_hydro_stations": {
-      const url = `${BASE}/hydro/latest`;
+      const url = buildUrl(`${BASE}/hydro/locations`, { app: "mcp-swiss" });
       const data = await fetchJSON<unknown>(url);
       return JSON.stringify(data, null, 2);
     }
 
     case "get_water_history": {
-      const url = buildUrl(`${BASE}/hydro/pop`, {
-        stations: args.station as string,
+      const url = buildUrl(`${BASE}/hydro/daterange`, {
+        locations: args.station as string,
         startdt: args.start_date as string,
         enddt: args.end_date as string,
+        app: "mcp-swiss",
+        version: "0.1.0",
       });
       const data = await fetchJSON<unknown>(url);
       return JSON.stringify(data, null, 2);
