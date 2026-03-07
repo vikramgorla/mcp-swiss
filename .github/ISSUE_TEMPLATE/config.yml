@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question (GitHub Discussions)
+    url: https://github.com/vikramgorla/mcp-swiss/discussions
+    about: General questions, usage help, and ideas — use Discussions, not Issues.
+  - name: Swiss open data portal
+    url: https://opendata.swiss
+    about: If the underlying data source has an issue, report it upstream.
+  - name: MCP specification
+    url: https://modelcontextprotocol.io
+    about: Questions about MCP itself should go to the official docs.
