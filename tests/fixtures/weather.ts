@@ -79,12 +79,12 @@ export const mockHydroStations = {
     "2135": {
       id: 1,
       name: "2135",
-      details: { name: "Aare - Bern, Schönau", river: "Aare", canton: "BE", lat: 46.943, lon: 7.441 },
+      details: { id: "2135", name: "Aare - Bern, Schönau", "water-body-name": "Aare", "water-body-type": "river", lat: 46.943, lon: 7.441 },
     },
     "2243": {
       id: 2,
       name: "2243",
-      details: { name: "Rhein - Basel, Rheinhalle", river: "Rhein", canton: "BS", lat: 47.567, lon: 7.597 },
+      details: { id: "2243", name: "Rhein - Basel, Rheinhalle", "water-body-name": "Rhein", "water-body-type": "river", lat: 47.567, lon: 7.597 },
     },
   },
 };
