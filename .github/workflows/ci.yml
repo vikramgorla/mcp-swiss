@@ -76,8 +76,6 @@ jobs:
     name: Integration Tests (Live Swiss APIs)
     runs-on: ubuntu-latest
     needs: lint-build
-    # Only run on push — not on every PR (preserves upstream API quota)
-    if: github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
