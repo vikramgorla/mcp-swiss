@@ -1,46 +1,60 @@
-# mcp-swiss 🏔️
+<div align="center">
 
-[![CI](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml/badge.svg)](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml)
+# 🏔️ mcp-swiss
+
+**Swiss open data for AI assistants — zero config, zero API keys**
+
 [![npm version](https://img.shields.io/npm/v/mcp-swiss.svg)](https://www.npmjs.com/package/mcp-swiss)
+[![CI](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml/badge.svg)](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-compatible-blue.svg)](https://modelcontextprotocol.io)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
-Swiss open data MCP server for AI assistants. Zero API keys. Zero config. Just works.
+[Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources) · [Contributing](#contributing)
 
-## What is this?
-
-`mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives AI assistants (Claude, Cursor, Cline, etc.) direct access to Swiss open data:
-
-- 🚆 **Transport** — SBB trains, PostBus, trams, live departures, journey planning
-- 🌤️ **Weather** — MeteoSwiss live conditions + historical data
-- 🌊 **Hydrology** — BAFU river and lake levels (great for Aare swimming!)
-- 🗺️ **Geodata** — swisstopo geocoding, solar potential, geographic layers
-- 🏢 **Companies** — ZEFIX federal registry, all 700K+ Swiss companies
-
-**22 tools. No API keys. No registration. No server to run.**
+</div>
 
 ---
 
-## Install
+`mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
+
+**22 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+
+```
+🚆 Transport — SBB, PostBus, trams, live departures, journey planning
+🌤️ Weather   — MeteoSwiss live conditions + historical data
+🌊 Hydrology — BAFU river & lake levels (great for Aare swimming!)
+🗺️ Geodata   — swisstopo geocoding, solar potential, geographic layers
+🏢 Companies — ZEFIX federal registry, all 700K+ Swiss companies
+```
+
+---
+
+## Installation
+
+### Quick Start
 
 ```bash
 npx mcp-swiss
 ```
 
+That's it. No API keys, no `.env` files, no accounts. Pick your client below and paste the config.
+
 ---
 
-## Configuration
+### <img src="https://cdn.simpleicons.org/anthropic" height="16" /> Claude Desktop
 
-### Claude Desktop
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Edit your config file:
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "swiss": {
       "command": "npx",
-      "args": ["mcp-swiss"]
+      "args": ["-y", "mcp-swiss"]
     }
   }
 }
@@ -48,35 +62,151 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 Restart Claude Desktop after saving.
 
-### Cursor
+---
 
-Create or edit `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` globally):
+### <img src="https://cdn.simpleicons.org/anthropic" height="16" /> Claude Code (CLI)
+
+```bash
+claude mcp add swiss -- npx -y mcp-swiss
+```
+
+That's it — Claude Code will use it in your next session.
+
+---
+
+### <img src="https://cdn.simpleicons.org/cursor" height="16" /> Cursor
+
+> Requires Cursor 0.45.6+
+
+**Option A: Project config** — create `.cursor/mcp.json` in your project root:
 
 ```json
 {
   "mcpServers": {
     "swiss": {
       "command": "npx",
-      "args": ["mcp-swiss"]
+      "args": ["-y", "mcp-swiss"]
     }
   }
 }
 ```
 
-### Cline (VSCode)
+**Option B: Global config** — create `~/.cursor/mcp.json`:
 
-Open `settings.json` and add:
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss"]
+    }
+  }
+}
+```
+
+**Option C: Via Cursor Settings UI**
+1. Open Cursor Settings
+2. Go to **Features → MCP Servers**
+3. Click **+ Add new global MCP server**
+4. Paste the JSON config above
+
+---
+
+### <img src="https://cdn.simpleicons.org/visualstudiocode" height="16" /> VS Code (GitHub Copilot)
+
+#### One-click Install
+
+[<img src="https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522swiss%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522mcp-swiss%2522%255D%257D)
+[<img src="https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white" alt="Install in VS Code Insiders">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522swiss%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522mcp-swiss%2522%255D%257D)
+
+#### CLI Install
+
+```bash
+# VS Code
+code --add-mcp '{"name":"swiss","command":"npx","args":["-y","mcp-swiss"]}'
+
+# VS Code Insiders
+code-insiders --add-mcp '{"name":"swiss","command":"npx","args":["-y","mcp-swiss"]}'
+```
+
+#### Manual Config
+
+Add to your VS Code User Settings (JSON) — press `Ctrl+Shift+P` → `Preferences: Open User Settings (JSON)`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "swiss": {
+        "command": "npx",
+        "args": ["-y", "mcp-swiss"]
+      }
+    }
+  }
+}
+```
+
+Or add to `.vscode/mcp.json` in your workspace (shareable with your team):
+
+```json
+{
+  "servers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss"]
+    }
+  }
+}
+```
+
+---
+
+### <img src="https://codeium.com/favicon.ico" height="16" /> Windsurf
+
+Add to `~/.codeium/windsurf/model_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss"]
+    }
+  }
+}
+```
+
+---
+
+### <img src="https://cdn.simpleicons.org/cline" height="16" /> Cline (VS Code)
+
+Open VS Code `settings.json` and add:
 
 ```json
 {
   "cline.mcpServers": {
     "swiss": {
       "command": "npx",
-      "args": ["mcp-swiss"]
+      "args": ["-y", "mcp-swiss"]
     }
   }
 }
 ```
+
+---
+
+### Any MCP Client
+
+`mcp-swiss` uses **stdio transport** and requires no environment variables. The universal config:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "mcp-swiss"]
+}
+```
+
+This works with any MCP-compatible client — just plug it in.
 
 ---
 
@@ -84,22 +214,25 @@ Open `settings.json` and add:
 
 Once connected, try asking your AI:
 
-- *"Next 5 trains from Zürich HB to Geneva right now"*
-- *"Is the Aare in Bern warm enough to swim? What's the water level?"*
-- *"Weather in Lugano vs Zürich today"*
-- *"Find all companies with 'blockchain' in their name registered in Zug"*
-- *"What's the solar potential of Bundesplatz 3, Bern?"*
-- *"Live departures from Bern HB in the next 30 minutes"*
-- *"Plan my Saturday: train to Interlaken, check weather, find the nearest SBB station"*
-- *"What rivers are near Thun and what are their current water levels?"*
+| Prompt | What it uses |
+|--------|-------------|
+| *"Next 5 trains from Zürich HB to Geneva"* | `get_connections` |
+| *"Is the Aare in Bern warm enough to swim?"* | `get_water_level` |
+| *"Weather in Lugano vs Zürich today"* | `get_weather` |
+| *"Find blockchain companies registered in Zug"* | `search_companies` |
+| *"Solar potential of Bundesplatz 3, Bern"* | `geocode` + `get_solar_potential` |
+| *"Live departures from Bern HB"* | `get_departures` |
+| *"What rivers are near Thun?"* | `list_hydro_stations` + `get_water_level` |
+| *"Plan my Saturday: train to Interlaken, check weather"* | Multiple tools chained |
 
 ---
 
 ## Tools
 
-Full specifications for all tools: [`docs/tool-specs.md`](docs/tool-specs.md) | Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
+
 | Tool | Description |
 |------|-------------|
 | `search_stations` | Find stations/stops by name or location |
@@ -109,6 +242,7 @@ Full specifications for all tools: [`docs/tool-specs.md`](docs/tool-specs.md) | 
 | `get_nearby_stations` | Stations near coordinates |
 
 ### 🌤️ Weather & Hydrology (6 tools)
+
 | Tool | Description |
 |------|-------------|
 | `get_weather` | Current conditions at a MeteoSwiss station |
@@ -119,6 +253,7 @@ Full specifications for all tools: [`docs/tool-specs.md`](docs/tool-specs.md) | 
 | `get_water_history` | Historical hydrology data |
 
 ### 🗺️ Geodata / swisstopo (6 tools)
+
 | Tool | Description |
 |------|-------------|
 | `geocode` | Swiss address → coordinates |
@@ -129,10 +264,11 @@ Full specifications for all tools: [`docs/tool-specs.md`](docs/tool-specs.md) | 
 | `get_municipality` | Municipality info by name |
 
 ### 🏢 Companies / ZEFIX (5 tools)
+
 | Tool | Description |
 |------|-------------|
 | `search_companies` | Search by name, canton, legal form |
-| `get_company` | Full company details by ZEFIX `ehraid` (from search results) |
+| `get_company` | Full company details by ZEFIX `ehraid` |
 | `search_companies_by_address` | Companies registered at an address |
 | `list_cantons` | All 26 Swiss cantons |
 | `list_legal_forms` | AG, GmbH, and all Swiss legal forms |
@@ -143,19 +279,46 @@ Full specifications for all tools: [`docs/tool-specs.md`](docs/tool-specs.md) | 
 
 All official Swiss open data — no API keys required:
 
-| Source | Data | API |
-|--------|------|-----|
-| [transport.opendata.ch](https://transport.opendata.ch) | SBB, PostBus, trams | REST |
-| [api.existenz.ch](https://api.existenz.ch) | MeteoSwiss weather + BAFU hydrology | REST |
-| [api3.geo.admin.ch](https://api3.geo.admin.ch) | swisstopo federal geodata | REST |
-| [zefix.admin.ch](https://www.zefix.admin.ch) | Federal company registry | REST |
+| Source | Data | Docs |
+|--------|------|------|
+| [transport.opendata.ch](https://transport.opendata.ch) | SBB, PostBus, trams | [API docs](http://transport.opendata.ch/docs.html) |
+| [api.existenz.ch](https://api.existenz.ch) | MeteoSwiss weather + BAFU hydrology | [API docs](https://api.existenz.ch) |
+| [api3.geo.admin.ch](https://api3.geo.admin.ch) | swisstopo federal geodata | [API docs](https://api3.geo.admin.ch/api/doc.html) |
+| [zefix.admin.ch](https://www.zefix.admin.ch) | Federal company registry | [Swagger](https://www.zefix.admin.ch/ZefixREST/swagger-ui.html) |
 
 ---
 
-## For contributors
+## Development
 
-mcp-swiss uses [Speckit](https://github.com/jmanhype/speckit) — a spec-driven development workflow.
-Every new tool or module starts with a spec in `specs/`, not code.
+```bash
+# Clone
+git clone https://github.com/vikramgorla/mcp-swiss.git
+cd mcp-swiss
+
+# Install deps
+npm install
+
+# Build
+npm run build
+
+# Run in dev mode
+npm run dev
+
+# Test with MCP Inspector
+npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+### Testing
+
+```bash
+npm test
+```
+
+---
+
+## Contributing
+
+mcp-swiss uses [Speckit](https://github.com/jmanhype/speckit) — a spec-driven development workflow. Every new tool starts with a spec in `specs/`, not code.
 
 See [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the full workflow including:
 - How to add a new tool (spec → plan → implement → test)
@@ -172,4 +335,4 @@ See [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the full workflow including
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE)
