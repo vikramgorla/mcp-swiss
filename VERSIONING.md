@@ -21,14 +21,15 @@ During `0.x`, MINOR bumps may include breaking changes. Once we hit `1.0.0`, Sem
 
 ---
 
-## Branching Strategy (GitHub Flow + release branches)
+## Branching Strategy
 
 ```
 main          ← stable, always deployable, protected
 develop       ← integration branch, next release
-feature/*     ← new tools / modules
+feature/*     ← new tools / modules (spec reviewed before code)
 fix/*         ← bug fixes
 docs/*        ← documentation only
+spec/*        ← new Speckit specs (merged before implementation starts)
 chore/*       ← deps, CI, config
 release/*     ← release preparation (from develop)
 hotfix/*      ← urgent production fixes (from main)
@@ -39,17 +40,23 @@ hotfix/*      ← urgent production fixes (from main)
 **`main`**
 - Always reflects the latest published npm release
 - Direct pushes forbidden — only merge from `release/*` or `hotfix/*`
-- Requires passing CI + 1 review
+- Requires passing CI (all jobs) + 1 review (when public)
 
 **`develop`**
-- Target for all `feature/*`, `fix/*`, `docs/*`, `chore/*` PRs
-- CI must pass
-- Direct commits allowed for trivial fixes
+- Target for all `feature/*`, `fix/*`, `docs/*`, `spec/*`, `chore/*` PRs
+- CI must pass before merge
+- Direct commits allowed for maintainers on trivial fixes
+
+**`spec/feature-name`**
+- Branch from: `develop`
+- Contains only spec files (`specs/NNN-feature/`)
+- Merged to `develop` before implementation begins
+- Naming: `spec/postal-codes`, `spec/train-occupancy`
 
 **`feature/tool-name`**
-- Branch from: `develop`
+- Branch from: `develop` (after spec PR is merged)
 - Merge to: `develop` via PR
-- Naming: `feature/add-train-occupancy`, `feature/postal-codes-module`
+- Naming: `feature/add-postal-codes`, `feature/weather-forecasts`
 
 **`fix/description`**
 - Branch from: `develop` (or `main` for hotfixes)
@@ -81,22 +88,22 @@ git checkout -b release/0.2.0
 npm version minor --no-git-tag-version   # or patch/major
 
 # 3. Update CHANGELOG.md
-# Add section for 0.2.0 with all changes since last release
+# Move [Unreleased] items to [0.2.0] section with today's date
 
 # 4. Commit
 git add package.json package-lock.json CHANGELOG.md
 git commit -m "chore(release): prepare v0.2.0"
 
 # 5. Open PR → main
-# After merge:
+# After CI passes and PR is merged:
 
 # 6. Tag on main
 git checkout main && git pull
 git tag -a v0.2.0 -m "Release v0.2.0"
 git push origin v0.2.0
+# → GitHub Actions release.yml triggers automatically
 
-# 7. GitHub Actions publishes release automatically
-# 8. Back-merge to develop
+# 7. Back-merge to develop
 git checkout develop
 git merge main
 git push
@@ -107,7 +114,7 @@ git push
 ```bash
 git checkout main && git pull
 git checkout -b hotfix/fix-description
-# ... make fix, bump PATCH version ...
+# ... fix, bump PATCH version, update CHANGELOG ...
 git checkout main && git merge hotfix/fix-description
 git tag -a v0.1.2 -m "Hotfix v0.1.2: description"
 git push origin v0.1.2
@@ -133,22 +140,24 @@ git checkout develop && git merge main && git push
 | `fix` | Bug fix |
 | `docs` | Documentation only |
 | `test` | Adding/updating tests |
+| `spec` | New or updated Speckit spec |
 | `refactor` | Code change without feature/fix |
 | `perf` | Performance improvement |
 | `chore` | Deps, build, CI, config |
 | `ci` | GitHub Actions changes |
 
 ### Scopes
-`transport`, `weather`, `geodata`, `companies`, `core`, `ci`, `docs`, `deps`
+`transport`, `weather`, `geodata`, `companies`, `core`, `ci`, `docs`, `deps`, `specs`
 
 ### Examples
 ```
-feat(transport): add get_journey_detail tool
+feat(transport): add get_train_occupancy tool
 fix(companies): handle ZEFIX 404 on empty search results
+spec(geodata): add spec for postal codes module
 docs(readme): add Cursor IDE configuration example
 test(weather): add unit tests for get_weather_history
 chore(deps): bump @modelcontextprotocol/sdk to 1.1.0
-ci: add Node 22 to test matrix
+ci: add integration test job to CI workflow
 ```
 
 ---
