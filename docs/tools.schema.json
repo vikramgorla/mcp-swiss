@@ -1090,6 +1090,306 @@
         "resources": [{ "name": "Data CSV", "format": "CSV", "url": "https://..." }],
         "source": "opendata.swiss"
       }
+    },
+    {
+      "name": "list_currencies",
+      "module": "snb",
+      "description": "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data",
+      "apiSource": "https://data.snb.ch/api",
+      "inputSchema": { "type": "object", "properties": {} },
+      "outputExample": [{ "code": "EUR", "name": "Euro", "region": "Euro area" }]
+    },
+    {
+      "name": "get_exchange_rate",
+      "module": "snb",
+      "description": "Get the current CHF exchange rate for a currency from the Swiss National Bank",
+      "apiSource": "https://data.snb.ch/api",
+      "inputSchema": {
+        "type": "object",
+        "required": ["currency"],
+        "properties": { "currency": { "type": "string", "description": "ISO 4217 currency code" } }
+      },
+      "outputExample": { "currency": "EUR", "rate": 0.9423, "date": "2026-02" }
+    },
+    {
+      "name": "get_exchange_rate_history",
+      "module": "snb",
+      "description": "Get historical monthly CHF exchange rates",
+      "apiSource": "https://data.snb.ch/api",
+      "inputSchema": {
+        "type": "object",
+        "required": ["currency"],
+        "properties": {
+          "currency": { "type": "string" },
+          "from": { "type": "string", "description": "YYYY-MM" },
+          "to": { "type": "string", "description": "YYYY-MM" }
+        }
+      },
+      "outputExample": { "currency": "EUR", "rates": [{ "date": "2026-01", "rate": 0.941 }] }
+    },
+    {
+      "name": "get_waste_collection",
+      "module": "recycling",
+      "description": "Next waste collection dates for a Zurich ZIP code",
+      "apiSource": "https://openerz.metaodi.ch/api",
+      "inputSchema": {
+        "type": "object",
+        "required": ["zip", "waste_type"],
+        "properties": {
+          "zip": { "type": "string" },
+          "waste_type": { "type": "string" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": { "zip": "8001", "waste_type": "paper", "next_collections": ["2026-03-14"] }
+    },
+    {
+      "name": "list_waste_types",
+      "module": "recycling",
+      "description": "List all supported waste types",
+      "apiSource": "https://openerz.metaodi.ch/api",
+      "inputSchema": { "type": "object", "properties": {} },
+      "outputExample": [{ "type": "paper", "description": "Paper and newspapers" }]
+    },
+    {
+      "name": "get_waste_calendar",
+      "module": "recycling",
+      "description": "Full upcoming waste collection calendar for a Zurich ZIP code",
+      "apiSource": "https://openerz.metaodi.ch/api",
+      "inputSchema": {
+        "type": "object",
+        "required": ["zip"],
+        "properties": {
+          "zip": { "type": "string" },
+          "days": { "type": "number" }
+        }
+      },
+      "outputExample": { "zip": "8001", "collections": [{ "date": "2026-03-14", "type": "paper" }] }
+    },
+    {
+      "name": "get_swiss_news",
+      "module": "news",
+      "description": "Get latest Swiss news headlines from SRF",
+      "apiSource": "https://www.srf.ch/news/bnf/rss",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string", "enum": ["switzerland", "international", "economy"] },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "title": "Swiss headline", "link": "https://...", "published": "2026-03-08" }]
+    },
+    {
+      "name": "search_swiss_news",
+      "module": "news",
+      "description": "Search SRF Swiss news by keyword",
+      "apiSource": "https://www.srf.ch/news/bnf/rss",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "title": "Matching headline", "link": "https://..." }]
+    },
+    {
+      "name": "get_voting_results",
+      "module": "voting",
+      "description": "Swiss popular vote results from Basel-Stadt open data",
+      "apiSource": "https://data.bs.ch/api/explore/v2.1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "number" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "title": "CO2-Gesetz", "date": "2021-06-13", "yes_pct": 51.6 }]
+    },
+    {
+      "name": "search_votes",
+      "module": "voting",
+      "description": "Search Swiss popular votes by keyword",
+      "apiSource": "https://data.bs.ch/api/explore/v2.1",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "title": "Initiative X", "yes_pct": 48.2 }]
+    },
+    {
+      "name": "get_vote_details",
+      "module": "voting",
+      "description": "Detailed per-district breakdown of a Swiss popular vote",
+      "apiSource": "https://data.bs.ch/api/explore/v2.1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vote_title": { "type": "string" },
+          "date": { "type": "string" }
+        }
+      },
+      "outputExample": { "title": "CO2-Gesetz", "districts": [{ "name": "Basel", "yes_pct": 52.1 }] }
+    },
+    {
+      "name": "search_dams",
+      "module": "dams",
+      "description": "Search Swiss federal dams by name or keyword",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": { "query": { "type": "string" } }
+      },
+      "outputExample": [{ "name": "Grande Dixence", "height": 285, "canton": "VS" }]
+    },
+    {
+      "name": "get_dams_by_canton",
+      "module": "dams",
+      "description": "List all federal dams in a Swiss canton",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["canton"],
+        "properties": { "canton": { "type": "string" } }
+      },
+      "outputExample": [{ "name": "Lac des Toules", "canton": "VS" }]
+    },
+    {
+      "name": "get_dam_details",
+      "module": "dams",
+      "description": "Detailed info on a specific dam",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": { "query": { "type": "string" } }
+      },
+      "outputExample": { "name": "Grande Dixence", "height_m": 285, "volume_m3": 401000000 }
+    },
+    {
+      "name": "get_trail_closures",
+      "module": "hiking",
+      "description": "Current Swiss trail closures and hiking alerts",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "title": "Trail closed", "canton": "VS", "reason": "Rockfall" }]
+    },
+    {
+      "name": "get_trail_closures_nearby",
+      "module": "hiking",
+      "description": "Trail closures near given coordinates",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lon"],
+        "properties": {
+          "lat": { "type": "number" },
+          "lon": { "type": "number" },
+          "radius": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "title": "Closed section", "distance_m": 3200 }]
+    },
+    {
+      "name": "get_property_price_index",
+      "module": "realestate",
+      "description": "Swiss property price index from BFS Immo-Monitoring",
+      "apiSource": "https://opendata.swiss",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string" },
+          "property_type": { "type": "string" }
+        }
+      },
+      "outputExample": { "index": 142.3, "year": 2024, "canton": "ZH" }
+    },
+    {
+      "name": "search_real_estate_data",
+      "module": "realestate",
+      "description": "Search BFS real estate datasets on opendata.swiss",
+      "apiSource": "https://opendata.swiss",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "id": "mietpreise-2024", "title": "Swiss Rent Prices 2024" }]
+    },
+    {
+      "name": "get_rent_index",
+      "module": "realestate",
+      "description": "Swiss rent index and housing cost data from BFS",
+      "apiSource": "https://opendata.swiss",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string" },
+          "year": { "type": "number" }
+        }
+      },
+      "outputExample": { "index": 108.5, "year": 2024, "canton": "ZH" }
+    },
+    {
+      "name": "get_traffic_count",
+      "module": "traffic",
+      "description": "Traffic counting station data from ASTRA — daily volumes and heavy traffic share",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station_id"],
+        "properties": {
+          "station_id": { "type": "string" }
+        }
+      },
+      "outputExample": { "station": "A1-ZH-001", "dtv": 52400, "prctheavytraffic": 8.3 }
+    },
+    {
+      "name": "get_traffic_by_canton",
+      "module": "traffic",
+      "description": "List ASTRA traffic counting stations filtered by canton",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["canton"],
+        "properties": {
+          "canton": { "type": "string" }
+        }
+      },
+      "outputExample": [{ "id": "A1-ZH-001", "name": "Zürich Nord", "canton": "ZH" }]
+    },
+    {
+      "name": "get_traffic_nearby",
+      "module": "traffic",
+      "description": "Find ASTRA traffic counting stations near given coordinates",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lon"],
+        "properties": {
+          "lat": { "type": "number" },
+          "lon": { "type": "number" },
+          "radius": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "id": "A1-ZH-001", "name": "Zürich Nord", "distance_m": 1200 }]
     }
   ]
 }

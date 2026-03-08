@@ -1902,5 +1902,311 @@ No parameters required.
 
 ---
 
-*Specification generated from mcp-swiss v0.2.0 source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss*
+## SNB Exchange Rates
+
+### `list_currencies`
+
+List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data.
+
+**Input:** *(no parameters)*
+
+**Output:** JSON array of currency objects with `code`, `name`, `region`, and `seriesId`.
+
+---
+
+### `get_exchange_rate`
+
+Get the current CHF exchange rate for a currency from the Swiss National Bank.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| currency | string | ✅ | ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP') |
+
+### Output
+
+```json
+{
+  "currency": "EUR",
+  "name": "Euro",
+  "rate": 0.9423,
+  "date": "2026-02",
+  "source": "Swiss National Bank (SNB)"
+}
+```
+
+---
+
+### `get_exchange_rate_history`
+
+Get historical monthly CHF exchange rates for a currency.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| currency | string | ✅ | ISO 4217 currency code (e.g. 'EUR', 'USD') |
+| from | string | ❌ | Start date in YYYY-MM format |
+| to | string | ❌ | End date in YYYY-MM format |
+
+---
+
+## Recycling / Waste Collection
+
+### `get_waste_collection`
+
+Get next waste collection dates for a Zurich ZIP code and waste type.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| zip | string | ✅ | Zurich ZIP code (e.g. '8001') |
+| waste_type | string | ✅ | Waste type (waste, cardboard, paper, organic, textile, special, mobile) |
+| limit | number | ❌ | Max results (default: 5) |
+
+---
+
+### `list_waste_types`
+
+List all supported waste types with descriptions.
+
+**Input:** *(no parameters)*
+
+---
+
+### `get_waste_calendar`
+
+Get full upcoming waste collection calendar for a Zurich ZIP code.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| zip | string | ✅ | Zurich ZIP code (e.g. '8001') |
+| days | number | ❌ | Days ahead to look (default: 30) |
+
+---
+
+## Swiss News
+
+### `get_swiss_news`
+
+Get the latest Swiss news headlines from SRF.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| category | string | ❌ | 'switzerland', 'international', or 'economy' (default: 'switzerland') |
+| limit | number | ❌ | Number of articles to return (default: 10, max: 50) |
+
+---
+
+### `search_swiss_news`
+
+Search SRF Swiss news by keyword.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ✅ | Search keyword or phrase |
+| limit | number | ❌ | Max results (default: 5, max: 20) |
+
+---
+
+## Voting
+
+### `get_voting_results`
+
+Get results of Swiss popular votes from Basel-Stadt open data.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| year | number | ❌ | Filter by year (e.g. 2024) |
+| limit | number | ❌ | Max results (default: 10, max: 50) |
+
+---
+
+### `search_votes`
+
+Search Swiss popular votes by keyword.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ✅ | Search keyword (German/French/Italian) |
+| limit | number | ❌ | Max results (default: 5, max: 20) |
+
+---
+
+### `get_vote_details`
+
+Get detailed per-district breakdown of a Swiss popular vote.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| vote_title | string | ❌ | Partial or full vote title |
+| date | string | ❌ | Vote date in YYYY-MM-DD format |
+
+---
+
+## Dams & Reservoirs
+
+### `search_dams`
+
+Search Swiss federal dams by name or keyword (SFOE federal supervision registry).
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ✅ | Dam name or keyword |
+
+---
+
+### `get_dams_by_canton`
+
+List all federal dams in a Swiss canton.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ✅ | Canton abbreviation (e.g. 'VS', 'GR', 'BE') |
+
+---
+
+### `get_dam_details`
+
+Get detailed info on a specific dam (height, volume, purpose, operation year).
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ✅ | Dam name to look up |
+
+---
+
+## Hiking / Trail Closures
+
+### `get_trail_closures`
+
+Get current Swiss trail closures and hiking alerts from swisstopo.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ❌ | Filter by canton abbreviation (e.g. 'VS') |
+| limit | number | ❌ | Max results (default: 20) |
+
+---
+
+### `get_trail_closures_nearby`
+
+Get trail closures near given coordinates.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| lat | number | ✅ | Latitude (WGS84) |
+| lon | number | ✅ | Longitude (WGS84) |
+| radius | number | ❌ | Search radius in metres (default: 10000) |
+
+---
+
+## Real Estate
+
+### `get_property_price_index`
+
+Swiss property price index from BFS Immo-Monitoring.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ❌ | Canton abbreviation to filter (e.g. 'ZH') |
+| property_type | string | ❌ | 'apartment', 'house', or 'all' (default: 'all') |
+
+---
+
+### `search_real_estate_data`
+
+Search BFS real estate datasets on opendata.swiss.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ✅ | Search term for real estate datasets |
+| limit | number | ❌ | Max results (default: 10) |
+
+---
+
+### `get_rent_index`
+
+Swiss rent index and housing cost data from BFS.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ❌ | Canton abbreviation (e.g. 'ZH') |
+| year | number | ❌ | Reference year (e.g. 2024) |
+
+---
+
+---
+
+## Traffic
+
+### `get_traffic_count`
+
+Traffic counting station data from ASTRA — daily volumes and heavy traffic share.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station_id | string | ✅ | ASTRA counting station ID |
+
+---
+
+### `get_traffic_by_canton`
+
+List ASTRA traffic counting stations filtered by canton.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ✅ | Canton abbreviation (e.g. 'ZH') |
+
+---
+
+### `get_traffic_nearby`
+
+Find ASTRA traffic counting stations near given coordinates.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| lat | number | ✅ | Latitude (WGS84) |
+| lon | number | ✅ | Longitude (WGS84) |
+| radius | number | ❌ | Search radius in metres (default: 5000) |
+
+---
+
+*Specification generated from mcp-swiss v0.3.2-dev source code.*  
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic)*

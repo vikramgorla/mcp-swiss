@@ -19,19 +19,29 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**43 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**65 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
-🚆 Transport — SBB, PostBus, trams, live departures, journey planning
-🌤️ Weather   — MeteoSwiss live conditions + historical data
-🌊 Hydrology — BAFU river & lake levels (great for Aare swimming!)
-🗺️ Geodata   — swisstopo geocoding, solar potential, geographic layers
-🏢 Companies — ZEFIX federal registry, all 700K+ Swiss companies
-🎄 Holidays  — Swiss public & school holidays by canton
-🏛️ Parliament — Bills, votes, councillors, session schedule
-🏔️ Avalanche  — SLF danger bulletins and warning regions
-💨 Air Quality — NABEL stations, Swiss legal limits (LRV)
-📮 Swiss Post — Postcode lookup and parcel tracking
+🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
+🌤️ Weather      — MeteoSwiss live conditions + historical data
+🌊 Hydrology    — BAFU river & lake levels (great for Aare swimming!)
+🗺️ Geodata      — swisstopo geocoding, solar potential, geographic layers
+🏢 Companies    — ZEFIX federal registry, all 700K+ Swiss companies
+🎄 Holidays     — Swiss public & school holidays by canton
+🏛️ Parliament   — Bills, votes, councillors, session schedule
+🏔️ Avalanche    — SLF danger bulletins and warning regions
+💨 Air Quality  — NABEL stations, Swiss legal limits (LRV)
+📮 Swiss Post   — Postcode lookup and parcel tracking
+⚡ Energy       — Electricity tariffs by municipality (ElCom)
+📊 Statistics   — Population, demographics, BFS datasets
+🏦 SNB Rates    — Swiss National Bank CHF exchange rates, historical data
+♻️ Recycling    — Zurich city waste collection calendar (OpenERZ)
+📰 Swiss News   — SRF news headlines and keyword search
+🗳️ Voting       — Swiss popular vote results (Basel-Stadt open data)
+🌊 Dams         — Swiss federal dam registry (SFOE/swisstopo)
+🥾 Hiking       — Swiss trail closures and hiking alerts (swisstopo)
+🏠 Real Estate  — Swiss property prices, rent index, housing data (BFS)
+🚗 Traffic      — ASTRA counting stations, daily volumes
 ```
 
 ---
@@ -242,7 +252,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 43 tools across 11 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 65 tools across 19 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -341,6 +351,68 @@ Once connected, try asking your AI:
 | `get_population` | Population by canton or municipality from BFS STATPOP |
 | `search_statistics` | Search BFS datasets on opendata.swiss |
 | `get_statistic` | Fetch detailed dataset information |
+
+### 🏦 SNB Exchange Rates (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_currencies` | List all currencies available from the Swiss National Bank (SNB) |
+| `get_exchange_rate` | Get the current CHF exchange rate for any currency |
+| `get_exchange_rate_history` | Get historical monthly CHF exchange rates with date filtering |
+
+### ♻️ Recycling / Waste Collection (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_waste_collection` | Next waste collection dates by Zurich ZIP code and waste type |
+| `list_waste_types` | List all supported waste types with descriptions |
+| `get_waste_calendar` | Full waste collection calendar for a ZIP code (upcoming dates) |
+
+### 📰 Swiss News (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_swiss_news` | Latest Swiss headlines from SRF by category (Switzerland/international/economy) |
+| `search_swiss_news` | Search SRF news by keyword across all categories |
+
+### 🗳️ Voting (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_voting_results` | Swiss popular vote results from Basel-Stadt open data |
+| `search_votes` | Search popular votes by keyword (German/French/Italian) |
+| `get_vote_details` | Detailed per-district breakdown of a specific vote |
+
+### 🌊 Dams & Reservoirs (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_dams` | Search Swiss federal dams by name or keyword |
+| `get_dams_by_canton` | List all federal dams in a canton |
+| `get_dam_details` | Detailed info on a specific dam (height, volume, purpose) |
+
+### 🥾 Hiking / Trail Closures (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_trail_closures` | Swiss trail closures and hiking alerts from swisstopo |
+| `get_trail_closures_nearby` | Trail closures near given coordinates |
+
+### 🏠 Real Estate (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_property_price_index` | Swiss property price index (BFS Immo-Monitoring) |
+| `search_real_estate_data` | Search BFS real estate datasets on opendata.swiss |
+| `get_rent_index` | Swiss rent index and housing cost data from BFS |
+
+### 🚗 Traffic / ASTRA (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_traffic_count` | Traffic counting station data (ASTRA) — daily volumes and heavy traffic share |
+| `get_traffic_by_canton` | List ASTRA traffic counting stations filtered by canton |
+| `get_traffic_nearby` | Find traffic counting stations near given coordinates |
 
 ---
 
