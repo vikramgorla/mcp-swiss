@@ -79,8 +79,10 @@ jobs:
           git fetch origin develop
           git checkout develop
           git pull origin develop
+          
+          # Merge main into develop to pick up the merge commit from the release PR
+          git merge origin/main --no-edit
 
-          # Get current version and compute next
           CURRENT=$(node -p "require('./package.json').version")
           MAJOR=$(echo $CURRENT | cut -d. -f1)
           MINOR=$(echo $CURRENT | cut -d. -f2)
@@ -88,21 +90,18 @@ jobs:
           NEXT_PATCH=$((PATCH + 1))
           NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}-dev"
 
-          # Create bump branch
           BRANCH="chore/bump-dev-${NEXT_VERSION}"
           git checkout -b "$BRANCH"
 
           npm version "$NEXT_VERSION" --no-git-tag-version
-          # Also update server.json
           node -e "const f='server.json';const d=require('./'+f);d.version='${NEXT_VERSION}';d.packages[0].version='${NEXT_VERSION}';require('fs').writeFileSync(f,JSON.stringify(d,null,2)+'\n')"
 
           git add -A
-          git commit -m "chore: bump dev version to ${NEXT_VERSION} [skip ci]"
+          git commit -m "chore: bump dev version to ${NEXT_VERSION}"
           git push origin "$BRANCH"
 
-          # Create and auto-merge PR via regular merge (not squash — preserves SHAs, no dev drift)
-          PR_URL=$(gh pr create --base develop --head "$BRANCH" --title "chore: bump dev version to ${NEXT_VERSION}" --body "Automated version bump after release." 2>&1)
-          PR_NUM=$(echo "$PR_URL" | grep -oP '\d+$')
-          # Wait a moment then merge; use || true so release doesn't fail if merge fails
-          sleep 5
-          gh pr merge "$PR_NUM" --merge --admin --delete-branch || echo "⚠️ Dev bump PR merge failed — manual merge may be needed for PR #${PR_NUM}"
+          gh pr create --base develop --head "$BRANCH" \
+            --title "chore: bump dev version to ${NEXT_VERSION}" \
+            --body "Automated version bump after release v${CURRENT}. Merge when CI passes."
+
+          echo "✅ Dev bump PR created. It will be merged after CI passes."
