@@ -475,13 +475,24 @@ npm test
 
 ## Contributing
 
-mcp-swiss uses [Speckit](https://github.com/jmanhype/speckit) — a spec-driven development workflow. Every new tool starts with a spec in `specs/`, not code.
+We welcome contributions! mcp-swiss follows a strict PR-based workflow to keep the codebase clean and CI always green.
 
-See [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the full workflow including:
-- How to add a new tool (spec → plan → implement → test)
-- Testing requirements (unit + integration + MCP protocol)
-- Code style and ESLint rules
-- Branch naming and PR process
+### Quick links
+
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — full contributor guide:
+  - Development setup (clone, install, build, test)
+  - Branch model (develop / main / feature branches)
+  - Hard workflow rules (no direct pushes, always PRs, regular merge only)
+  - Adding a new module (step-by-step with code templates)
+  - Integration checklist (all files to update)
+  - Code standards (TypeScript, no `any`, 50K response limit, zero API keys)
+
+- **[`RELEASING.md`](RELEASING.md)** — release process for maintainers:
+  - Step-by-step release workflow
+  - Pre-release checklist
+  - Version strategy (minor for features, patch for fixes)
+  - Post-release verification
+  - CI/CD workflow reference (`ci.yml`, `release.yml`, `beta.yml`, `mcp-registry.yml`)
 
 ---
 
