@@ -228,6 +228,40 @@ Open VS Code `settings.json` and add:
 
 This works with any MCP-compatible client — just plug it in.
 
+### Docker
+
+```bash
+docker pull vikramgorla/mcp-swiss
+```
+
+Use with any MCP client that supports Docker-based servers. The container uses stdio transport:
+
+```bash
+# Run directly (stdio)
+docker run -i vikramgorla/mcp-swiss
+
+# Use with Claude Desktop
+```
+
+For Claude Desktop, update your config to use Docker:
+
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "vikramgorla/mcp-swiss"]
+    }
+  }
+}
+```
+
+Also available on GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/vikramgorla/mcp-swiss
+```
+
 ---
 
 ## Demo Prompts
