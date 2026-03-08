@@ -9,6 +9,11 @@ permissions:
   contents: read
   id-token: write  # Required for GitHub OIDC authentication
 
+# Only one registry publish at a time
+concurrency:
+  group: mcp-registry
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish to MCP Registry
