@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.vikramgorla/swiss",
   "title": "Switzerland MCP 🇨🇭",
-  "description": "Swiss open data for AI assistants. SBB trains & public transport, MeteoSwiss weather, river & lake levels, Swisstopo maps & geodata, ZEFIX company registry. 23 tools, zero API keys, works with Claude, Cursor, VS Code & more.",
+  "description": "Swiss open data — trains, weather, hydrology, geodata, companies. 23 tools, zero API keys.",
   "repository": {
     "url": "https://github.com/vikramgorla/mcp-swiss",
     "source": "github"
