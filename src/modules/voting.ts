@@ -213,7 +213,7 @@ export async function handleGetVotingResults(params: {
   let extraWhere = "";
   if (params.year) {
     const y = params.year;
-    extraWhere = `abst_datum_text>="${y}-01-01" AND abst_datum_text<="${y}-12-31"`;
+    extraWhere = `abst_datum_text like "${y}%"`;
   }
 
   const rows = await fetchVoteRows(extraWhere, limit);

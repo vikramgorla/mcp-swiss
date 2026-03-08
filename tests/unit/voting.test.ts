@@ -415,7 +415,8 @@ describe("get_voting_results", () => {
     vi.stubGlobal("fetch", fetchMock);
     await handleGetVotingResults({ year: 2024 });
     const url = fetchMock.mock.calls[0][0] as string;
-    expect(url).toContain("2024");
+    // Year filter uses LIKE pattern for text date field
+    expect(url).toContain("2024%");
   });
 });
 
