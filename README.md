@@ -65,15 +65,17 @@ That's it. No API keys, no `.env` files, no accounts. Pick your client below and
 
 ### One-Click Install (.mcpb)
 
-`.mcpb` bundles work with Claude Desktop and any MCP Bundle-compatible app. Download, open, done.
+`.mcpb` bundles work with Claude Desktop and any MCP Bundle-compatible app.
 
-[![Download .mcpb Bundle](https://img.shields.io/badge/Download_.mcpb-One--Click_Install-D52B1E?style=for-the-badge)](https://github.com/vikramgorla/mcp-swiss/releases/latest)
+1. Go to the [latest release](https://github.com/vikramgorla/mcp-swiss/releases/latest)
+2. Download the `mcp-swiss-X.Y.Z.mcpb` file (under Assets)
+3. Open the file — your app handles the rest
 
-Grab the `.mcpb` file from the [latest release](https://github.com/vikramgorla/mcp-swiss/releases/latest) and open it — your app handles the rest. No config editing needed.
+No config editing, no terminal commands, no API keys.
 
 ---
 
-### Claude Desktop (Manual)
+### Claude Desktop
 
 Edit your config file:
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
