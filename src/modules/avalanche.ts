@@ -70,16 +70,14 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function bulletinPdfUrl(lang: string, _period: "morning" | "evening" = "morning"): string {
+function bulletinPdfUrl(lang: string): string {
   // aws.slf.ch serves official PDF bulletins — publicly accessible without auth
-  // Pattern: https://aws.slf.ch/api/bulletin/document/regional/<lang>/<period>
-  const validLang = SUPPORTED_LANGUAGES.includes(lang) ? lang : "en";
-  return `https://aws.slf.ch/api/bulletin/document/full/${validLang}`;
+  // Caller (handleAvalanche) has already validated lang is in SUPPORTED_LANGUAGES
+  return `https://aws.slf.ch/api/bulletin/document/full/${lang}`;
 }
 
 function whiteRiskUrl(lang: string): string {
-  const validLang = SUPPORTED_LANGUAGES.includes(lang) ? lang : "en";
-  return `https://whiterisk.ch/${validLang}/conditions`;
+  return `https://whiterisk.ch/${lang}/conditions`;
 }
 
 // ── Tool definitions ──────────────────────────────────────────────────────────

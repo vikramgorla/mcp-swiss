@@ -158,9 +158,87 @@ export const mockCkanDatasetDetail = {
   },
 };
 
+// ── CKAN: Dataset detail with sparse optional fields ─────────────────────────
+
+export const mockCkanDatasetDetailSparse = {
+  success: true,
+  result: {
+    id: "sparse-uuid",
+    name: "sparse-dataset",
+    title: { de: "Spärlicher Datensatz" }, // no EN title
+    // use 'description' instead of 'notes' → hits the || pkg.description branch
+    notes: null,
+    description: { de: "Beschreibung über description-Feld." },
+    // keywords completely absent → hits ?? [] final fallback
+    // no 'issued' field → hits issued?.slice ?? "" fallback
+    // no 'metadata_modified' → hits modified?.slice ?? "" fallback
+    // no 'organization' → org = ""
+    // no 'contact_points' → contact = undefined
+    // no 'resources' → hits pkg.resources ?? [] fallback
+  },
+};
+
 // ── Error responses ──────────────────────────────────────────────────────────
 
 export const mockCkanNotFound = {
   success: false,
   error: { message: "Not found", __type: "Not Found Error" },
+};
+
+// ── CKAN: Search results with long description (for truncate branch) ──────────
+
+// ── CKAN: Search results with sparse fields (no metadata_modified, no en keywords) ──
+
+export const mockCkanSearchResultsSparse = {
+  success: true,
+  result: {
+    count: 2,
+    results: [
+      {
+        id: "sparse1",
+        name: "sparse-search-dataset",
+        title: { de: "Datensatz ohne Metadaten" }, // no EN title
+        notes: null, // falsy notes → use description
+        description: { de: "Kurze Beschreibung über description-Feld." },
+        keywords: { de: ["test"] }, // no 'en' keywords → de fallback
+        // no metadata_modified → hits ?? "" fallback
+        resources: [],
+        contact_points: [],
+      },
+      {
+        id: "sparse2",
+        name: "no-keywords-dataset",
+        title: { en: "No Keywords Dataset" },
+        notes: { en: "A dataset with no keywords at all." },
+        // keywords completely absent → hits ?? [] final fallback
+        metadata_modified: "2025-01-01T00:00:00",
+        resources: [],
+        contact_points: [],
+      },
+    ],
+  },
+};
+
+const LONG_DESCRIPTION = "This is a very long description that exceeds 200 characters. " +
+  "It covers topics such as Swiss demographics, cantonal statistics, migration flows, " +
+  "age distribution, household composition, and economic indicators across all 26 cantons. " +
+  "Additional metadata about data sources and methodologies is included here.";
+
+export const mockCkanSearchResultsLongDesc = {
+  success: true,
+  result: {
+    count: 1,
+    results: [
+      {
+        id: "long1",
+        name: "long-description-dataset",
+        title: { en: "Long Description Dataset", de: "Datensatz mit langer Beschreibung" },
+        notes: { en: LONG_DESCRIPTION, de: LONG_DESCRIPTION },
+        keywords: { en: ["statistics"], de: ["statistik"] },
+        metadata_modified: "2026-01-01T00:00:00",
+        resources: [],
+        contact_points: [],
+      },
+    ],
+  },
 };

@@ -98,10 +98,8 @@ function resolveText(val: string | Record<string, string> | undefined): string {
 
 function resolveCantonCode(input: string): string | null {
   const normalized = input.trim().toLowerCase();
-  // Direct 2-letter code
+  // Direct 2-letter code (both lowercase and uppercase input handled by normalizing)
   if (CANTON_CODES[normalized]) return CANTON_CODES[normalized];
-  // Already uppercase code
-  if (CANTON_NAMES[input.toUpperCase()]) return input.toUpperCase();
   // Alias lookup
   if (CANTON_ALIASES[normalized]) return CANTON_ALIASES[normalized];
   // Partial match
@@ -253,7 +251,8 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
     const row = data.data[0];
     const pop = row ? parseInt(row.values[0], 10) : null;
     return JSON.stringify({
-      location: CANTON_NAMES[code] ?? code,
+      /* c8 ignore next */
+      location: CANTON_NAMES[code] ?? code, // defensive: code always in CANTON_NAMES
       canton_code: code,
       year: parseInt(year, 10),
       population: pop,

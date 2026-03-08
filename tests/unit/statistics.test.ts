@@ -7,6 +7,9 @@ import {
   mockCkanSearchResults,
   mockCkanDatasetDetail,
   mockCkanNotFound,
+  mockCkanSearchResultsLongDesc,
+  mockCkanDatasetDetailSparse,
+  mockCkanSearchResultsSparse,
 } from "../fixtures/statistics.js";
 
 function mockFetch(payload: unknown, status = 200) {
@@ -375,6 +378,73 @@ describe("get_statistic", () => {
   });
 });
 
+// ── search/get_statistic: data.success === false branches ─────────────────────
+
+describe("search_statistics — data.success false (line 312)", () => {
+  it("throws when CKAN returns success:false for search", async () => {
+    mockFetch({ success: false, error: { message: "Rate limit exceeded" } });
+    await expect(
+      handleStatistics("search_statistics", { query: "population" })
+    ).rejects.toThrow("opendata.swiss search failed");
+  });
+});
+
+describe("get_statistic — data.success false (line 339)", () => {
+  it("throws when CKAN returns success:false for package_show", async () => {
+    mockFetch({ success: false, error: { message: "Not found" } });
+    await expect(
+      handleStatistics("get_statistic", { dataset_id: "missing-dataset" })
+    ).rejects.toThrow("Dataset not found: missing-dataset");
+  });
+});
+
+// ── get_population: empty data (null pop branch) ─────────────────────────────
+
+describe("get_population — empty data returns null population", () => {
+  it("returns null population when data array is empty for switzerland mode", async () => {
+    mockFetch({ ...mockPxWebSwitzerlandTotal, data: [] });
+    const result = JSON.parse(
+      await handleStatistics("get_population", { location: "switzerland" })
+    );
+    expect(result.population).toBeNull();
+  });
+
+  it("returns null population when data array is empty for canton mode", async () => {
+    mockFetch({ ...mockPxWebCantonZH, data: [] });
+    const result = JSON.parse(
+      await handleStatistics("get_population", { canton: "ZH" })
+    );
+    expect(result.population).toBeNull();
+    expect(result.canton_code).toBe("ZH");
+  });
+});
+
+// ── get_population: unknown canton code fallback ──────────────────────────────
+
+describe("get_population — unknown canton code in CANTON_NAMES", () => {
+  it("falls back to raw canton code when not in CANTON_NAMES map (line 278)", async () => {
+    // Minimal all-mode response: one Switzerland total + one unknown canton code
+    const withUnknownCode = {
+      columns: mockPxWebAllCantons.columns,
+      comments: [],
+      metadata: [],
+      data: [
+        { key: ["2024", "8100", "1", "-99999", "-99999", "-99999"], values: ["9051029"] },
+        { key: ["2024", "9999", "1", "-99999", "-99999", "-99999"], values: ["12345"] },
+      ],
+    };
+    mockFetch(withUnknownCode);
+    // Must use canton: "all" (not location: "all") — arg name is 'canton'
+    const result = JSON.parse(
+      await handleStatistics("get_population", { canton: "all" })
+    );
+    const cantonList: Array<{ canton: string; code: string; population: number }> = result.cantons;
+    const unknownEntry = cantonList?.find((c) => c.code === "9999");
+    // Unknown code → CANTON_NAMES fallback returns the raw code
+    expect(unknownEntry?.canton).toBe("9999");
+  });
+});
+
 // ── Unknown tool ──────────────────────────────────────────────────────────────
 
 describe("handleStatistics — unknown tool", () => {
@@ -382,5 +452,246 @@ describe("handleStatistics — unknown tool", () => {
     await expect(
       handleStatistics("nonexistent_tool", {})
     ).rejects.toThrow(/Unknown statistics tool/);
+  });
+});
+
+// ── truncate branch: long description ────────────────────────────────────────
+
+describe("search_statistics — truncates long descriptions", () => {
+  it("truncates description longer than 200 chars with ellipsis", async () => {
+    mockFetch(mockCkanSearchResultsLongDesc);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "population" })
+    );
+    expect(result.results).toHaveLength(1);
+    const desc: string = result.results[0].description;
+    // truncate(str, 200): output is exactly 200 chars ending in "..."
+    expect(desc.length).toBeLessThanOrEqual(200);
+    expect(desc.endsWith("...")).toBe(true);
+  });
+});
+
+// ── resolveCantonCode: edge cases ─────────────────────────────────────────────
+
+describe("get_population — resolveCantonCode edge cases", () => {
+  it("resolves already-uppercase 2-letter canton code (line 104)", async () => {
+    mockFetch(mockPxWebCantonZH);
+    // "ZH" is not in CANTON_CODES (lowercase key map) but IS in CANTON_NAMES
+    const result = JSON.parse(
+      await handleStatistics("get_population", { canton: "ZH" })
+    );
+    expect(result.canton_code).toBe("ZH");
+  });
+
+  it("resolves canton via partial alias match (line 109)", async () => {
+    mockFetch(mockPxWebCantonZH);
+    // "zurich city" contains "zurich" which is an alias for ZH
+    const result = JSON.parse(
+      await handleStatistics("get_population", { canton: "zurich city" })
+    );
+    expect(result.canton_code).toBe("ZH");
+  });
+});
+
+// ── resolveText: language fallback chain ──────────────────────────────────────
+
+describe("resolveText — language fallback chain", () => {
+  it("falls back through FR when EN and DE are absent", async () => {
+    // Need a fixture where title/notes only has FR text
+    const frOnlyResponse = {
+      success: true,
+      result: {
+        count: 1,
+        results: [
+          {
+            id: "fr1",
+            name: "fr-dataset",
+            title: { fr: "Données en français" }, // no EN or DE
+            notes: { fr: "Description en français." },
+            keywords: { fr: ["données"] },
+            metadata_modified: "2025-01-01T00:00:00",
+            resources: [],
+            contact_points: [],
+          },
+        ],
+      },
+    };
+    mockFetch(frOnlyResponse);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "données" })
+    );
+    expect(result.results[0].title).toBe("Données en français");
+  });
+
+  it("falls back to Object.values(val)[0] when only an unusual language key exists", async () => {
+    const rmResponse = {
+      success: true,
+      result: {
+        count: 1,
+        results: [
+          {
+            id: "rm1",
+            name: "rm-dataset",
+            title: { rm: "Datas en rumantsch" }, // Romansh only — not en/de/fr/it
+            notes: { rm: "Descripziun en rumantsch." },
+            keywords: {},
+            metadata_modified: "2025-01-01T00:00:00",
+            resources: [],
+            contact_points: [],
+          },
+        ],
+      },
+    };
+    mockFetch(rmResponse);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "rumantsch" })
+    );
+    expect(result.results[0].title).toBe("Datas en rumantsch");
+  });
+
+  it("returns plain string title as-is (resolveText string branch)", async () => {
+    const plainStringResponse = {
+      success: true,
+      result: {
+        count: 1,
+        results: [
+          {
+            id: "plain1",
+            name: "plain-string-dataset",
+            title: "Plain String Title", // direct string, not an object
+            notes: "Plain string notes.",
+            keywords: { en: ["test"] },
+            metadata_modified: "2025-01-01T00:00:00",
+            resources: [],
+            contact_points: [],
+          },
+        ],
+      },
+    };
+    mockFetch(plainStringResponse);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "plain" })
+    );
+    expect(result.results[0].title).toBe("Plain String Title");
+    expect(result.results[0].description).toBe("Plain string notes.");
+  });
+
+  it("returns empty string when resolveText receives empty object (all branches falsy)", async () => {
+    const emptyObjResponse = {
+      success: true,
+      result: {
+        count: 1,
+        results: [
+          {
+            id: "empty1",
+            name: "empty-obj-dataset",
+            title: {}, // empty object — Object.values(val)[0] is undefined → falls back to ""
+            notes: {},
+            keywords: { en: ["test"] },
+            metadata_modified: "2025-01-01T00:00:00",
+            resources: [],
+            contact_points: [],
+          },
+        ],
+      },
+    };
+    mockFetch(emptyObjResponse);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "empty" })
+    );
+    expect(result.results[0].title).toBe("");
+    expect(result.results[0].description).toBe("");
+  });
+});
+
+// ── search_statistics: non-string query arg fallback ─────────────────────────
+
+describe("search_statistics — non-string query", () => {
+  it("throws when query arg is not a string (undefined → empty string → error)", async () => {
+    await expect(
+      handleStatistics("search_statistics", { query: undefined })
+    ).rejects.toThrow("query is required");
+  });
+});
+
+// ── get_statistic: non-string dataset_id fallback ─────────────────────────────
+
+describe("get_statistic — non-string dataset_id", () => {
+  it("throws when dataset_id is not a string (number → empty string → error)", async () => {
+    await expect(
+      handleStatistics("get_statistic", { dataset_id: 42 })
+    ).rejects.toThrow("dataset_id is required");
+  });
+});
+
+// ── search_statistics: sparse fields (no metadata_modified, description fallback) ──
+
+describe("search_statistics — sparse optional fields", () => {
+  it("handles missing metadata_modified, description fallback, and no-keywords fallback", async () => {
+    mockFetch(mockCkanSearchResultsSparse);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "sparse" })
+    );
+    expect(result.results).toHaveLength(2);
+    // First result: notes is null → description field used; metadata_modified absent → ""
+    expect(typeof result.results[0].description).toBe("string");
+    expect(result.results[0].modified).toBe("");
+    expect(result.results[0].keywords).toContain("test");
+    // Second result: keywords completely absent → []
+    expect(result.results[1].keywords).toEqual([]);
+  });
+});
+
+// ── get_statistic: sparse optional fields coverage ───────────────────────────
+
+describe("get_statistic — sparse optional fields", () => {
+  it("handles missing keywords, issued, contact, organization, resources", async () => {
+    mockFetch(mockCkanDatasetDetailSparse);
+    const result = JSON.parse(
+      await handleStatistics("get_statistic", { dataset_id: "sparse-dataset" })
+    );
+    // keywords completely absent → falls back to []
+    expect(Array.isArray(result.keywords)).toBe(true);
+    expect(result.keywords).toHaveLength(0);
+    // issued is empty string when missing
+    expect(result.issued).toBe("");
+    // metadata_modified missing → modified = ""
+    expect(result.modified).toBe("");
+    // contact is undefined (not in JSON output)
+    expect(result.contact).toBeUndefined();
+    // organization is empty string when missing
+    expect(result.organization).toBe("");
+    // resources absent → empty array
+    expect(result.resources).toHaveLength(0);
+  });
+});
+
+// ── search_statistics: DE-only keywords fallback ─────────────────────────────
+
+describe("search_statistics — DE-only keywords", () => {
+  it("falls back to DE keywords when EN is absent", async () => {
+    const deOnlyKeywordsResponse = {
+      success: true,
+      result: {
+        count: 1,
+        results: [
+          {
+            id: "de-only",
+            name: "de-only-dataset",
+            title: { de: "Deutscher Titel" },
+            notes: { de: "Kurze Beschreibung." },
+            keywords: { de: ["bevölkerung", "gemeinde"] }, // no 'en'
+            metadata_modified: "2025-01-01T00:00:00",
+            resources: [],
+            contact_points: [],
+          },
+        ],
+      },
+    };
+    mockFetch(deOnlyKeywordsResponse);
+    const result = JSON.parse(
+      await handleStatistics("search_statistics", { query: "bevölkerung" })
+    );
+    expect(result.results[0].keywords).toContain("bevölkerung");
   });
 });

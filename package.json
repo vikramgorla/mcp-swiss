@@ -18,7 +18,8 @@
     "test:integration": "vitest run tests/integration",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
-    "validate": "npm run lint && npm run build && npm test"
+    "validate": "npm run lint && npm run build && npm test",
+    "test:qa": "bash scripts/qa-smoke-test.sh"
   },
   "keywords": [
     "mcp",
