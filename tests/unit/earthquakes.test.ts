@@ -317,7 +317,7 @@ describe('search_earthquakes_by_location', () => {
     expect(result.center).toEqual({ lat: 46.9, lon: 7.5 });
   });
 
-  it('passes lat, lon, maxradiuskm, and starttime to URL', async () => {
+  it('passes lat, lon, maxradius (degrees), and starttime to URL', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true, status: 200, statusText: 'OK',
       text: () => Promise.resolve(mockFdsnTextNearBern),
@@ -331,7 +331,9 @@ describe('search_earthquakes_by_location', () => {
     const calledUrl = fetchMock.mock.calls[0][0] as string;
     expect(calledUrl).toContain('latitude=46.9');
     expect(calledUrl).toContain('longitude=7.5');
-    expect(calledUrl).toContain('maxradiuskm=100');
+    // 100 km / 111.12 ≈ 0.9 degrees
+    expect(calledUrl).toContain('maxradius=');
+    expect(calledUrl).not.toContain('maxradiuskm');
     expect(calledUrl).toContain('starttime=');
   });
 
@@ -343,7 +345,8 @@ describe('search_earthquakes_by_location', () => {
     vi.stubGlobal('fetch', fetchMock);
     await handleEarthquakes('search_earthquakes_by_location', { lat: 46.9, lon: 7.5 });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('maxradiuskm=50');
+    // 50 km / 111.12 ≈ 0.45 degrees
+    expect(calledUrl).toContain('maxradius=');
     expect(calledUrl).toContain('minmagnitude=0.5');
   });
 
@@ -359,7 +362,9 @@ describe('search_earthquakes_by_location', () => {
       radius_km: 9999,
     });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('maxradiuskm=500');
+    // 500 km / 111.12 ≈ 4.5 degrees
+    expect(calledUrl).toContain('maxradius=');
+    expect(calledUrl).not.toContain('maxradiuskm');
   });
 
   it('returns empty result on 204', async () => {

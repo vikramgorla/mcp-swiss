@@ -319,10 +319,13 @@ async function handleSearchEarthquakesByLocation(
   const days = Math.min(Number(args.days ?? 90), 365);
   const minMag = Number(args.min_magnitude ?? 0.5);
 
+  // SED FDSN uses maxradius in degrees, not km. Convert: 1 degree ≈ 111.12 km
+  const maxRadiusDeg = radiusKm / 111.12;
+
   const url = buildUrl(BASE, {
     latitude: lat,
     longitude: lon,
-    maxradiuskm: radiusKm,
+    maxradius: maxRadiusDeg,
     starttime: startTimeISO(days),
     minmagnitude: minMag,
     format: "text",
