@@ -5,6 +5,7 @@ import {
   handleGetExchangeRateHistory,
   parseSnbCsv,
   flattenCurrencies,
+  clearSnbCache,
 } from '../../src/modules/snb.js';
 import {
   mockDimensionsResponse,
@@ -70,6 +71,7 @@ function mockCsvFetch(csvText: string, status = 200) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearSnbCache();
 });
 
 // ── parseSnbCsv ───────────────────────────────────────────────────────────────

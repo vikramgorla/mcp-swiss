@@ -7,7 +7,7 @@ import {
   handleGetExchangeRateHistory,
 } from '../../src/modules/snb.js';
 
-const TIMEOUT = 20000;
+const TIMEOUT = 30000;
 
 describe('SNB Exchange Rates API (live)', () => {
   // ── list_currencies ────────────────────────────────────────────────────────

@@ -141,17 +141,45 @@ function findSeriesId(currencyCode: string, currencies: CurrencyInfo[]): Currenc
 
 // ── Fetch helpers ────────────────────────────────────────────────────────────
 
+let _dimensionsCache: CurrencyInfo[] | null = null;
+let _dimensionsCachedAt = 0;
+const DIMENSIONS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour (dimensions rarely change)
+
 async function fetchDimensions(): Promise<CurrencyInfo[]> {
+  const now = Date.now();
+  if (_dimensionsCache && now - _dimensionsCachedAt < DIMENSIONS_CACHE_TTL_MS) {
+    return _dimensionsCache;
+  }
   const data = await fetchJSON<DimensionsResponse>(SNB_DIMENSIONS);
   // D1 dimension contains currency items; skip D0 (monthly average/end-of-month)
   const d1 = data.dimensions.find((d) => d.id === "D1");
   if (!d1) {
     throw new Error("SNB dimensions response missing D1 (currency) dimension");
   }
-  return flattenCurrencies(d1.dimensionItems, "");
+  _dimensionsCache = flattenCurrencies(d1.dimensionItems, "");
+  _dimensionsCachedAt = now;
+  return _dimensionsCache;
+}
+
+// ── In-memory cache (5-minute TTL) ───────────────────────────────────────────
+let _ratesMapCache: Map<string, RateEntry[]> | null = null;
+let _ratesMapCachedAt = 0;
+const RATES_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/** Clear in-memory caches (for testing) */
+export function clearSnbCache(): void {
+  _ratesMapCache = null;
+  _ratesMapCachedAt = 0;
+  _dimensionsCache = null;
+  _dimensionsCachedAt = 0;
 }
 
 async function fetchRatesMap(): Promise<Map<string, RateEntry[]>> {
+  const now = Date.now();
+  if (_ratesMapCache && now - _ratesMapCachedAt < RATES_CACHE_TTL_MS) {
+    return _ratesMapCache;
+  }
+
   const response = await fetch(SNB_MONTHLY_CSV, {
     headers: {
       "Accept": "text/csv,text/plain,*/*",
@@ -164,7 +192,9 @@ async function fetchRatesMap(): Promise<Map<string, RateEntry[]>> {
   }
 
   const csv = await response.text();
-  return parseSnbCsv(csv);
+  _ratesMapCache = parseSnbCsv(csv);
+  _ratesMapCachedAt = now;
+  return _ratesMapCache;
 }
 
 // ── Tool implementations ─────────────────────────────────────────────────────
