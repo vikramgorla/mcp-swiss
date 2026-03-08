@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  packages: write
 
 # Only one release at a time
 concurrency:
@@ -17,6 +18,8 @@ jobs:
   release:
     name: Build, Release & Publish
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -68,24 +71,6 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
 
-      - name: Trigger Docker build
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "Triggering Docker build for v${VERSION}..."
-          gh workflow run docker.yml --ref main -f version="${VERSION}" || echo "Docker workflow trigger failed (non-fatal)"
-
-      - name: Trigger MCPB build
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "Triggering MCPB build for v${VERSION}..."
-          gh workflow run mcpb.yml --ref main -f version="${VERSION}" || echo "MCPB workflow trigger failed (non-fatal)"
-
       - name: Publish to npm
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -135,3 +120,117 @@ jobs:
             --body "Automated version bump after release v${CURRENT}. Merge when CI passes."
 
           echo "✅ Dev bump PR created. It will be merged after CI passes."
+
+  docker:
+    name: Docker (Hub + GHCR)
+    needs: release
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version tags
+        id: tags
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          MINOR=$(echo $VERSION | cut -d. -f1-2)
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            vikramgorla/mcp-swiss:${{ needs.release.outputs.version }}
+            vikramgorla/mcp-swiss:${{ steps.tags.outputs.minor }}
+            vikramgorla/mcp-swiss:latest
+            ghcr.io/vikramgorla/mcp-swiss:${{ needs.release.outputs.version }}
+            ghcr.io/vikramgorla/mcp-swiss:${{ steps.tags.outputs.minor }}
+            ghcr.io/vikramgorla/mcp-swiss:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=mcp-swiss
+            org.opencontainers.image.description=Swiss open data MCP server — 68 tools, zero API keys
+            org.opencontainers.image.source=https://github.com/vikramgorla/mcp-swiss
+            org.opencontainers.image.licenses=MIT
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: vikramgorla/mcp-swiss
+          short-description: "Swiss open data MCP server — 68 tools, 20 modules, zero API keys"
+          readme-filepath: ./README.md
+
+  mcpb:
+    name: MCPB Bundle
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build MCPB bundle
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          BUNDLE_DIR=$(mktemp -d)
+
+          cp -r dist/ "${BUNDLE_DIR}/dist/"
+          cp -r node_modules/ "${BUNDLE_DIR}/node_modules/"
+          cp package.json "${BUNDLE_DIR}/"
+          cp manifest.json "${BUNDLE_DIR}/"
+          [ -d "assets" ] && cp -r assets/ "${BUNDLE_DIR}/assets/" || true
+
+          cd "${BUNDLE_DIR}"
+          zip -qr "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" . -x "*.git*" "*.DS_Store"
+          cp "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" "${GITHUB_WORKSPACE}/mcp-swiss.mcpb"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.release.outputs.version }}
+          files: |
+            mcp-swiss-${{ needs.release.outputs.version }}.mcpb
+            mcp-swiss.mcpb
