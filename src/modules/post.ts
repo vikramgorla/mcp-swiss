@@ -81,18 +81,6 @@ interface CantonFindResponse {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Strip HTML tags from swisstopo labels like "<b>8001 - Zürich</b>" */
-function stripHtml(s: string): string {
-  return s.replace(/<[^>]+>/g, "").trim();
-}
-
-/** Parse locality from label "8001 - Zürich" → "Zürich" */
-function parseLocality(label: string): string {
-  const clean = stripHtml(label);
-  const dashIdx = clean.indexOf(" - ");
-  return dashIdx >= 0 ? clean.slice(dashIdx + 3).trim() : clean;
-}
-
 /**
  * Resolve a canton abbreviation (e.g. "zh", "Zürich", "BE") to its
  * uppercase 2-letter code (e.g. "ZH", "BE").
