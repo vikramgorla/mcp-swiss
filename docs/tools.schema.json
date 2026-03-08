@@ -958,6 +958,138 @@
         "formats": "99.xx.xxxxxx.xxxxxxxx for standard parcels, RI/RR xxxxxxxxx CH for registered mail."
       },
       "notes": "No public REST tracking API available from Swiss Post. Returns official tracking page URL."
+    },
+    {
+      "name": "get_electricity_tariff",
+      "module": "energy",
+      "description": "Get Swiss electricity tariff (price in Rappen/kWh) for a municipality from ElCom",
+      "apiSource": "https://www.strompreis.elcom.admin.ch/api/graphql",
+      "inputSchema": {
+        "type": "object",
+        "required": ["municipality"],
+        "properties": {
+          "municipality": { "type": "string", "description": "Municipality BFS number (e.g. '261' for Zürich). Use search_municipality_energy to find the ID." },
+          "category": { "type": "string", "enum": ["H1","H2","H3","H4","H5","H6","H7","H8","C1","C2","C3","C4","C5","C6","C7"], "description": "Electricity category. Default: H4" },
+          "year": { "type": "string", "description": "Tariff year (2011–2026). Default: 2026" }
+        }
+      },
+      "outputExample": {
+        "municipality": "261",
+        "municipalityLabel": "Zürich",
+        "canton": "ZH",
+        "category": "H4",
+        "year": "2026",
+        "total_rp_kwh": 22.5,
+        "components": { "energy": 8.2, "gridusage": 9.1, "charge": 1.8, "aidfee": 0.23 },
+        "source": "ElCom — Swiss Federal Electricity Commission"
+      }
+    },
+    {
+      "name": "compare_electricity_tariffs",
+      "module": "energy",
+      "description": "Compare Swiss electricity tariffs across multiple municipalities side-by-side",
+      "apiSource": "https://www.strompreis.elcom.admin.ch/api/graphql",
+      "inputSchema": {
+        "type": "object",
+        "required": ["municipalities"],
+        "properties": {
+          "municipalities": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 20, "description": "Array of municipality BFS numbers to compare" },
+          "category": { "type": "string", "enum": ["H1","H2","H3","H4","H5","H6","H7","H8","C1","C2","C3","C4","C5","C6","C7"], "description": "Electricity category. Default: H4" },
+          "year": { "type": "string", "description": "Tariff year (2011–2026). Default: 2026" }
+        }
+      },
+      "outputExample": {
+        "category": "H4",
+        "year": "2026",
+        "comparison": [
+          { "municipality": "351", "label": "Bern", "canton": "BE", "total_rp_kwh": 20.1 },
+          { "municipality": "261", "label": "Zürich", "canton": "ZH", "total_rp_kwh": 22.5 }
+        ],
+        "cheapest": { "municipality": "351", "label": "Bern" },
+        "source": "ElCom — Swiss Federal Electricity Commission"
+      }
+    },
+    {
+      "name": "search_municipality_energy",
+      "module": "energy",
+      "description": "Search for Swiss municipality IDs needed for electricity tariff lookup",
+      "apiSource": "https://www.strompreis.elcom.admin.ch/api/graphql",
+      "inputSchema": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "description": "Municipality name to search (e.g. 'Zürich', 'Bern', 'Basel')" }
+        }
+      },
+      "outputExample": {
+        "query": "Zürich",
+        "results": [
+          { "id": "261", "name": "Zürich" }
+        ],
+        "source": "ElCom — Swiss Federal Electricity Commission"
+      }
+    },
+    {
+      "name": "get_population",
+      "module": "statistics",
+      "description": "Get Swiss population data from the Federal Statistical Office (FSO/BFS) — STATPOP",
+      "apiSource": "https://www.pxweb.bfs.admin.ch/api/v1/en",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string", "description": "Canton name or 2-letter code (e.g. 'ZH', 'Zürich'). Omit for CH total. Use 'all' for all cantons." },
+          "year": { "type": "number", "description": "Year of data (2010–2024). Default: 2024" }
+        }
+      },
+      "outputExample": {
+        "location": "Zug",
+        "canton_code": "ZG",
+        "year": 2024,
+        "population": 132000,
+        "population_type": "Permanent resident population",
+        "source": "Federal Statistical Office (FSO/BFS) — STATPOP"
+      }
+    },
+    {
+      "name": "search_statistics",
+      "module": "statistics",
+      "description": "Search BFS/OFS datasets on opendata.swiss",
+      "apiSource": "https://ckan.opendata.swiss/api/3/action",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string", "description": "Search query (e.g. 'unemployment', 'GDP', 'housing prices')" },
+          "limit": { "type": "number", "description": "Max results (1–20, default 10)" }
+        }
+      },
+      "outputExample": {
+        "query": "unemployment",
+        "total_matches": 42,
+        "returned": 10,
+        "results": [{ "id": "dataset-id", "title": "Unemployment statistics", "modified": "2024-03-15" }],
+        "source": "opendata.swiss — Federal Statistical Office (BFS/OFS)"
+      }
+    },
+    {
+      "name": "get_statistic",
+      "module": "statistics",
+      "description": "Fetch details and resource links for a specific BFS dataset by its opendata.swiss ID",
+      "apiSource": "https://ckan.opendata.swiss/api/3/action",
+      "inputSchema": {
+        "type": "object",
+        "required": ["dataset_id"],
+        "properties": {
+          "dataset_id": { "type": "string", "description": "Dataset identifier from opendata.swiss" }
+        }
+      },
+      "outputExample": {
+        "id": "bevolkerungsstatistik-einwohner",
+        "title": "Population statistics",
+        "organization": "Federal Statistical Office BFS",
+        "resources": [{ "name": "Data CSV", "format": "CSV", "url": "https://..." }],
+        "source": "opendata.swiss"
+      }
     }
   ]
 }

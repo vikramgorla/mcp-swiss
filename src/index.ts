@@ -15,6 +15,8 @@ import { parliamentTools, handleParliament } from "./modules/parliament.js";
 import { avalancheTools, handleAvalanche } from "./modules/avalanche.js";
 import { airqualityTools, handleAirQuality } from "./modules/airquality.js";
 import { postTools, handlePost } from "./modules/post.js";
+import { energyTools, handleEnergy } from "./modules/energy.js";
+import { statisticsTools, handleStatistics } from "./modules/statistics.js";
 
 const server = new Server(
   { name: "mcp-swiss", version: "0.1.0" },
@@ -31,6 +33,8 @@ const allTools = [
   ...avalancheTools,
   ...airqualityTools,
   ...postTools,
+  ...energyTools,
+  ...statisticsTools,
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -62,6 +66,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await handleAirQuality(name, safeArgs);
     } else if (postTools.some((t) => t.name === name)) {
       result = await handlePost(name, safeArgs);
+    } else if (energyTools.some((t) => t.name === name)) {
+      result = await handleEnergy(name, safeArgs);
+    } else if (statisticsTools.some((t) => t.name === name)) {
+      result = await handleStatistics(name, safeArgs);
     } else {
       throw new Error(`Unknown tool: ${name}`);
     }
