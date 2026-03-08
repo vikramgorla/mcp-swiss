@@ -65,19 +65,12 @@ jobs:
           echo "BUNDLE_SIZE=$(du -h "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" | cut -f1)" >> $GITHUB_ENV
 
       - name: Upload to GitHub Release
-        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
           files: |
             mcp-swiss-${{ steps.version.outputs.version }}.mcpb
             mcp-swiss.mcpb
-
-      - name: Upload artifact (manual dispatch)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mcpb-bundle
-          path: ${{ env.BUNDLE_PATH }}
 
       - name: Summary
         run: |
