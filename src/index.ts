@@ -25,6 +25,7 @@ import { damsTools, handleDams } from "./modules/dams.js";
 import { hikingTools, handleHiking } from "./modules/hiking.js";
 import { realEstateTools, handleRealEstate } from "./modules/realestate.js";
 import { trafficTools, handleTraffic } from "./modules/traffic.js";
+import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
 
 const server = new Server(
   { name: "mcp-swiss", version: "0.1.0" },
@@ -51,6 +52,7 @@ const allTools = [
   ...hikingTools,
   ...realEstateTools,
   ...trafficTools,
+  ...earthquakeTools,
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -102,6 +104,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await handleRealEstate(name, safeArgs);
     } else if (trafficTools.some((t) => t.name === name)) {
       result = await handleTraffic(name, safeArgs);
+    } else if (earthquakeTools.some((t) => t.name === name)) {
+      result = await handleEarthquakes(name, safeArgs as Record<string, string | number | boolean>);
     } else {
       throw new Error(`Unknown tool: ${name}`);
     }
