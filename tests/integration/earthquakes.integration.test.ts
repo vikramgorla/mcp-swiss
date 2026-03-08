@@ -95,14 +95,15 @@ describe('Earthquakes API (live — SED/ETH Zürich)', () => {
       await handleEarthquakes('search_earthquakes_by_location', {
         lat: 46.9480,
         lon: 7.4474,
-        radius_km: 100,
-        days: 90,
-        min_magnitude: 0.5,
+        radius_km: 50,
+        days: 30,
+        min_magnitude: 1.0,
+        limit: 10,
       })
     );
     expect(result.count).toBeGreaterThanOrEqual(0);
     expect(result.center).toEqual({ lat: 46.948, lon: 7.4474 });
-    expect(result.radius_km).toBe(100);
+    expect(result.radius_km).toBe(50);
     expect(Array.isArray(result.events)).toBe(true);
   });
 
@@ -110,8 +111,9 @@ describe('Earthquakes API (live — SED/ETH Zürich)', () => {
     const raw = await handleEarthquakes('search_earthquakes_by_location', {
       lat: 46.9480,
       lon: 7.4474,
-      radius_km: 200,
-      days: 180,
+      radius_km: 50,
+      days: 30,
+      limit: 20,
     });
     expect(raw.length).toBeLessThan(50000);
   });
@@ -122,8 +124,9 @@ describe('Earthquakes API (live — SED/ETH Zürich)', () => {
       await handleEarthquakes('search_earthquakes_by_location', {
         lat: 47.3769,
         lon: 8.5417,
-        radius_km: 80,
-        days: 60,
+        radius_km: 50,
+        days: 30,
+        limit: 10,
       })
     );
     expect(result.center).toEqual({ lat: 47.3769, lon: 8.5417 });

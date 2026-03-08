@@ -118,6 +118,10 @@ export const earthquakeTools: EarthquakeTool[] = [
           type: "number",
           description: "Minimum magnitude filter (default: 0.5)",
         },
+        limit: {
+          type: "number",
+          description: "Maximum number of results to return (default: 20, max: 100)",
+        },
       },
     },
   },
@@ -318,6 +322,7 @@ async function handleSearchEarthquakesByLocation(
   const radiusKm = Math.min(Number(args.radius_km ?? 50), 500);
   const days = Math.min(Number(args.days ?? 90), 365);
   const minMag = Number(args.min_magnitude ?? 0.5);
+  const limit = Math.min(Number(args.limit ?? 20), 100);
 
   // SED FDSN uses maxradius in degrees, not km. Convert: 1 degree ≈ 111.12 km
   const maxRadiusDeg = radiusKm / 111.12;
@@ -328,6 +333,7 @@ async function handleSearchEarthquakesByLocation(
     maxradius: maxRadiusDeg,
     starttime: startTimeISO(days),
     minmagnitude: minMag,
+    limit: limit,
     format: "text",
     orderby: "time",
   });
@@ -342,6 +348,7 @@ async function handleSearchEarthquakesByLocation(
       radius_km: radiusKm,
       days_searched: days,
       min_magnitude: minMag,
+      limit,
       source: "Swiss Seismological Service (SED), ETH Zürich",
       note: "No events found near the given location.",
     });
@@ -349,33 +356,17 @@ async function handleSearchEarthquakesByLocation(
 
   const events = parseFdsnText(raw);
 
-  const result = JSON.stringify({
+  return JSON.stringify({
     count: events.length,
     center: { lat, lon },
     radius_km: radiusKm,
     days_searched: days,
     min_magnitude: minMag,
+    limit,
     source: "Swiss Seismological Service (SED), ETH Zürich",
     api: "FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/",
     events,
   });
-
-  if (result.length > 50000) {
-    const trimmed = events.slice(0, Math.max(1, Math.floor(events.length * 0.8)));
-    return JSON.stringify({
-      count: trimmed.length,
-      truncated: true,
-      center: { lat, lon },
-      radius_km: radiusKm,
-      days_searched: days,
-      min_magnitude: minMag,
-      source: "Swiss Seismological Service (SED), ETH Zürich",
-      api: "FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/",
-      events: trimmed,
-    });
-  }
-
-  return result;
 }
 
 // ── Main dispatcher ───────────────────────────────────────────────────────────
