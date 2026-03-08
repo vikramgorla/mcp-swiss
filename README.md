@@ -22,16 +22,18 @@
 **43 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
-🚆 Transport — SBB, PostBus, trams, live departures, journey planning
-🌤️ Weather   — MeteoSwiss live conditions + historical data
-🌊 Hydrology — BAFU river & lake levels (great for Aare swimming!)
-🗺️ Geodata   — swisstopo geocoding, solar potential, geographic layers
-🏢 Companies — ZEFIX federal registry, all 700K+ Swiss companies
-🎄 Holidays  — Swiss public & school holidays by canton
-🏛️ Parliament — Bills, votes, councillors, session schedule
-🏔️ Avalanche  — SLF danger bulletins and warning regions
-💨 Air Quality — NABEL stations, Swiss legal limits (LRV)
-📮 Swiss Post — Postcode lookup and parcel tracking
+🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
+🌤️ Weather      — MeteoSwiss live conditions + historical data
+🌊 Hydrology    — BAFU river & lake levels (great for Aare swimming!)
+🗺️ Geodata      — swisstopo geocoding, solar potential, geographic layers
+🏢 Companies    — ZEFIX federal registry, all 700K+ Swiss companies
+🎄 Holidays     — Swiss public & school holidays by canton
+🏛️ Parliament   — Bills, votes, councillors, session schedule
+🏔️ Avalanche    — SLF danger bulletins and warning regions
+💨 Air Quality  — NABEL stations, Swiss legal limits (LRV)
+📮 Swiss Post   — Postcode lookup and parcel tracking
+⚡ Energy       — Electricity tariffs by municipality (ElCom)
+📊 Statistics   — Population, demographics, BFS datasets
 ```
 
 ---
