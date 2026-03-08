@@ -13,6 +13,7 @@
 [![Downloads](https://img.shields.io/npm/dm/mcp-swiss.svg?style=flat-square)](https://www.npmjs.com/package/mcp-swiss)
 [![Stars](https://img.shields.io/github/stars/vikramgorla/mcp-swiss?style=flat-square)](https://github.com/vikramgorla/mcp-swiss)
 [![Node](https://img.shields.io/node/v/mcp-swiss?style=flat-square)](https://nodejs.org)
+[![Claude Desktop](https://img.shields.io/badge/Claude_Desktop-Download_.mcpb-D52B1E?style=flat-square)](https://github.com/vikramgorla/mcp-swiss/releases/latest)
 
 [Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources)
 
@@ -62,7 +63,17 @@ That's it. No API keys, no `.env` files, no accounts. Pick your client below and
 
 ---
 
-### Claude Desktop
+### Claude Desktop (One-Click)
+
+Download the latest `.mcpb` bundle and open it — Claude Desktop will handle the rest:
+
+[![Download for Claude Desktop](https://img.shields.io/badge/Download_for_Claude_Desktop-.mcpb_Bundle-D52B1E?style=for-the-badge)](https://github.com/vikramgorla/mcp-swiss/releases/latest)
+
+Or download from the [latest release](https://github.com/vikramgorla/mcp-swiss/releases/latest) page.
+
+---
+
+### Claude Desktop (Manual)
 
 Edit your config file:
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
