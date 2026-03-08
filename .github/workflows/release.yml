@@ -68,6 +68,24 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Trigger Docker build
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Triggering Docker build for v${VERSION}..."
+          gh workflow run docker.yml --ref main -f version="${VERSION}" || echo "Docker workflow trigger failed (non-fatal)"
+
+      - name: Trigger MCPB build
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Triggering MCPB build for v${VERSION}..."
+          gh workflow run mcpb.yml --ref main -f version="${VERSION}" || echo "MCPB workflow trigger failed (non-fatal)"
+
       - name: Publish to npm
         run: |
           VERSION=$(node -p "require('./package.json').version")
