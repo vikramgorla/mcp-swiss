@@ -19,7 +19,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**65 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**68 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -42,6 +42,7 @@
 🥾 Hiking       — Swiss trail closures and hiking alerts (swisstopo)
 🏠 Real Estate  — Swiss property prices, rent index, housing data (BFS)
 🚗 Traffic      — ASTRA counting stations, daily volumes
+🌍 Earthquakes  — Swiss Seismological Service (SED/ETH Zürich), FDSN API
 ```
 
 ---
@@ -252,7 +253,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 65 tools across 19 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 68 tools across 20 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -413,6 +414,14 @@ Once connected, try asking your AI:
 | `get_traffic_count` | Traffic counting station data (ASTRA) — daily volumes and heavy traffic share |
 | `get_traffic_by_canton` | List ASTRA traffic counting stations filtered by canton |
 | `get_traffic_nearby` | Find traffic counting stations near given coordinates |
+
+### 🌍 Earthquakes / SED (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_recent_earthquakes` | Recent seismic events in/around Switzerland from the Swiss Seismological Service (SED) at ETH Zürich |
+| `get_earthquake_details` | Full details for a specific seismic event by SED event ID |
+| `search_earthquakes_by_location` | Earthquakes near given coordinates with configurable radius, time range, and limit |
 
 ---
 

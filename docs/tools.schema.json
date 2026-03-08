@@ -1390,6 +1390,55 @@
         }
       },
       "outputExample": [{ "id": "A1-ZH-001", "name": "Zürich Nord", "distance_m": 1200 }]
+    },
+    {
+      "name": "get_recent_earthquakes",
+      "module": "earthquakes",
+      "description": "Recent seismic events in and around Switzerland from the Swiss Seismological Service (SED) at ETH Zürich",
+      "apiSource": "http://arclink.ethz.ch/fdsnws/event/1/",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "days": { "type": "number" },
+          "min_magnitude": { "type": "number" },
+          "limit": { "type": "number" },
+          "include_blasts": { "type": "boolean" }
+        }
+      },
+      "outputExample": { "count": 5, "events": [{ "event_id": "smi:ch.ethz.sed/...", "magnitude": 2.1 }] }
+    },
+    {
+      "name": "get_earthquake_details",
+      "module": "earthquakes",
+      "description": "Full details for a specific seismic event by SED event ID",
+      "apiSource": "http://arclink.ethz.ch/fdsnws/event/1/",
+      "inputSchema": {
+        "type": "object",
+        "required": ["event_id"],
+        "properties": {
+          "event_id": { "type": "string" }
+        }
+      },
+      "outputExample": { "event": { "event_id": "smi:ch.ethz.sed/...", "magnitude": 3.4, "location": "Valais" } }
+    },
+    {
+      "name": "search_earthquakes_by_location",
+      "module": "earthquakes",
+      "description": "Search for earthquakes near given coordinates using the SED FDSN API",
+      "apiSource": "http://arclink.ethz.ch/fdsnws/event/1/",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lon"],
+        "properties": {
+          "lat": { "type": "number" },
+          "lon": { "type": "number" },
+          "radius_km": { "type": "number" },
+          "days": { "type": "number" },
+          "min_magnitude": { "type": "number" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": { "count": 3, "center": { "lat": 46.948, "lon": 7.447 }, "radius_km": 50, "events": [] }
     }
   ]
 }
