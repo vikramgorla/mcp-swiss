@@ -13,7 +13,7 @@
     "prepublishOnly": "npm run build",
     "test": "vitest run tests/unit tests/mcp",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage tests/unit tests/mcp",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "lint": "eslint src/",

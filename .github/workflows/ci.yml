@@ -94,7 +94,7 @@ jobs:
 
       - name: Integration Tests
         run: npm run test:integration
-        timeout-minutes: 3
+        timeout-minutes: 15
 
   security-audit:
     name: Security Audit

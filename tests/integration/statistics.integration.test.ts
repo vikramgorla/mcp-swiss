@@ -16,17 +16,17 @@ describe("get_population — live (BFS PxWeb)", () => {
     expect(result.population).toBeLessThan(12_000_000);
     expect(result.source).toContain("BFS");
     expect(result.source_url).toContain("bfs.admin.ch");
-  }, 30000);
+  }, 60000);
 
   it("response is under 50K chars", async () => {
     const raw = await handleStatistics("get_population", {});
     expect(raw.length).toBeLessThan(50000);
-  }, 30000);
+  }, 60000);
 
   it("population_type is permanent resident", async () => {
     const result = JSON.parse(await handleStatistics("get_population", {}));
     expect(result.population_type).toContain("Permanent");
-  }, 30000);
+  }, 60000);
 
   it("returns valid data for year 2020", async () => {
     const result = JSON.parse(
@@ -34,7 +34,7 @@ describe("get_population — live (BFS PxWeb)", () => {
     );
     expect(result.year).toBe(2020);
     expect(result.population).toBeGreaterThan(8_000_000);
-  }, 30000);
+  }, 60000);
 });
 
 // ── get_population: Cantons ──────────────────────────────────────────────────
@@ -48,12 +48,12 @@ describe("get_population — canton (live)", () => {
     expect(result.location).toBe("Zürich");
     expect(result.population).toBeGreaterThan(1_000_000);
     expect(result.population).toBeLessThan(2_500_000);
-  }, 30000);
+  }, 60000);
 
   it("response for single canton is under 50K chars", async () => {
     const raw = await handleStatistics("get_population", { canton: "BE" });
     expect(raw.length).toBeLessThan(50000);
-  }, 30000);
+  }, 60000);
 
   it("resolves Geneva by name", async () => {
     const result = JSON.parse(
@@ -61,7 +61,7 @@ describe("get_population — canton (live)", () => {
     );
     expect(result.canton_code).toBe("GE");
     expect(result.population).toBeGreaterThan(400_000);
-  }, 30000);
+  }, 60000);
 
   it("resolves Ticino by name", async () => {
     const result = JSON.parse(
@@ -69,7 +69,7 @@ describe("get_population — canton (live)", () => {
     );
     expect(result.canton_code).toBe("TI");
     expect(result.population).toBeGreaterThan(300_000);
-  }, 30000);
+  }, 60000);
 
   it("resolves Bern by name", async () => {
     const result = JSON.parse(
@@ -77,7 +77,7 @@ describe("get_population — canton (live)", () => {
     );
     expect(result.canton_code).toBe("BE");
     expect(result.population).toBeGreaterThan(900_000);
-  }, 30000);
+  }, 60000);
 
   it("smallest canton (AI) has reasonable population", async () => {
     const result = JSON.parse(
@@ -86,7 +86,7 @@ describe("get_population — canton (live)", () => {
     expect(result.canton_code).toBe("AI");
     expect(result.population).toBeGreaterThan(5_000);
     expect(result.population).toBeLessThan(100_000);
-  }, 30000);
+  }, 60000);
 });
 
 // ── get_population: All cantons ───────────────────────────────────────────────
@@ -98,12 +98,12 @@ describe("get_population — all cantons (live)", () => {
     );
     expect(result.cantons).toHaveLength(26);
     expect(result.switzerland_total).toBeGreaterThan(8_000_000);
-  }, 45000);
+  }, 90000);
 
   it("all-cantons response is under 50K chars", async () => {
     const raw = await handleStatistics("get_population", { canton: "all" });
     expect(raw.length).toBeLessThan(50000);
-  }, 45000);
+  }, 90000);
 
   it("canton populations sum to roughly Switzerland total", async () => {
     const result = JSON.parse(
@@ -117,14 +117,14 @@ describe("get_population — all cantons (live)", () => {
     const ratio = sum / result.switzerland_total;
     expect(ratio).toBeGreaterThan(0.95);
     expect(ratio).toBeLessThan(1.05);
-  }, 45000);
+  }, 90000);
 
   it("ZH has the largest population", async () => {
     const result = JSON.parse(
       await handleStatistics("get_population", { canton: "all" })
     );
     expect(result.cantons[0].code).toBe("ZH");
-  }, 45000);
+  }, 90000);
 
   it("each canton has valid code and name", async () => {
     const result = JSON.parse(
@@ -135,7 +135,7 @@ describe("get_population — all cantons (live)", () => {
       expect(c.canton).toBeTruthy();
       expect(c.population).toBeGreaterThan(0);
     }
-  }, 45000);
+  }, 90000);
 });
 
 // ── search_statistics ─────────────────────────────────────────────────────────
