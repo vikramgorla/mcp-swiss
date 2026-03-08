@@ -81,3 +81,12 @@ jobs:
             org.opencontainers.image.description=Swiss open data MCP server — 68 tools, zero API keys
             org.opencontainers.image.source=https://github.com/vikramgorla/mcp-swiss
             org.opencontainers.image.licenses=MIT
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: vikramgorla/mcp-swiss
+          short-description: "Swiss open data MCP server — 68 tools, 20 modules, zero API keys"
+          readme-filepath: ./README.md
