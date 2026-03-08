@@ -1,0 +1,70 @@
+name: Docker
+
+on:
+  release:
+    types: [published]
+
+env:
+  DOCKERHUB_IMAGE: vikramgorla/mcp-swiss
+  GHCR_IMAGE: ghcr.io/vikramgorla/mcp-swiss
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f1-2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.DOCKERHUB_IMAGE }}:${{ steps.version.outputs.minor }}
+            ${{ env.DOCKERHUB_IMAGE }}:latest
+            ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.minor }}
+            ${{ env.GHCR_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=mcp-swiss
+            org.opencontainers.image.description=Swiss open data MCP server — 68 tools, zero API keys
+            org.opencontainers.image.source=https://github.com/vikramgorla/mcp-swiss
+            org.opencontainers.image.licenses=MIT
