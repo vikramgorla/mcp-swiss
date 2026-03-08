@@ -2208,5 +2208,53 @@ Find ASTRA traffic counting stations near given coordinates.
 
 ---
 
-*Specification generated from mcp-swiss v0.3.2-dev source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic)*
+---
+
+## Earthquakes
+
+### `get_recent_earthquakes`
+
+Recent seismic events in and around Switzerland from the Swiss Seismological Service (SED) at ETH Zürich.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| days | number | ❌ | Number of past days to search (default: 30, max: 365) |
+| min_magnitude | number | ❌ | Minimum magnitude filter (default: 0.5) |
+| limit | number | ❌ | Maximum number of results (default: 20) |
+| include_blasts | boolean | ❌ | Include quarry blasts (default: false) |
+
+---
+
+### `get_earthquake_details`
+
+Full details for a specific seismic event by SED event ID.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| event_id | string | ✅ | SED event ID (e.g. 'smi:ch.ethz.sed/sc25a/Event/2026errxzt') |
+
+---
+
+### `search_earthquakes_by_location`
+
+Search for earthquakes near given coordinates using the SED FDSN API.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| lat | number | ✅ | Latitude of center point (decimal degrees) |
+| lon | number | ✅ | Longitude of center point (decimal degrees) |
+| radius_km | number | ❌ | Search radius in kilometres (default: 50, max: 500) |
+| days | number | ❌ | Number of past days to search (default: 90, max: 365) |
+| min_magnitude | number | ❌ | Minimum magnitude filter (default: 0.5) |
+| limit | number | ❌ | Maximum number of results (default: 20, max: 100) |
+
+---
+
+*Specification generated from mcp-swiss v0.4.1 source code.*  
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes)*
