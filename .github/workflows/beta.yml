@@ -1,23 +1,31 @@
 name: Beta Release
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [develop]
 
 jobs:
   beta:
     name: Publish Beta to npm
     runs-on: ubuntu-latest
-    # Skip if this is an automated dev-version bump (avoids infinite loop with release.yml)
-    if: "!contains(github.event.head_commit.message, 'chore: bump dev version')"
+    # Only run if CI succeeded AND was a push event (not PR)
+    # Skip automated dev-version bumps to avoid infinite loop
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      !contains(github.event.workflow_run.head_commit.message, 'chore: bump dev version')
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: develop
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           registry-url: "https://registry.npmjs.org"
 
