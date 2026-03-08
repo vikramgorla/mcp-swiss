@@ -1,0 +1,23 @@
+name: Guard Main Branch
+
+# Runs on PRs targeting main — rejects anything not from develop
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-source:
+    name: Verify PR source is develop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        run: |
+          HEAD="${{ github.head_ref }}"
+          echo "PR source branch: $HEAD"
+          if [ "$HEAD" != "develop" ]; then
+            echo "❌ ERROR: Only the 'develop' branch can merge to main."
+            echo "   Got: $HEAD"
+            echo "   Please merge your changes to develop first, then create a develop → main PR."
+            exit 1
+          fi
+          echo "✅ Source branch is develop — allowed."
