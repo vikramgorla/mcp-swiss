@@ -1,6 +1,6 @@
 {
   "name": "mcp-swiss",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Swiss open data MCP server — transport, weather, geodata, companies. Zero API keys.",
   "main": "dist/index.js",
   "bin": {
@@ -13,7 +13,7 @@
     "prepublishOnly": "npm run build",
     "test": "vitest run tests/unit tests/mcp",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage tests/unit tests/mcp",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "lint": "eslint src/",
