@@ -79,6 +79,9 @@ jobs:
           git fetch origin develop
           git checkout develop
           git pull origin develop
+          
+          # Merge main into develop to pick up the merge commit from the release PR
+          git merge origin/main --no-edit
 
           CURRENT=$(node -p "require('./package.json').version")
           MAJOR=$(echo $CURRENT | cut -d. -f1)
