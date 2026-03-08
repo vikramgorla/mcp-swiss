@@ -1,4 +1,4 @@
-import { fetchJSON, buildUrl } from "../utils/http.js";
+import { fetchJSON } from "../utils/http.js";
 
 const GEO_ADMIN = "https://api3.geo.admin.ch/rest/services/api/MapServer";
 const NABELSTATIONEN_LAYER = "ch.bafu.nabelstationen";
@@ -30,18 +30,6 @@ interface NabelStationFeature {
 
 interface NabelStationResponse {
   feature?: NabelStationFeature;
-}
-
-interface FindResult {
-  featureId: string;
-  id: string;
-  geometry?: StationGeometry;
-  attributes: StationAttributes;
-  bbox?: number[];
-}
-
-interface FindResponse {
-  results: FindResult[];
 }
 
 // ── Known NABEL stations (BAFU/EMPA national monitoring network) ─────────────

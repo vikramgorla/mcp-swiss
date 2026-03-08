@@ -70,7 +70,7 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function bulletinPdfUrl(lang: string, period: "morning" | "evening" = "morning"): string {
+function bulletinPdfUrl(lang: string, _period: "morning" | "evening" = "morning"): string {
   // aws.slf.ch serves official PDF bulletins — publicly accessible without auth
   // Pattern: https://aws.slf.ch/api/bulletin/document/regional/<lang>/<period>
   const validLang = SUPPORTED_LANGUAGES.includes(lang) ? lang : "en";
