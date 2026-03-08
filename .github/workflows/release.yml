@@ -100,7 +100,9 @@ jobs:
           git commit -m "chore: bump dev version to ${NEXT_VERSION} [skip ci]"
           git push origin "$BRANCH"
 
-          # Create and auto-merge PR
+          # Create and auto-merge PR (or push directly if gh merge fails)
           PR_URL=$(gh pr create --base develop --head "$BRANCH" --title "chore: bump dev version to ${NEXT_VERSION}" --body "Automated version bump after release." 2>&1)
           PR_NUM=$(echo "$PR_URL" | grep -oP '\d+$')
-          gh pr merge "$PR_NUM" --squash --admin --delete-branch
+          # Wait a moment then merge; use || true so release doesn't fail if merge fails
+          sleep 5
+          gh pr merge "$PR_NUM" --squash --admin --delete-branch || echo "⚠️ Dev bump PR merge failed — manual merge may be needed for PR #${PR_NUM}"
