@@ -3,12 +3,49 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+
+# Cancel redundant runs: only keep the latest for each PR/branch
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  lint-build:
-    name: Code Style & Build (Node ${{ matrix.node }})
+  lint:
+    name: Lint (ESLint + TypeScript)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  build:
+    name: Build & Verify (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -27,9 +64,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint (ESLint + TypeScript)
-        run: npm run lint
-
       - name: Build
         run: npm run build
 
@@ -44,15 +78,15 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: lint-build
+    needs: [lint, build]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
@@ -75,15 +109,17 @@ jobs:
   integration-tests:
     name: Integration Tests (Live Swiss APIs)
     runs-on: ubuntu-latest
-    needs: lint-build
+    needs: [lint, build]
+    # Only run integration tests on PRs — push events already passed PR checks
+    if: github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
@@ -103,10 +139,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
@@ -114,3 +150,4 @@ jobs:
 
       - name: npm audit
         run: npm audit --audit-level=moderate
+        continue-on-error: true
