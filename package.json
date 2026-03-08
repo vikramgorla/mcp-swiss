@@ -1,6 +1,6 @@
 {
   "name": "mcp-swiss",
-  "version": "0.4.0",
+  "version": "0.4.1-dev",
   "description": "Swiss open data MCP server — transport, weather, geodata, companies. Zero API keys.",
   "main": "dist/index.js",
   "bin": {
