@@ -49,9 +49,9 @@ afterEach(() => {
 // ── postTools export ──────────────────────────────────────────────────────────
 
 describe("postTools", () => {
-  it("exports an array of 3 tools", () => {
+  it("exports an array of 4 tools", () => {
     expect(Array.isArray(postTools)).toBe(true);
-    expect(postTools).toHaveLength(3);
+    expect(postTools).toHaveLength(4);
   });
 
   it("has required tool names", () => {
@@ -382,6 +382,62 @@ describe("list_postcodes_in_canton", () => {
     await expect(
       handlePost("list_postcodes_in_canton", { canton: "" })
     ).rejects.toThrow("canton must not be empty");
+  });
+});
+
+// ── track_parcel ──────────────────────────────────────────────────────────────
+
+describe("track_parcel", () => {
+  it("is listed in postTools", () => {
+    const tool = postTools.find((t) => t.name === "track_parcel");
+    expect(tool).toBeDefined();
+    expect(tool!.inputSchema.required).toContain("tracking_number");
+  });
+
+  it("returns tracking URL for a standard parcel number", async () => {
+    const result = JSON.parse(
+      await handlePost("track_parcel", { tracking_number: "99.00.123456.12345678" })
+    );
+    expect(result.tracking_url).toBe(
+      "https://service.post.ch/ekp-web/ui/entry/shipping/1/parcel/detail?parcelId=99.00.123456.12345678"
+    );
+    expect(result.tracking_number).toBe("99.00.123456.12345678");
+  });
+
+  it("returns tracking URL for registered mail number", async () => {
+    const result = JSON.parse(
+      await handlePost("track_parcel", { tracking_number: "RI 123456789 CH" })
+    );
+    expect(result.tracking_url).toContain("service.post.ch");
+    expect(result.tracking_url).toContain("RI%20123456789%20CH");
+    expect(result.tracking_number).toBe("RI 123456789 CH");
+  });
+
+  it("includes a note about no public API", async () => {
+    const result = JSON.parse(
+      await handlePost("track_parcel", { tracking_number: "99.00.123456.12345678" })
+    );
+    expect(result.note).toContain("Swiss Post does not provide a public tracking API");
+  });
+
+  it("includes formats info", async () => {
+    const result = JSON.parse(
+      await handlePost("track_parcel", { tracking_number: "99.00.123456.12345678" })
+    );
+    expect(result.formats).toBeTruthy();
+    expect(result.formats).toContain("99.xx");
+  });
+
+  it("throws for empty tracking number", async () => {
+    await expect(
+      handlePost("track_parcel", { tracking_number: "" })
+    ).rejects.toThrow("tracking_number must not be empty");
+  });
+
+  it("throws when tracking_number is missing", async () => {
+    await expect(
+      handlePost("track_parcel", {})
+    ).rejects.toThrow("tracking_number must not be empty");
   });
 });
 

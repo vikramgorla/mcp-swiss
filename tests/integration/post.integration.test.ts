@@ -205,3 +205,26 @@ describe("list_postcodes_in_canton (live API)", () => {
     expect(result.source).toContain("swisstopo");
   });
 });
+
+// ── track_parcel ──────────────────────────────────────────────────────────────
+
+describe("track_parcel (no live API — URL construction only)", () => {
+  it("constructs correct tracking URL without network call", async () => {
+    const result = JSON.parse(
+      await handlePost("track_parcel", { tracking_number: "99.00.123456.12345678" })
+    );
+    expect(result.tracking_url).toBe(
+      "https://service.post.ch/ekp-web/ui/entry/shipping/1/parcel/detail?parcelId=99.00.123456.12345678"
+    );
+    expect(result.tracking_number).toBe("99.00.123456.12345678");
+    expect(result.note).toContain("Swiss Post does not provide a public tracking API");
+    expect(result.formats).toBeTruthy();
+  });
+
+  it("URL-encodes tracking numbers with spaces", async () => {
+    const result = JSON.parse(
+      await handlePost("track_parcel", { tracking_number: "RI 123456789 CH" })
+    );
+    expect(result.tracking_url).toContain("RI%20123456789%20CH");
+  });
+});
