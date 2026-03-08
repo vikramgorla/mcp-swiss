@@ -383,6 +383,14 @@ describe("list_postcodes_in_canton", () => {
       handlePost("list_postcodes_in_canton", { canton: "" })
     ).rejects.toThrow("canton must not be empty");
   });
+
+  it("throws 'Canton not found' when canton API returns empty results", async () => {
+    // First fetch (canton find) returns empty results → triggers line 324 throw
+    mockFetchSequence(mockEmptyResults);
+    await expect(
+      handlePost("list_postcodes_in_canton", { canton: "ZH" })
+    ).rejects.toThrow(/Canton not found/);
+  });
 });
 
 // ── track_parcel ──────────────────────────────────────────────────────────────
@@ -438,6 +446,102 @@ describe("track_parcel", () => {
     await expect(
       handlePost("track_parcel", {})
     ).rejects.toThrow("tracking_number must not be empty");
+  });
+});
+
+// ── args ?? "" fallback branches ─────────────────────────────────────────────
+
+describe("post: args undefined fallback paths (??  '' branches)", () => {
+  it("lookup_postcode: undefined postcode arg hits ?? '' and fails validation", async () => {
+    await expect(
+      handlePost("lookup_postcode", {}) // no postcode key
+    ).rejects.toThrow("Invalid Swiss postcode");
+  });
+
+  it("search_postcode: undefined city_name arg hits ?? '' and throws empty error", async () => {
+    await expect(
+      handlePost("search_postcode", {}) // no city_name key
+    ).rejects.toThrow("city_name must not be empty");
+  });
+
+  it("list_postcodes_in_canton: undefined canton arg hits ?? '' and throws empty error", async () => {
+    await expect(
+      handlePost("list_postcodes_in_canton", {}) // no canton key
+    ).rejects.toThrow("canton must not be empty");
+  });
+});
+
+// ── lookup_postcode: no coordinates branch ────────────────────────────────────
+
+describe("lookup_postcode — no coordinates branch", () => {
+  it("returns null coordinates when SearchServer returns no zipcode-origin entry", async () => {
+    const emptySearchResponse = { results: [] };
+    mockFetchSequence(mockPlzFindResponse, emptySearchResponse);
+    const result = JSON.parse(
+      await handlePost("lookup_postcode", { postcode: "8001" })
+    );
+    expect(result.found).toBe(true);
+    expect(result.coordinates).toBeNull();
+    expect(result.canton).toBeNull();
+  });
+});
+
+// ── search_postcode: zusziff branch ──────────────────────────────────────────
+
+describe("search_postcode — zusziff branch", () => {
+  it("includes additionalNumber when zusziff is not '00'", async () => {
+    const responseWithZusziff = {
+      results: [
+        {
+          featureId: "100",
+          id: "100",
+          layerBodId: "ch.swisstopo-vd.ortschaftenverzeichnis_plz",
+          layerName: "Amtliches Ortschaftenverzeichnis",
+          attributes: {
+            plz: 1234,
+            zusziff: "01",
+            langtext: "Testort",
+            status: "REAL",
+            modified: "01.01.2026",
+            label: 1234,
+          },
+        },
+      ],
+    };
+    mockFetch(responseWithZusziff);
+    const result = JSON.parse(
+      await handlePost("search_postcode", { city_name: "Testort" })
+    );
+    expect(result.results[0].additionalNumber).toBe("01");
+  });
+});
+
+// ── list_postcodes_in_canton: ≥200 results note ───────────────────────────────
+
+describe("list_postcodes_in_canton — capped results note", () => {
+  it("includes note when result count is exactly 200", async () => {
+    const bigPlzResponse = {
+      results: Array.from({ length: 200 }, (_, i) => ({
+        featureId: String(i),
+        id: String(i),
+        layerBodId: "ch.swisstopo-vd.ortschaftenverzeichnis_plz",
+        layerName: "Amtliches Ortschaftenverzeichnis",
+        attributes: {
+          plz: 8000 + i,
+          zusziff: "00",
+          langtext: `Ort ${i}`,
+          status: "REAL",
+          modified: "01.01.2026",
+          label: 8000 + i,
+        },
+      })),
+    };
+    mockFetchSequence(mockCantonFindResponse, bigPlzResponse);
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZH" })
+    );
+    expect(result.count).toBe(200);
+    expect(result.note).toContain("capped at 200");
   });
 });
 

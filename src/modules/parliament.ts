@@ -136,19 +136,6 @@ function odataStringOf(field: string, value: string): string {
 /** Truncate a string response to keep under 50K chars */
 function truncate(json: string, maxBytes = 48000): string {
   if (json.length <= maxBytes) return json;
-  // Parse and slice the array
-  try {
-    const parsed = JSON.parse(json);
-    if (Array.isArray(parsed)) {
-      let sliced = parsed;
-      while (JSON.stringify(sliced).length > maxBytes && sliced.length > 1) {
-        sliced = sliced.slice(0, Math.floor(sliced.length * 0.8));
-      }
-      return JSON.stringify(sliced);
-    }
-  } catch {
-    // fall through
-  }
   return json.slice(0, maxBytes) + "…";
 }
 
@@ -306,7 +293,7 @@ async function searchParliamentBusiness(args: {
     if (!args.year) return true;
     if (!b.SubmissionDate) return false;
     const d = parseODataDate(b.SubmissionDate as string);
-    return d ? new Date(d).getFullYear() === args.year : false;
+    return !!d && new Date(d).getFullYear() === args.year;
   }).slice(0, limit);
 
   const cleaned = results.map((b: Partial<RawBusiness>) => ({
@@ -430,7 +417,7 @@ async function getSessions(args: {
     ? raw.filter((s) => {
         if (!s.StartDate) return false;
         const d = parseODataDate(s.StartDate as string);
-        return d ? new Date(d).getFullYear() === args.year : false;
+        return !!d && new Date(d).getFullYear() === args.year;
       })
     : raw;
 

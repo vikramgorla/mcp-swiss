@@ -362,3 +362,228 @@ describe('energyTools schema', () => {
     expect(tool?.inputSchema.properties.municipalities.type).toBe('array');
   });
 });
+
+// ── compare_electricity_tariffs: null value sort branches ────────────────────
+
+describe('compare_electricity_tariffs — notFound and unknown category', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('includes notFound array when some municipalities have no data', async () => {
+    // Only one municipality returns data; other is in notFound
+    const partialData = {
+      observations: [
+        {
+          period: "2026", municipality: "261", municipalityLabel: "Zürich",
+          operator: "565", operatorLabel: "EWZ", canton: "1", cantonLabel: "Zürich",
+          category: "H4", total: 24.75, energy: 10, gridusage: 8, charge: 2,
+          aidfee: 1, fixcosts: 0, meteringrate: 0, annualmeteringcost: 0, value: 24.75,
+          coverageRatio: 1,
+        },
+      ],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: partialData }),
+    }));
+    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+      municipalities: ['261', '99999'], // 99999 not in results
+    }));
+    expect(result.notFound).toContain('99999');
+  });
+
+  it('falls back to raw category name when not in CATEGORY_DESCRIPTIONS (compare)', async () => {
+    const unknownCatData = {
+      observations: [
+        {
+          period: "2026", municipality: "261", municipalityLabel: "Zürich",
+          operator: "565", operatorLabel: "EWZ", canton: "1", cantonLabel: "Zürich",
+          category: "X9", total: 24.75, energy: 10, gridusage: 8, charge: 2,
+          aidfee: 1, fixcosts: 0, meteringrate: 0, annualmeteringcost: 0, value: 24.75,
+          coverageRatio: 1,
+        },
+        {
+          period: "2026", municipality: "351", municipalityLabel: "Bern",
+          operator: "519", operatorLabel: "EWB", canton: "2", cantonLabel: "Bern",
+          category: "X9", total: 30.0, energy: 12, gridusage: 10, charge: 3,
+          aidfee: 1, fixcosts: 0, meteringrate: 0, annualmeteringcost: 0, value: 30.0,
+          coverageRatio: 1,
+        },
+      ],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: unknownCatData }),
+    }));
+    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+      municipalities: ['261', '351'],
+      category: 'X9',
+    }));
+    // Unknown category → description falls back to the category code itself
+    expect(result.summary.categoryDescription).toBe('X9');
+  });
+});
+
+describe('get_electricity_tariff — unknown category fallback', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('falls back to raw category name when not in CATEGORY_DESCRIPTIONS', async () => {
+    const unknownCatData = {
+      observations: [
+        {
+          period: "2026", municipality: "261", municipalityLabel: "Zürich",
+          operator: "565", operatorLabel: "EWZ", canton: "1", cantonLabel: "Zürich",
+          category: "X9", total: 24.75, energy: 10, gridusage: 8, charge: 2,
+          aidfee: 1, fixcosts: 0, meteringrate: 0, annualmeteringcost: 0, value: 24.75,
+          coverageRatio: 1,
+        },
+      ],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: unknownCatData }),
+    }));
+    // Single result → returns object (not array)
+    const result = JSON.parse(await handleEnergy('get_electricity_tariff', {
+      municipality: '261',
+      category: 'X9',
+    }));
+    expect(result.categoryDescription).toBe('X9');
+  });
+});
+
+describe('compare_electricity_tariffs — null tariff values', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sorts null values to end (a.value === null → return 1)', async () => {
+    const nullValueData = {
+      observations: [
+        {
+          period: "2026", municipality: "261", municipalityLabel: "Zürich",
+          operator: "565", operatorLabel: "EWZ", canton: "1", cantonLabel: "Zürich",
+          category: "H4", value: null, coverageRatio: 1,
+        },
+        {
+          period: "2026", municipality: "351", municipalityLabel: "Bern",
+          operator: "519", operatorLabel: "EWB", canton: "2", cantonLabel: "Bern",
+          category: "H4", value: 33.06, coverageRatio: 1,
+        },
+      ],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: nullValueData }),
+    }));
+    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+      municipalities: ['261', '351'],
+    }));
+    // Bern (non-null) should rank #1, Zürich (null) should be last
+    expect(result.comparison[0].municipality).toBe('Bern');
+    expect(result.comparison[1].municipality).toBe('Zürich');
+  });
+
+  it('sorts b.value === null to end (b.value === null → return -1)', async () => {
+    const nullBData = {
+      observations: [
+        {
+          period: "2026", municipality: "261", municipalityLabel: "Zürich",
+          operator: "565", operatorLabel: "EWZ", canton: "1", cantonLabel: "Zürich",
+          category: "H4", value: 24.75, coverageRatio: 1,
+        },
+        {
+          period: "2026", municipality: "351", municipalityLabel: "Bern",
+          operator: "519", operatorLabel: "EWB", canton: "2", cantonLabel: "Bern",
+          category: "H4", value: null, coverageRatio: 1,
+        },
+        {
+          period: "2026", municipality: "6621", municipalityLabel: "Lugano",
+          operator: "700", operatorLabel: "AIM", canton: "22", cantonLabel: "Ticino",
+          category: "H4", value: 28.00, coverageRatio: 1,
+        },
+      ],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: nullBData }),
+    }));
+    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+      municipalities: ['261', '351', '6621'],
+    }));
+    // Non-null values first, null last
+    const nullEntry = result.comparison.find((c: { total_rp_per_kwh: null | number }) => c.total_rp_per_kwh === null);
+    expect(nullEntry.municipality).toBe('Bern');
+    expect(result.comparison[result.comparison.length - 1].municipality).toBe('Bern');
+  });
+});
+
+// ── observations ?? [] and municipalities ?? [] fallback paths ────────────────
+
+describe('energy: undefined field fallback paths', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('handles missing observations field in get_electricity_tariff (line 193 fallback)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: {} }), // data exists but no observations key
+    }));
+    const result = JSON.parse(await handleEnergy('get_electricity_tariff', { municipality: '261' }));
+    expect(result.error).toContain('No tariff data found');
+  });
+
+  it('handles missing observations field gracefully (compare_electricity_tariffs)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: {} }), // no observations field
+    }));
+    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+      municipalities: ['261', '351'],
+    }));
+    expect(result.error).toContain('No tariff data found');
+  });
+
+  it('handles missing municipalities field gracefully (search_municipality_energy)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: () => Promise.resolve({ data: {} }), // no municipalities field
+    }));
+    const result = JSON.parse(await handleEnergy('search_municipality_energy', { name: 'Zürich' }));
+    expect(result.message).toContain('No municipalities found');
+  });
+});
+
+// ── ElCom GraphQL error paths ─────────────────────────────────────────────────
+
+describe('ElCom GraphQL error paths', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws when GraphQL response contains errors array', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve({
+        errors: [{ message: 'GraphQL syntax error' }, { message: 'Variable not found' }],
+      }),
+    }));
+    await expect(
+      handleEnergy('get_electricity_tariff', { municipality: '261' })
+    ).rejects.toThrow('ElCom API error: GraphQL syntax error; Variable not found');
+  });
+
+  it('throws when GraphQL response has no data field', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve({}),
+    }));
+    await expect(
+      handleEnergy('get_electricity_tariff', { municipality: '261' })
+    ).rejects.toThrow('ElCom API returned no data');
+  });
+});
