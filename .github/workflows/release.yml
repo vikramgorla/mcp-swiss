@@ -64,7 +64,14 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          # Check if this version is already published
+          if npm view "mcp-swiss@${VERSION}" version 2>/dev/null; then
+            echo "⚠️ mcp-swiss@${VERSION} already published, skipping"
+          else
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
