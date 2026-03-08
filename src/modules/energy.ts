@@ -346,8 +346,8 @@ export async function handleEnergy(
         {
           comparison: results,
           summary: {
-            cheapest: cheapest?.municipality ?? null,
-            most_expensive: mostExpensive?.municipality ?? null,
+            cheapest: cheapest.municipality,
+            most_expensive: mostExpensive.municipality,
             spread_rp_per_kwh: spread,
             category,
             categoryDescription: CATEGORY_DESCRIPTIONS[category] ?? category,

@@ -257,3 +257,49 @@ describe('unknown holidays tool', () => {
       .rejects.toThrow('Unknown holidays tool: does_not_exist');
   });
 });
+
+// ── extractName fallback: no EN language entry ────────────────────────────────
+
+describe('get_public_holidays — extractName fallback', () => {
+  it('falls back to first name entry when no EN language is present', async () => {
+    const nonEnHolidays = [
+      {
+        id: "test-id-1",
+        startDate: "2026-08-01",
+        endDate: "2026-08-01",
+        type: "Public",
+        name: [
+          { language: "DE", text: "Bundesfeier" },
+          { language: "FR", text: "Fête nationale" },
+        ],
+        regionalScope: "National",
+        temporalScope: "FullDay",
+        nationwide: true,
+      },
+    ];
+    mockFetch(nonEnHolidays);
+    const result = JSON.parse(await handleHolidays('get_public_holidays', { year: 2026 }));
+    expect(result.holidays).toHaveLength(1);
+    // Should fall back to first entry (DE) since no EN exists
+    expect(result.holidays[0].name).toBe('Bundesfeier');
+  });
+
+  it('falls back to "Unknown" when name array is empty', async () => {
+    const emptyNameHolidays = [
+      {
+        id: "test-id-2",
+        startDate: "2026-08-01",
+        endDate: "2026-08-01",
+        type: "Public",
+        name: [],
+        regionalScope: "National",
+        temporalScope: "FullDay",
+        nationwide: true,
+      },
+    ];
+    mockFetch(emptyNameHolidays);
+    const result = JSON.parse(await handleHolidays('get_public_holidays', { year: 2026 }));
+    expect(result.holidays).toHaveLength(1);
+    expect(result.holidays[0].name).toBe('Unknown');
+  });
+});
