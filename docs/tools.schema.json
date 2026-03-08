@@ -1346,6 +1346,50 @@
         }
       },
       "outputExample": { "index": 108.5, "year": 2024, "canton": "ZH" }
+    },
+    {
+      "name": "get_traffic_count",
+      "module": "traffic",
+      "description": "Traffic counting station data from ASTRA — daily volumes and heavy traffic share",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station_id"],
+        "properties": {
+          "station_id": { "type": "string" }
+        }
+      },
+      "outputExample": { "station": "A1-ZH-001", "dtv": 52400, "prctheavytraffic": 8.3 }
+    },
+    {
+      "name": "get_traffic_by_canton",
+      "module": "traffic",
+      "description": "List ASTRA traffic counting stations filtered by canton",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["canton"],
+        "properties": {
+          "canton": { "type": "string" }
+        }
+      },
+      "outputExample": [{ "id": "A1-ZH-001", "name": "Zürich Nord", "canton": "ZH" }]
+    },
+    {
+      "name": "get_traffic_nearby",
+      "module": "traffic",
+      "description": "Find ASTRA traffic counting stations near given coordinates",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["lat", "lon"],
+        "properties": {
+          "lat": { "type": "number" },
+          "lon": { "type": "number" },
+          "radius": { "type": "number" }
+        }
+      },
+      "outputExample": [{ "id": "A1-ZH-001", "name": "Zürich Nord", "distance_m": 1200 }]
     }
   ]
 }

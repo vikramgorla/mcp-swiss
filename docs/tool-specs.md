@@ -2166,5 +2166,47 @@ Swiss rent index and housing cost data from BFS.
 
 ---
 
+---
+
+## Traffic
+
+### `get_traffic_count`
+
+Traffic counting station data from ASTRA — daily volumes and heavy traffic share.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station_id | string | ✅ | ASTRA counting station ID |
+
+---
+
+### `get_traffic_by_canton`
+
+List ASTRA traffic counting stations filtered by canton.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ✅ | Canton abbreviation (e.g. 'ZH') |
+
+---
+
+### `get_traffic_nearby`
+
+Find ASTRA traffic counting stations near given coordinates.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| lat | number | ✅ | Latitude (WGS84) |
+| lon | number | ✅ | Longitude (WGS84) |
+| radius | number | ❌ | Search radius in metres (default: 5000) |
+
+---
+
 *Specification generated from mcp-swiss v0.3.2-dev source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking)*
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic)*

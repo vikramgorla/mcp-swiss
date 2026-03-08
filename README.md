@@ -19,7 +19,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**62 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**65 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -41,6 +41,7 @@
 🌊 Dams         — Swiss federal dam registry (SFOE/swisstopo)
 🥾 Hiking       — Swiss trail closures and hiking alerts (swisstopo)
 🏠 Real Estate  — Swiss property prices, rent index, housing data (BFS)
+🚗 Traffic      — ASTRA counting stations, daily volumes
 ```
 
 ---
@@ -251,7 +252,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 62 tools across 18 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 65 tools across 19 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -404,6 +405,14 @@ Once connected, try asking your AI:
 | `get_property_price_index` | Swiss property price index (BFS Immo-Monitoring) |
 | `search_real_estate_data` | Search BFS real estate datasets on opendata.swiss |
 | `get_rent_index` | Swiss rent index and housing cost data from BFS |
+
+### 🚗 Traffic / ASTRA (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_traffic_count` | Traffic counting station data (ASTRA) — daily volumes and heavy traffic share |
+| `get_traffic_by_canton` | List ASTRA traffic counting stations filtered by canton |
+| `get_traffic_nearby` | Find traffic counting stations near given coordinates |
 
 ---
 
