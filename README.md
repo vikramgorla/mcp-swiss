@@ -19,7 +19,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**37 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**43 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport — SBB, PostBus, trams, live departures, journey planning
@@ -235,12 +235,14 @@ Once connected, try asking your AI:
 | *"What's the avalanche danger level in the Bernese Alps?"* | `get_avalanche_bulletin` |
 | *"What's the postcode for Zermatt?"* | `search_postcode` |
 | *"Track my Swiss Post parcel 99.12.345678.12345678"* | `track_parcel` |
+| *"How much does electricity cost in Zürich vs Basel?"* | `search_municipality_energy` + `compare_electricity_tariffs` |
+| *"What's the population of canton Zug?"* | `get_population` |
 
 ---
 
 ## Tools
 
-> 37 tools across 9 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 43 tools across 11 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -324,6 +326,22 @@ Once connected, try asking your AI:
 | `list_postcodes_in_canton` | All postcodes in a canton |
 | `track_parcel` | Generate Swiss Post tracking URL for a parcel |
 
+### ⚡ Energy Prices (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_electricity_tariff` | Electricity tariff by municipality with component breakdown |
+| `compare_electricity_tariffs` | Compare electricity prices across municipalities |
+| `search_municipality_energy` | Find municipality ID for tariff lookup |
+
+### 📊 Statistics / BFS (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_population` | Population by canton or municipality from BFS STATPOP |
+| `search_statistics` | Search BFS datasets on opendata.swiss |
+| `get_statistic` | Fetch detailed dataset information |
+
 ---
 
 ## Data Sources
@@ -341,6 +359,8 @@ All official Swiss open data — no API keys required:
 | [whiterisk.ch](https://whiterisk.ch) / [aws.slf.ch](https://aws.slf.ch) | SLF/WSL avalanche bulletins | [SLF](https://www.slf.ch/en/avalanche-bulletin-and-snow-situation.html) |
 | [geo.admin.ch](https://api3.geo.admin.ch) — BAFU/NABEL | Swiss air quality monitoring stations | [BAFU NABEL](https://www.bafu.admin.ch/bafu/en/home/topics/air/state/data/nabel.html) |
 | [geo.admin.ch](https://api3.geo.admin.ch) — swisstopo | Swiss postcodes (Amtliches Ortschaftenverzeichnis) | [geo.admin.ch](https://api3.geo.admin.ch/api/doc.html) |
+| [strompreis.elcom.admin.ch](https://strompreis.elcom.admin.ch) | ElCom electricity tariffs by municipality | [ElCom](https://www.elcom.admin.ch/elcom/en/home.html) |
+| [pxweb.bfs.admin.ch](https://www.pxweb.bfs.admin.ch) + [opendata.swiss](https://opendata.swiss) | BFS population statistics (STATPOP) + datasets | [BFS](https://www.bfs.admin.ch/bfs/en/home/statistics/population.html) |
 
 ---
 
