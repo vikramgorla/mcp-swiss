@@ -2,12 +2,12 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.vikramgorla/swiss",
   "title": "Switzerland MCP 🇨🇭",
-  "description": "Swiss open data — trains, weather, hydrology, geodata, companies. 23 tools, zero API keys.",
+  "description": "Swiss open data — 37 tools, zero API keys. Trains, weather, geodata, companies, holidays, post.",
   "repository": {
     "url": "https://github.com/vikramgorla/mcp-swiss",
     "source": "github"
   },
-  "version": "0.1.7",
+  "version": "0.2.0",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/vikramgorla/mcp-swiss/main/assets/icon.svg",
@@ -16,14 +16,16 @@
     {
       "src": "https://raw.githubusercontent.com/vikramgorla/mcp-swiss/main/assets/icon.png",
       "mimeType": "image/png",
-      "sizes": ["256x256"]
+      "sizes": [
+        "256x256"
+      ]
     }
   ],
   "packages": [
     {
       "registryType": "npm",
       "identifier": "mcp-swiss",
-      "version": "0.1.7",
+      "version": "0.2.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

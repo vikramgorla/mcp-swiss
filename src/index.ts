@@ -10,6 +10,11 @@ import { transportTools, handleTransport } from "./modules/transport.js";
 import { weatherTools, handleWeather } from "./modules/weather.js";
 import { geodataTools, handleGeodata } from "./modules/geodata.js";
 import { companiesTools, handleCompanies } from "./modules/companies.js";
+import { holidaysTools, handleHolidays } from "./modules/holidays.js";
+import { parliamentTools, handleParliament } from "./modules/parliament.js";
+import { avalancheTools, handleAvalanche } from "./modules/avalanche.js";
+import { airqualityTools, handleAirQuality } from "./modules/airquality.js";
+import { postTools, handlePost } from "./modules/post.js";
 
 const server = new Server(
   { name: "mcp-swiss", version: "0.1.0" },
@@ -21,6 +26,11 @@ const allTools = [
   ...weatherTools,
   ...geodataTools,
   ...companiesTools,
+  ...holidaysTools,
+  ...parliamentTools,
+  ...avalancheTools,
+  ...airqualityTools,
+  ...postTools,
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -42,6 +52,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await handleGeodata(name, safeArgs);
     } else if (companiesTools.some((t) => t.name === name)) {
       result = await handleCompanies(name, safeArgs);
+    } else if (holidaysTools.some((t) => t.name === name)) {
+      result = await handleHolidays(name, safeArgs);
+    } else if (parliamentTools.some((t) => t.name === name)) {
+      result = await handleParliament(name, safeArgs);
+    } else if (avalancheTools.some((t) => t.name === name)) {
+      result = await handleAvalanche(name, safeArgs as Record<string, string>);
+    } else if (airqualityTools.some((t) => t.name === name)) {
+      result = await handleAirQuality(name, safeArgs);
+    } else if (postTools.some((t) => t.name === name)) {
+      result = await handlePost(name, safeArgs);
     } else {
       throw new Error(`Unknown tool: ${name}`);
     }

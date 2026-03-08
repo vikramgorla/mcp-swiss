@@ -19,7 +19,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**22 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**37 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport — SBB, PostBus, trams, live departures, journey planning
@@ -27,6 +27,11 @@
 🌊 Hydrology — BAFU river & lake levels (great for Aare swimming!)
 🗺️ Geodata   — swisstopo geocoding, solar potential, geographic layers
 🏢 Companies — ZEFIX federal registry, all 700K+ Swiss companies
+🎄 Holidays  — Swiss public & school holidays by canton
+🏛️ Parliament — Bills, votes, councillors, session schedule
+🏔️ Avalanche  — SLF danger bulletins and warning regions
+💨 Air Quality — NABEL stations, Swiss legal limits (LRV)
+📮 Swiss Post — Postcode lookup and parcel tracking
 ```
 
 ---
@@ -225,12 +230,17 @@ Once connected, try asking your AI:
 | *"Live departures from Bern HB"* | `get_departures` |
 | *"What rivers are near Thun?"* | `list_hydro_stations` + `get_water_level` |
 | *"Plan my Saturday: train to Interlaken, check weather"* | Multiple tools chained |
+| *"Is next Monday a holiday in Zürich?"* | `get_public_holidays` |
+| *"What did the Swiss parliament vote on recently?"* | `get_latest_votes` |
+| *"What's the avalanche danger level in the Bernese Alps?"* | `get_avalanche_bulletin` |
+| *"What's the postcode for Zermatt?"* | `search_postcode` |
+| *"Track my Swiss Post parcel 99.12.345678.12345678"* | `track_parcel` |
 
 ---
 
 ## Tools
 
-> Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 37 tools across 9 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -274,6 +284,46 @@ Once connected, try asking your AI:
 | `list_cantons` | All 26 Swiss cantons |
 | `list_legal_forms` | AG, GmbH, and all Swiss legal forms |
 
+### 🎄 Holidays (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_public_holidays` | Swiss public holidays by year, optionally filtered by canton |
+| `get_school_holidays` | School holiday periods by year and canton |
+| `is_holiday_today` | Quick check if today is a public holiday |
+
+### 🏛️ Parliament (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_parliament_business` | Search bills, motions, interpellations |
+| `get_latest_votes` | Recent parliamentary vote results |
+| `search_councillors` | Find members of the National/States Council |
+| `get_sessions` | Parliamentary session schedule |
+
+### 🏔️ Avalanche (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_avalanche_bulletin` | Current avalanche bulletin with danger levels and PDF links |
+| `list_avalanche_regions` | All 22 Swiss avalanche warning regions |
+
+### 💨 Air Quality (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_air_quality_stations` | All 14 NABEL monitoring stations |
+| `get_air_quality` | Station info, Swiss legal limits (LRV), and BAFU data links |
+
+### 📮 Swiss Post (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `lookup_postcode` | PLZ → locality, canton, coordinates |
+| `search_postcode` | City name → matching postcodes |
+| `list_postcodes_in_canton` | All postcodes in a canton |
+| `track_parcel` | Generate Swiss Post tracking URL for a parcel |
+
 ---
 
 ## Data Sources
@@ -286,6 +336,11 @@ All official Swiss open data — no API keys required:
 | [api.existenz.ch](https://api.existenz.ch) | MeteoSwiss weather + BAFU hydrology | [API docs](https://api.existenz.ch) |
 | [api3.geo.admin.ch](https://api3.geo.admin.ch) | swisstopo federal geodata | [API docs](https://api3.geo.admin.ch/api/doc.html) |
 | [zefix.admin.ch](https://www.zefix.admin.ch) | Federal company registry | [Swagger](https://www.zefix.admin.ch/ZefixREST/swagger-ui.html) |
+| [openholidaysapi.org](https://openholidaysapi.org) | Swiss public & school holidays | [API docs](https://openholidaysapi.org/swagger) |
+| [ws.parlament.ch](https://ws.parlament.ch) | Swiss Parliament OData (bills, votes, councillors) | [OData docs](https://ws.parlament.ch/odata.svc/$metadata) |
+| [whiterisk.ch](https://whiterisk.ch) / [aws.slf.ch](https://aws.slf.ch) | SLF/WSL avalanche bulletins | [SLF](https://www.slf.ch/en/avalanche-bulletin-and-snow-situation.html) |
+| [geo.admin.ch](https://api3.geo.admin.ch) — BAFU/NABEL | Swiss air quality monitoring stations | [BAFU NABEL](https://www.bafu.admin.ch/bafu/en/home/topics/air/state/data/nabel.html) |
+| [geo.admin.ch](https://api3.geo.admin.ch) — swisstopo | Swiss postcodes (Amtliches Ortschaftenverzeichnis) | [geo.admin.ch](https://api3.geo.admin.ch/api/doc.html) |
 
 ---
 
