@@ -66,3 +66,31 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Bump develop to next dev version
+        run: |
+          RELEASED_VERSION="${{ steps.version.outputs.version }}"
+          echo "Released: $RELEASED_VERSION"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch and checkout develop
+          git fetch origin develop
+          git checkout develop
+
+          # Compute next patch version (e.g. 0.1.7 -> 0.1.8-dev)
+          NEXT_VERSION=$(node -e "
+            const [major, minor, patch] = '$RELEASED_VERSION'.split('.').map(Number);
+            process.stdout.write(major + '.' + minor + '.' + (patch + 1) + '-dev');
+          ")
+          echo "Next dev version: $NEXT_VERSION"
+
+          # Write new version into package.json without creating a git tag
+          npm version "$NEXT_VERSION" --no-git-tag-version
+
+          git add package.json package-lock.json
+          git commit -m "chore: bump dev version to $NEXT_VERSION [skip ci]"
+          git push origin develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
