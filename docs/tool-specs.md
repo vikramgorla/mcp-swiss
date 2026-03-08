@@ -1,7 +1,7 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 37 MCP tools.
-> Version: 0.2.0 | Generated from source
+> Complete human + machine-readable specification for all 68 MCP tools.
+> Generated from source
 
 ---
 
@@ -16,6 +16,17 @@
 - [Avalanche Module (2 tools)](#avalanche-module)
 - [Air Quality Module (2 tools)](#air-quality-module)
 - [Swiss Post Module (4 tools)](#swiss-post-module)
+- [Energy Prices Module (3 tools)](#energy-prices)
+- [Statistics / BFS Module (3 tools)](#statistics--bfs)
+- [SNB Exchange Rates Module (3 tools)](#snb-exchange-rates)
+- [Recycling / Waste Collection Module (3 tools)](#recycling--waste-collection)
+- [Swiss News Module (2 tools)](#swiss-news)
+- [Voting Module (3 tools)](#voting)
+- [Dams & Reservoirs Module (3 tools)](#dams--reservoirs)
+- [Hiking / Trail Closures Module (2 tools)](#hiking--trail-closures)
+- [Real Estate Module (3 tools)](#real-estate)
+- [Traffic / ASTRA Module (3 tools)](#traffic)
+- [Earthquakes / SED Module (3 tools)](#earthquakes)
 
 ---
 
@@ -2256,5 +2267,5 @@ Search for earthquakes near given coordinates using the SED FDSN API.
 
 ---
 
-*Specification generated from mcp-swiss v0.4.1 source code.*  
+*Specification generated from mcp-swiss source code.*  
 *API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes)*

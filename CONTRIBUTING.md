@@ -62,7 +62,18 @@ src/
     parliament.ts           — Swiss parliament bills, votes, councillors
     avalanche.ts            — SLF avalanche bulletins
     airquality.ts           — NABEL air quality stations
-    ...                     — (add new modules here)
+    post.ts                 — Swiss Post postcodes + parcel tracking
+    energy.ts               — ElCom electricity tariffs
+    statistics.ts           — BFS population + opendata.swiss datasets
+    snb.ts                  — Swiss National Bank exchange rates
+    recycling.ts            — Zurich waste collection (OpenERZ)
+    news.ts                 — SRF Swiss news headlines + search
+    voting.ts               — Swiss popular vote results (Basel-Stadt)
+    dams.ts                 — Swiss federal dam registry
+    hiking.ts               — Trail closures + hiking alerts (swisstopo)
+    realestate.ts           — Property prices + rent index (BFS)
+    traffic.ts              — ASTRA traffic counting stations
+    earthquakes.ts          — Swiss Seismological Service (SED/ETH)
   utils/
     http.ts                 — fetchWithTimeout, fetchJSON, buildUrl helpers
 
