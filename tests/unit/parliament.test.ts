@@ -437,6 +437,62 @@ describe('get_sessions', () => {
   });
 });
 
+// ── get_sessions: null StartDate branch ──────────────────────────────────────
+
+describe('get_sessions — null StartDate branch', () => {
+  it('excludes sessions with null StartDate when year filter is active', async () => {
+    const sessionWithNullDate = {
+      d: [
+        { ...mockSessionResponse.d[0], StartDate: null },
+        { ...mockSessionResponse.d[1] },
+      ],
+    };
+    mockFetch(sessionWithNullDate);
+    // With year filter: null StartDate → returns false → excluded
+    const result = JSON.parse(
+      await handleParliament('get_sessions', { year: 2025 })
+    );
+    // Only the non-null one (if it matches year 2025) survives
+    for (const s of result.sessions) {
+      expect(s.startDate).not.toBeNull();
+    }
+  });
+});
+
+// ── search_parliament_business: year filter with null SubmissionDate ──────────
+
+describe('search_parliament_business — year filter branches', () => {
+  it('excludes items with null SubmissionDate when year filter is active', async () => {
+    const mixedDates = {
+      d: [
+        { ...mockBusinessResponse.d[0], SubmissionDate: null }, // null → excluded
+        { ...mockBusinessResponse.d[1] }, // valid date
+      ],
+    };
+    mockFetch(mixedDates);
+    const result = JSON.parse(
+      await handleParliament('search_parliament_business', { query: 'test', year: 2026 })
+    );
+    // Null SubmissionDate items excluded; valid items passing year filter kept
+    for (const b of result.business) {
+      expect(b.submissionDate).not.toBeNull();
+    }
+  });
+});
+
+// ── search_councillors: no name (optional name branch) ───────────────────────
+
+describe('search_councillors — no name filter', () => {
+  it('works without a name filter (no substringof filter added)', async () => {
+    const fetchMock = capturedFetch(mockMemberCouncilResponse);
+    await handleParliament('search_councillors', {}); // no name
+    const calledUrl = decodeURIComponent(fetchMock.mock.calls[0][0] as string);
+    // No substringof filter — just Language and Active
+    expect(calledUrl).not.toContain('substringof');
+    expect(calledUrl).toContain('Active eq true');
+  });
+});
+
 // ── unknown tool ──────────────────────────────────────────────────────────────
 
 describe('unknown parliament tool', () => {
@@ -444,6 +500,99 @@ describe('unknown parliament tool', () => {
     await expect(handleParliament('does_not_exist', {})).rejects.toThrow(
       'Unknown parliament tool: does_not_exist'
     );
+  });
+});
+
+// ── search_parliament_business: type filter coverage ──────────────────────────
+
+describe('search_parliament_business type filter', () => {
+  it('adds server-side BusinessType filter when type given with no query', async () => {
+    const fetchMock = capturedFetch(mockBusinessResponse);
+    // type='initiative' with NO query → server-side OData filter
+    await handleParliament('search_parliament_business', { query: '', type: 'initiative' });
+    const calledUrl = decodeURIComponent(fetchMock.mock.calls[0][0] as string);
+    expect(calledUrl).toContain('BusinessType eq');
+  });
+
+  it('uses fetchLimit * 3 and post-filters when type AND query are both set', async () => {
+    // Create a response where one item matches BusinessType 3 (initiative) and one does not
+    const mixedResponse = {
+      d: [
+        { ...mockBusinessResponse.d[0], BusinessType: 3 },   // initiative → keep
+        { ...mockBusinessResponse.d[1], BusinessType: 8 },   // interpellation → filtered out
+      ],
+    };
+    const fetchMock = capturedFetch(mixedResponse);
+    const result = JSON.parse(
+      await handleParliament('search_parliament_business', { query: 'Neutralität', type: 'initiative' })
+    );
+    // Post-filter should keep only BusinessType 3 (initiative: [1, 3, 13])
+    expect(result.business).toHaveLength(1);
+    expect(result.business[0].type).toBe('Volksinitiative');
+    // Should over-fetch: $top=30 (limit 10 * 3)
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('$top=30');
+  });
+
+  it('unknown type key → no typeIds → no type filter added', async () => {
+    const fetchMock = capturedFetch(mockBusinessResponse);
+    await handleParliament('search_parliament_business', { query: 'test', type: 'unknowntype' });
+    const calledUrl = decodeURIComponent(fetchMock.mock.calls[0][0] as string);
+    expect(calledUrl).not.toContain('BusinessType eq');
+  });
+});
+
+// ── search_councillors: party filter coverage ─────────────────────────────────
+
+describe('search_councillors party filter', () => {
+  it('adds party substringof filter when party is provided', async () => {
+    const fetchMock = capturedFetch(mockMemberCouncilResponse);
+    await handleParliament('search_councillors', { name: 'test', party: 'SP' });
+    const calledUrl = decodeURIComponent(fetchMock.mock.calls[0][0] as string);
+    expect(calledUrl).toContain('PartyAbbreviation');
+    expect(calledUrl).toContain('SP');
+  });
+
+  it('escapes single quotes in party name', async () => {
+    const fetchMock = capturedFetch(mockMemberCouncilResponse);
+    await handleParliament('search_councillors', { name: 'test', party: "L'Autre" });
+    // Decoded URL — OData escapes ' → '' so L'Autre becomes L''''Autre in substringof
+    const decodedUrl = decodeURIComponent(fetchMock.mock.calls[0][0] as string);
+    expect(decodedUrl).toContain("L''''Autre");
+  });
+
+  it('council filter with unknown code adds nothing', async () => {
+    const fetchMock = capturedFetch(mockMemberCouncilResponse);
+    await handleParliament('search_councillors', { name: 'test', council: 'EU' });
+    const calledUrl = decodeURIComponent(fetchMock.mock.calls[0][0] as string);
+    expect(calledUrl).not.toContain('Council eq');
+  });
+});
+
+// ── truncate coverage: large response path ────────────────────────────────────
+
+describe('parliament truncate — large response', () => {
+  it('truncates oversized response to maxBytes + ellipsis', async () => {
+    // Generate 500 vote records with large fields — serialised JSON will exceed 48KB
+    const bigVotes = Array.from({ length: 500 }, (_, i) => ({
+      ID: i,
+      RegistrationNumber: `REG${i}`,
+      BusinessShortNumber: `${i}.000`,
+      BusinessTitle: 'X'.repeat(200),
+      BillTitle: 'Y'.repeat(200),
+      SessionName: 'Frühjahrssession 2026',
+      Subject: 'Z'.repeat(200),
+      MeaningYes: 'Ja',
+      MeaningNo: 'Nein',
+      VoteEnd: '/Date(1706745600000)/',
+      Language: 'DE',
+      __metadata: { type: 'SP.Data.Vote' },
+    }));
+    mockFetch({ d: bigVotes });
+    const raw = await handleParliament('get_latest_votes', { limit: 50 });
+    // Should be truncated and end with ellipsis
+    expect(raw.endsWith('…')).toBe(true);
+    expect(raw.length).toBeLessThanOrEqual(48001);
   });
 });
 
@@ -474,5 +623,72 @@ describe('OData date parsing edge cases', () => {
     mockFetch(withNullDate);
     const result = JSON.parse(await handleParliament('get_latest_votes', {}));
     expect(result.votes[0].voteEnd).toBeNull();
+  });
+
+  it('returns raw string when date does not match OData format (line 111)', async () => {
+    // Use a non-OData date string — parseODataDate returns the raw string
+    const nonODataDate = {
+      d: [{
+        ...mockBusinessResponse.d[0],
+        SubmissionDate: "2026-03-01T00:00:00Z", // ISO format, not /Date(...)/
+      }],
+    };
+    mockFetch(nonODataDate);
+    const result = JSON.parse(
+      await handleParliament('search_parliament_business', { query: 'test' })
+    );
+    // Returns raw string when pattern doesn't match
+    expect(result.business[0].submissionDate).toBe("2026-03-01T00:00:00Z");
+  });
+
+  it('returns false for year filter when date does not match OData format (line 296)', async () => {
+    const malformedDate = {
+      d: [{
+        ...mockBusinessResponse.d[0],
+        SubmissionDate: "not-a-date", // won't parse → d=null → returns false in year filter
+      }],
+    };
+    mockFetch(malformedDate);
+    // With year filter: malformed date → excluded
+    const result = JSON.parse(
+      await handleParliament('search_parliament_business', { query: 'test', year: 2026 })
+    );
+    // Item with malformed date excluded
+    expect(result.business).toHaveLength(0);
+  });
+
+  it('returns false for session year filter when StartDate does not match OData format (line 420)', async () => {
+    const malformedSession = {
+      d: [{
+        ...mockSessionResponse.d[0],
+        StartDate: "invalid-date",
+      }],
+    };
+    mockFetch(malformedSession);
+    const result = JSON.parse(
+      await handleParliament('get_sessions', { year: 2026 })
+    );
+    // Session with malformed StartDate excluded from year filter
+    expect(result.sessions).toHaveLength(0);
+  });
+});
+
+// ── odataFetch: missing or non-array d field ─────────────────────────────────
+
+describe('odataFetch — invalid d field', () => {
+  it('returns empty array when response has no d field (line 126)', async () => {
+    mockFetch({ results: [] }); // no 'd' field
+    const result = JSON.parse(
+      await handleParliament('search_parliament_business', { query: 'test' })
+    );
+    expect(result.business).toHaveLength(0);
+  });
+
+  it('returns empty array when d field is not an array', async () => {
+    mockFetch({ d: "not-an-array" }); // d is a string, not array
+    const result = JSON.parse(
+      await handleParliament('search_parliament_business', { query: 'test' })
+    );
+    expect(result.business).toHaveLength(0);
   });
 });
