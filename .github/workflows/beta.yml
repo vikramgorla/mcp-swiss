@@ -8,6 +8,8 @@ jobs:
   beta:
     name: Publish Beta to npm
     runs-on: ubuntu-latest
+    # Skip if this is an automated dev-version bump (avoids infinite loop with release.yml)
+    if: "!contains(github.event.head_commit.message, 'chore: bump dev version')"
 
     steps:
       - uses: actions/checkout@v4
