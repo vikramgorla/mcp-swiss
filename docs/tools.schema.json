@@ -1,7 +1,7 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "server": "mcp-swiss",
-  "description": "Swiss open data MCP server — transport, weather, geodata, companies. Zero API keys.",
+  "description": "Swiss open data MCP server — transport, weather, geodata, companies, holidays, parliament, avalanche, air quality, post. Zero API keys.",
   "tools": [
     {
       "name": "search_stations",
@@ -563,6 +563,401 @@
         { "code": "0109", "name": "Stiftung", "nameEn": "Foundation" }
       ],
       "notes": "Returns hardcoded data — ZEFIX /legalForms API endpoint returns 403. Use code with search_companies legal_form parameter."
+    },
+    {
+      "name": "get_public_holidays",
+      "module": "holidays",
+      "description": "Get Swiss public holidays for a given year, optionally filtered by canton",
+      "apiSource": "https://openholidaysapi.org/PublicHolidays",
+      "inputSchema": {
+        "type": "object",
+        "required": ["year"],
+        "properties": {
+          "year": { "type": "number", "description": "Year (e.g. 2026)" },
+          "canton": { "type": "string", "description": "Two-letter canton code (e.g. ZH, BE, GE, BS, TI). If omitted, returns all Swiss holidays." }
+        }
+      },
+      "outputExample": {
+        "year": 2026,
+        "canton": "ZH",
+        "count": 12,
+        "holidays": [
+          { "date": "2026-01-01", "name": "New Year's Day", "type": "Public", "nationwide": true }
+        ],
+        "source": "openholidaysapi.org"
+      },
+      "notes": "Nationwide and canton-specific holidays included. Canton filter uses CH-ZH style internally."
+    },
+    {
+      "name": "get_school_holidays",
+      "module": "holidays",
+      "description": "Get Swiss school holidays for a given year, optionally filtered by canton",
+      "apiSource": "https://openholidaysapi.org/SchoolHolidays",
+      "inputSchema": {
+        "type": "object",
+        "required": ["year"],
+        "properties": {
+          "year": { "type": "number", "description": "Year (e.g. 2026)" },
+          "canton": { "type": "string", "description": "Two-letter canton code (e.g. ZH, BE, GE, BS, TI). If omitted, returns school holidays for all cantons." }
+        }
+      },
+      "outputExample": {
+        "year": 2026,
+        "canton": "ZH",
+        "count": 6,
+        "holidays": [
+          { "date": "2026-02-09/2026-02-20", "name": "Winter holidays", "type": "School", "nationwide": false, "cantons": ["ZH"] }
+        ],
+        "source": "openholidaysapi.org"
+      },
+      "notes": "date is YYYY-MM-DD/YYYY-MM-DD for multi-day periods. School dates vary significantly by canton."
+    },
+    {
+      "name": "is_holiday_today",
+      "module": "holidays",
+      "description": "Check whether today is a Swiss public holiday, optionally for a specific canton",
+      "apiSource": "https://openholidaysapi.org/PublicHolidays",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string", "description": "Two-letter canton code (e.g. ZH, BE, GE). If omitted, checks nationwide holidays only." }
+        }
+      },
+      "outputExample": {
+        "date": "2026-08-01",
+        "is_holiday": true,
+        "holiday": "Swiss National Day",
+        "type": "Public",
+        "nationwide": true,
+        "canton": "ZH"
+      },
+      "notes": "Uses today's date in UTC. Prefers nationwide holidays over canton-specific when both apply."
+    },
+    {
+      "name": "search_parliament_business",
+      "module": "parliament",
+      "description": "Search Swiss Parliament bills, motions, interpellations, questions and other business items",
+      "apiSource": "https://ws.parlament.ch/odata.svc/Business",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string", "description": "Search term (e.g. 'Klimaschutz', 'AHV', 'Neutralität')" },
+          "type": { "type": "string", "description": "Business type: motion, interpellation, postulate, initiative, question, bill" },
+          "year": { "type": "number", "description": "Filter by submission year, e.g. 2024" },
+          "limit": { "type": "number", "description": "Max results (default: 10, max: 50)" }
+        }
+      },
+      "outputExample": {
+        "count": 5,
+        "query": "AHV",
+        "business": [
+          {
+            "id": 20240001,
+            "shortNumber": "24.001",
+            "type": "Motion",
+            "typeAbbr": "Mo.",
+            "title": "AHV-Reform 2025",
+            "submittedBy": "Müller Hans",
+            "submissionDate": "2024-03-01T00:00:00.000Z",
+            "status": "Eingereicht",
+            "department": "EDI",
+            "tags": ["AHV", "Sozialversicherung"],
+            "url": "https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20240001"
+          }
+        ]
+      },
+      "notes": "Returns results in German (DE). Business types: motion(5), interpellation(8/9), postulate(6), initiative(1/3/13), question(7/16/17), bill(4/10/19)."
+    },
+    {
+      "name": "get_latest_votes",
+      "module": "parliament",
+      "description": "Get the most recent parliamentary votes in the Swiss National Council or Council of States",
+      "apiSource": "https://ws.parlament.ch/odata.svc/Vote",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": { "type": "number", "description": "Number of recent votes to fetch (default: 10, max: 50)" }
+        }
+      },
+      "outputExample": {
+        "count": 10,
+        "votes": [
+          {
+            "voteId": 123456,
+            "registrationNumber": 2024001,
+            "businessNumber": "24.001",
+            "businessTitle": "AHV-Reform 2025",
+            "billTitle": "AHV-Reform Schlussabstimmung",
+            "session": "Frühjahrssession 2024",
+            "subject": "Schlussabstimmung",
+            "meaningYes": "Annahme",
+            "meaningNo": "Ablehnung",
+            "voteEnd": "2024-03-22T10:30:00.000Z",
+            "url": "https://www.parlament.ch/de/ratsbetrieb/abstimmungen/abstimmung#key=2024001"
+          }
+        ]
+      },
+      "notes": "Returns vote metadata only (not individual member votes). Sorted most recent first."
+    },
+    {
+      "name": "search_councillors",
+      "module": "parliament",
+      "description": "Search for Swiss Members of Parliament by name, canton, party, or council",
+      "apiSource": "https://ws.parlament.ch/odata.svc/MemberCouncil",
+      "inputSchema": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "description": "Name or partial name of the councillor" },
+          "canton": { "type": "string", "description": "Canton abbreviation (e.g. ZH, BE, GE, VS)" },
+          "party": { "type": "string", "description": "Party abbreviation (e.g. SP, SVP, FDP, Grüne, Mitte)" },
+          "council": { "type": "string", "description": "NR for National Council (Nationalrat), SR for Council of States (Ständerat)" }
+        }
+      },
+      "outputExample": {
+        "count": 1,
+        "councillors": [
+          {
+            "id": 4123,
+            "firstName": "Hans",
+            "lastName": "Müller",
+            "gender": "m",
+            "canton": "ZH",
+            "cantonName": "Zürich",
+            "council": "NR",
+            "councilName": "Nationalrat",
+            "parlGroup": "SVP",
+            "parlGroupName": "SVP-Fraktion",
+            "party": "SVP",
+            "partyName": "Schweizerische Volkspartei",
+            "birthCity": "Winterthur",
+            "url": "https://www.parlament.ch/de/biografie?CouncillorId=4123"
+          }
+        ]
+      },
+      "notes": "Only returns active (currently seated) councillors. Up to 20 results."
+    },
+    {
+      "name": "get_sessions",
+      "module": "parliament",
+      "description": "List Swiss parliamentary sessions with dates",
+      "apiSource": "https://ws.parlament.ch/odata.svc/Session",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "number", "description": "Filter by year (e.g. 2025)" },
+          "limit": { "type": "number", "description": "Number of sessions to return (default: 10, max: 20)" }
+        }
+      },
+      "outputExample": {
+        "count": 4,
+        "sessions": [
+          {
+            "id": 5001,
+            "name": "Frühjahrssession 2025",
+            "abbreviation": "FS 25",
+            "type": "Ordentliche Session",
+            "startDate": "2025-03-03T00:00:00.000Z",
+            "endDate": "2025-03-21T00:00:00.000Z",
+            "title": "50. Legislatur, Frühjahrssession 2025",
+            "legislativePeriod": 50
+          }
+        ]
+      },
+      "notes": "4 ordinary sessions per year: spring (March), summer (June), autumn (September), winter (December). Sorted most recent first."
+    },
+    {
+      "name": "get_avalanche_bulletin",
+      "module": "avalanche",
+      "description": "Get the current Swiss avalanche danger bulletin from SLF (WSL Institute for Snow and Avalanche Research)",
+      "apiSource": "https://aws.slf.ch/api/bulletin/document/full/<lang>",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": { "type": "string", "description": "Region ID (e.g. CH-9 for Central Graubünden) or name. Use list_avalanche_regions for options." },
+          "language": { "type": "string", "enum": ["de", "en", "fr", "it"], "description": "Language for bulletin links: de, en, fr, it (default: en)" }
+        }
+      },
+      "outputExample": {
+        "date": "2026-01-15",
+        "source": "SLF – WSL Institute for Snow and Avalanche Research",
+        "bulletin_url": {
+          "interactive_map": "https://whiterisk.ch/en/conditions",
+          "pdf_full": "https://aws.slf.ch/api/bulletin/document/full/en"
+        },
+        "danger_scale": {
+          "1": "Low (1/5) — No special precautions needed",
+          "3": "Considerable (3/5) — Careful assessment required"
+        },
+        "region": {
+          "id": "CH-9",
+          "name": "Central Graubünden",
+          "canton": "GR",
+          "typical_elevation_m": 2500,
+          "bulletin_link": "https://whiterisk.ch/en/conditions#region=CH-9"
+        }
+      },
+      "notes": "SLF JSON API requires auth; this tool returns PDF/map URLs. Published daily Oct–May at ~08:00 and ~17:00 Swiss time."
+    },
+    {
+      "name": "list_avalanche_regions",
+      "module": "avalanche",
+      "description": "List all 22 Swiss avalanche warning regions as defined by SLF/EAWS",
+      "apiSource": "hardcoded",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string", "description": "Filter regions by canton abbreviation (e.g. GR, VS, BE). Optional." }
+        }
+      },
+      "outputExample": {
+        "count": 22,
+        "source": "SLF/EAWS Swiss Avalanche Warning Regions",
+        "regions": [
+          { "id": "CH-1",  "name": "Jura",              "canton": "JU/NE/VD", "typical_elevation_m": 800  },
+          { "id": "CH-9",  "name": "Central Graubünden", "canton": "GR",       "typical_elevation_m": 2500 }
+        ],
+        "bulletin_map": "https://whiterisk.ch/en/conditions"
+      },
+      "notes": "22 official Swiss avalanche warning regions (CH-1 through CH-22), EAWS naming scheme."
+    },
+    {
+      "name": "list_air_quality_stations",
+      "module": "airquality",
+      "description": "List all official Swiss NABEL air quality monitoring stations operated by BAFU/EMPA",
+      "apiSource": "geo.admin.ch ch.bafu.nabelstationen (hardcoded registry)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputExample": {
+        "count": 14,
+        "network": "NABEL — Nationales Beobachtungsnetz für Luftfremdstoffe",
+        "operator": "BAFU (Swiss Federal Office for the Environment) / EMPA",
+        "data_portal": "https://www.bafu.admin.ch/bafu/en/home/topics/air/state/data/nabel.html",
+        "stations": {
+          "BER": "Bern-Bollwerk (BE) — urban",
+          "ZUE": "Zürich-Kaserne (ZH) — urban",
+          "DAV": "Davos (GR) — alpine"
+        }
+      },
+      "notes": "14 NABEL stations. Environment types: urban, suburban, rural, rural-roadside, rural-elevated, alpine."
+    },
+    {
+      "name": "get_air_quality",
+      "module": "airquality",
+      "description": "Get station info, Swiss legal limits (LRV), and BAFU data links for a NABEL air quality station",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer/ch.bafu.nabelstationen/{code}",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station"],
+        "properties": {
+          "station": { "type": "string", "description": "NABEL station code (e.g. BER, ZUE, LUG, BAS, DAV). Use list_air_quality_stations for all codes." }
+        }
+      },
+      "outputExample": {
+        "station": "BER",
+        "name": "Bern-Bollwerk",
+        "canton": "BE",
+        "coordinates": { "lat": 46.950993, "lon": 7.440866 },
+        "altitude_m": 540,
+        "environment": "urban",
+        "network": "NABEL",
+        "live_data_portal": "https://www.bafu.admin.ch/bafu/en/home/topics/air/state/data/nabel.html",
+        "swiss_legal_limits_lrv": {
+          "PM10":  { "annual_mean_µg_m3": 20, "daily_mean_µg_m3": 50 },
+          "NO2":   { "annual_mean_µg_m3": 30, "hourly_mean_µg_m3": 100 }
+        }
+      },
+      "notes": "Live measurement data not available via public REST API. LRV = Luftreinhalteordnung (Swiss Clean Air Act, Annex 7)."
+    },
+    {
+      "name": "lookup_postcode",
+      "module": "post",
+      "description": "Look up a Swiss postcode (PLZ) to get locality name, canton, and coordinates",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer/find + SearchServer",
+      "inputSchema": {
+        "type": "object",
+        "required": ["postcode"],
+        "properties": {
+          "postcode": { "type": "string", "description": "Swiss postal code (PLZ), e.g. \"8001\" or \"3000\"" }
+        }
+      },
+      "outputExample": {
+        "found": true,
+        "postcode": 3920,
+        "locality": "Zermatt",
+        "canton": { "code": "VS", "name": "Valais" },
+        "coordinates": { "lat": 46.0207, "lon": 7.7491 },
+        "source": "swisstopo — Amtliches Ortschaftenverzeichnis"
+      },
+      "notes": "Must be exactly 4 digits. Canton identified via reverse-geocoding PLZ centroid."
+    },
+    {
+      "name": "search_postcode",
+      "module": "post",
+      "description": "Search Swiss postcodes by city or locality name",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer/find",
+      "inputSchema": {
+        "type": "object",
+        "required": ["city_name"],
+        "properties": {
+          "city_name": { "type": "string", "description": "City or locality name, e.g. \"Zürich\", \"Bern\", \"Locarno\"" }
+        }
+      },
+      "outputExample": {
+        "query": "Zermatt",
+        "count": 1,
+        "results": [
+          { "postcode": 3920, "locality": "Zermatt" }
+        ],
+        "source": "swisstopo — Amtliches Ortschaftenverzeichnis"
+      },
+      "notes": "Partial name matching supported. Deduplicates by PLZ number."
+    },
+    {
+      "name": "list_postcodes_in_canton",
+      "module": "post",
+      "description": "List all Swiss postcodes (PLZ) in a given canton",
+      "apiSource": "https://api3.geo.admin.ch/rest/services/api/MapServer/find + identify",
+      "inputSchema": {
+        "type": "object",
+        "required": ["canton"],
+        "properties": {
+          "canton": { "type": "string", "description": "Canton code (e.g. \"ZH\", \"BE\", \"GR\") or full name (e.g. \"Zürich\", \"Graubünden\")" }
+        }
+      },
+      "outputExample": {
+        "canton": { "code": "VS", "name": "Valais" },
+        "count": 158,
+        "postcodes": [
+          { "postcode": 3900, "locality": "Brig" },
+          { "postcode": 3920, "locality": "Zermatt" }
+        ],
+        "source": "swisstopo — Amtliches Ortschaftenverzeichnis"
+      },
+      "notes": "Accepts full canton names or 2-letter codes. Sorted by postcode ascending. API may cap at ~200 results."
+    },
+    {
+      "name": "track_parcel",
+      "module": "post",
+      "description": "Generate a Swiss Post parcel tracking URL for a given tracking number",
+      "apiSource": "https://service.post.ch/ekp-web/ui/entry/shipping/1/parcel/detail",
+      "inputSchema": {
+        "type": "object",
+        "required": ["tracking_number"],
+        "properties": {
+          "tracking_number": { "type": "string", "description": "Swiss Post tracking number, e.g. \"99.00.123456.12345678\" for parcels or \"RI 123456789 CH\" for registered mail" }
+        }
+      },
+      "outputExample": {
+        "tracking_number": "99.00.123456.12345678",
+        "tracking_url": "https://service.post.ch/ekp-web/ui/entry/shipping/1/parcel/detail?parcelId=99.00.123456.12345678",
+        "note": "Swiss Post does not provide a public tracking API. This URL opens the official Swiss Post tracking page.",
+        "formats": "99.xx.xxxxxx.xxxxxxxx for standard parcels, RI/RR xxxxxxxxx CH for registered mail."
+      },
+      "notes": "No public REST tracking API available from Swiss Post. Returns official tracking page URL."
     }
   ]
 }
