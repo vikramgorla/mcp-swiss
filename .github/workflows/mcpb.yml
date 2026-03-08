@@ -58,6 +58,9 @@ jobs:
           cd "${BUNDLE_DIR}"
           zip -r "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" . -x "*.git*" "*.DS_Store"
 
+          # Also create a stable-name copy for permanent download links
+          cp "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" "${GITHUB_WORKSPACE}/mcp-swiss.mcpb"
+
           echo "BUNDLE_PATH=mcp-swiss-${VERSION}.mcpb" >> $GITHUB_ENV
           echo "BUNDLE_SIZE=$(du -h "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" | cut -f1)" >> $GITHUB_ENV
 
@@ -65,7 +68,9 @@ jobs:
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.BUNDLE_PATH }}
+          files: |
+            mcp-swiss-${{ steps.version.outputs.version }}.mcpb
+            mcp-swiss.mcpb
 
       - name: Upload artifact (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
