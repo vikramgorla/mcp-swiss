@@ -14,6 +14,7 @@
 [![Stars](https://img.shields.io/github/stars/vikramgorla/mcp-swiss?style=flat-square)](https://github.com/vikramgorla/mcp-swiss)
 [![Node](https://img.shields.io/node/v/mcp-swiss?style=flat-square)](https://nodejs.org)
 [![.mcpb](https://img.shields.io/badge/.mcpb-One--Click_Install-D52B1E?style=flat-square)](https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb)
+[![Claude Desktop](https://img.shields.io/badge/Claude_Desktop-Install-D52B1E?style=flat-square&logo=anthropic&logoColor=white)](https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb)
 
 [Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources)
 
@@ -68,6 +69,8 @@ That's it. No API keys, no `.env` files, no accounts. Pick your client below and
 `.mcpb` bundles work with Claude Desktop and any MCP Bundle-compatible app.
 
 [**⬇ Download mcp-swiss.mcpb**](https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb)
+
+[![Install in Claude Desktop](https://img.shields.io/badge/Install_in_Claude_Desktop-D52B1E?style=for-the-badge&logo=anthropic&logoColor=white)](https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb)
 
 Open the downloaded file — your app handles the rest. No config editing, no terminal, no API keys.
 
