@@ -408,3 +408,72 @@ export {
   parseSnbCsv,
   flattenCurrencies,
 };
+
+// ── Adapter exports for index.ts integration ──────────────────────────────────
+
+export const snbTools = [
+  {
+    name: "list_currencies",
+    description:
+      "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data. Returns currency codes, names, and regions.",
+    inputSchema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "get_exchange_rate",
+    description:
+      "Get the current CHF exchange rate for a currency from the Swiss National Bank (SNB). Returns the latest monthly average rate and currency details.",
+    inputSchema: {
+      type: "object" as const,
+      required: ["currency"],
+      properties: {
+        currency: {
+          type: "string",
+          description: "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP', 'JPY'). Use list_currencies to see all available codes.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_exchange_rate_history",
+    description:
+      "Get historical CHF exchange rates for a currency from the Swiss National Bank (SNB). Returns monthly average rates with optional date filtering. Without date range, returns the most recent 90 months.",
+    inputSchema: {
+      type: "object" as const,
+      required: ["currency"],
+      properties: {
+        currency: {
+          type: "string",
+          description: "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP'). Use list_currencies to see all available codes.",
+        },
+        from: {
+          type: "string",
+          description: "Start date in YYYY-MM format (e.g. '2020-01'). Optional.",
+        },
+        to: {
+          type: "string",
+          description: "End date in YYYY-MM format (e.g. '2026-02'). Optional.",
+        },
+      },
+    },
+  },
+];
+
+export async function handleSnb(
+  name: string,
+  args: Record<string, unknown>
+): Promise<string> {
+  switch (name) {
+    case "list_currencies":
+      return handleListCurrencies();
+    case "get_exchange_rate":
+      return handleGetExchangeRate(args.currency as string);
+    case "get_exchange_rate_history":
+      return handleGetExchangeRateHistory(
+        args.currency as string,
+        args.from as string | undefined,
+        args.to as string | undefined
+      );
+    default:
+      throw new Error(`Unknown SNB tool: ${name}`);
+  }
+}

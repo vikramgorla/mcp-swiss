@@ -421,3 +421,21 @@ export function registerVotingTools(server: {
     }),
   );
 }
+
+// ── Adapter export for index.ts integration ───────────────────────────────────
+
+export async function handleVoting(
+  name: string,
+  args: Record<string, unknown>
+): Promise<string> {
+  switch (name) {
+    case "get_voting_results":
+      return handleGetVotingResults(args as { year?: number; limit?: number });
+    case "search_votes":
+      return handleSearchVotes(args as { query: string; limit?: number });
+    case "get_vote_details":
+      return handleGetVoteDetails(args as { vote_title?: string; date?: string });
+    default:
+      throw new Error(`Unknown voting tool: ${name}`);
+  }
+}

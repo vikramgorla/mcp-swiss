@@ -17,6 +17,13 @@ import { airqualityTools, handleAirQuality } from "./modules/airquality.js";
 import { postTools, handlePost } from "./modules/post.js";
 import { energyTools, handleEnergy } from "./modules/energy.js";
 import { statisticsTools, handleStatistics } from "./modules/statistics.js";
+import { snbTools, handleSnb } from "./modules/snb.js";
+import { recyclingTools, handleRecycling } from "./modules/recycling.js";
+import { newsTools, handleNews } from "./modules/news.js";
+import { votingTools, handleVoting } from "./modules/voting.js";
+import { damsTools, handleDams } from "./modules/dams.js";
+import { hikingTools, handleHiking } from "./modules/hiking.js";
+import { realEstateTools, handleRealEstate } from "./modules/realestate.js";
 
 const server = new Server(
   { name: "mcp-swiss", version: "0.1.0" },
@@ -35,6 +42,13 @@ const allTools = [
   ...postTools,
   ...energyTools,
   ...statisticsTools,
+  ...snbTools,
+  ...recyclingTools,
+  ...newsTools,
+  ...votingTools,
+  ...damsTools,
+  ...hikingTools,
+  ...realEstateTools,
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -70,6 +84,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await handleEnergy(name, safeArgs);
     } else if (statisticsTools.some((t) => t.name === name)) {
       result = await handleStatistics(name, safeArgs);
+    } else if (snbTools.some((t) => t.name === name)) {
+      result = await handleSnb(name, safeArgs);
+    } else if (recyclingTools.some((t) => t.name === name)) {
+      result = await handleRecycling(name, safeArgs);
+    } else if (newsTools.some((t) => t.name === name)) {
+      result = await handleNews(name, safeArgs);
+    } else if (votingTools.some((t) => t.name === name)) {
+      result = await handleVoting(name, safeArgs);
+    } else if (damsTools.some((t) => t.name === name)) {
+      result = await handleDams(name, safeArgs);
+    } else if (hikingTools.some((t) => t.name === name)) {
+      result = await handleHiking(name, safeArgs);
+    } else if (realEstateTools.some((t) => t.name === name)) {
+      result = await handleRealEstate(name, safeArgs);
     } else {
       throw new Error(`Unknown tool: ${name}`);
     }

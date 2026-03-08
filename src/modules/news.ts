@@ -223,3 +223,61 @@ export function registerNewsTools(server: McpServer): void {
     }
   );
 }
+
+// ── Adapter exports for index.ts integration ──────────────────────────────────
+
+export const newsTools = [
+  {
+    name: "get_swiss_news",
+    description:
+      "Get the latest Swiss news headlines from SRF (Schweizer Radio und Fernsehen). Returns top news articles with title, description, link, and publication date.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        category: {
+          type: "string",
+          enum: ["switzerland", "international", "economy"],
+          description:
+            'News category. "switzerland" = domestic Swiss news (default), "international" = world news, "economy" = business & economy.',
+        },
+        limit: {
+          type: "number",
+          description: "Number of articles to return (default: 10, max: 50)",
+        },
+      },
+    },
+  },
+  {
+    name: "search_swiss_news",
+    description:
+      "Search Swiss news headlines from SRF by keyword. Searches across all available news categories and returns matching articles.",
+    inputSchema: {
+      type: "object" as const,
+      required: ["query"],
+      properties: {
+        query: {
+          type: "string",
+          description: "Search keyword or phrase to find in news articles",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of results to return (default: 5, max: 20)",
+        },
+      },
+    },
+  },
+];
+
+export async function handleNews(
+  name: string,
+  args: Record<string, unknown>
+): Promise<string> {
+  switch (name) {
+    case "get_swiss_news":
+      return handleGetSwissNews(args as { category?: "switzerland" | "international" | "economy"; limit?: number });
+    case "search_swiss_news":
+      return handleSearchSwissNews(args as { query: string; limit?: number });
+    default:
+      throw new Error(`Unknown news tool: ${name}`);
+  }
+}
