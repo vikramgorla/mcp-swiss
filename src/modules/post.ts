@@ -195,6 +195,22 @@ export const postTools = [
       },
     },
   },
+  {
+    name: "track_parcel",
+    description:
+      "Generate a Swiss Post parcel tracking URL for a given tracking number. Swiss Post does not provide a public tracking API, so this returns the official tracking page URL to open in a browser.",
+    inputSchema: {
+      type: "object",
+      required: ["tracking_number"],
+      properties: {
+        tracking_number: {
+          type: "string",
+          description:
+            "Swiss Post tracking number, e.g. \"99.00.123456.12345678\" for parcels or \"RI 123456789 CH\" for registered mail",
+        },
+      },
+    },
+  },
 ];
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -362,6 +378,23 @@ export async function handlePost(
             ? "Results may be capped at 200 by the API. Cross-border PLZ entries near canton boundaries may be included."
             : undefined,
         source: "swisstopo — Amtliches Ortschaftenverzeichnis",
+      });
+    }
+
+    // ── track_parcel ─────────────────────────────────────────────────────────
+    case "track_parcel": {
+      const trackingNumber = String(args.tracking_number ?? "").trim();
+      if (!trackingNumber) {
+        throw new Error("tracking_number must not be empty.");
+      }
+
+      const trackingUrl = `https://service.post.ch/ekp-web/ui/entry/shipping/1/parcel/detail?parcelId=${encodeURIComponent(trackingNumber)}`;
+
+      return JSON.stringify({
+        tracking_number: trackingNumber,
+        tracking_url: trackingUrl,
+        note: "Swiss Post does not provide a public tracking API. This URL opens the official Swiss Post tracking page for your parcel. No authentication required to view tracking status in browser.",
+        formats: "Swiss Post tracking number formats: \"99.xx.xxxxxx.xxxxxxxx\" for standard parcels (e.g. 99.00.123456.12345678), \"RI xxxxxxxxx CH\" for registered mail, \"RR xxxxxxxxx CH\" for registered parcels.",
       });
     }
 
