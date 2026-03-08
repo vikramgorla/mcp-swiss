@@ -1,12 +1,10 @@
 name: MCPB Bundle
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g. 0.5.1)'
+        description: 'Version to build (e.g. 0.5.3)'
         required: true
 
 jobs:
@@ -19,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.version && format('v{0}', inputs.version) || github.ref }}
+          ref: v${{ inputs.version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,32 +31,19 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Determine version
-        id: version
-        run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "version=$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build MCPB bundle
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ inputs.version }}"
           BUNDLE_DIR=$(mktemp -d)
 
-          # Copy required files
           cp -r dist/ "${BUNDLE_DIR}/dist/"
           cp -r node_modules/ "${BUNDLE_DIR}/node_modules/"
           cp package.json "${BUNDLE_DIR}/"
           cp manifest.json "${BUNDLE_DIR}/"
           [ -d "assets" ] && cp -r assets/ "${BUNDLE_DIR}/assets/" || true
 
-          # Create .mcpb
           cd "${BUNDLE_DIR}"
           zip -r "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" . -x "*.git*" "*.DS_Store"
-
-          # Also create a stable-name copy for permanent download links
           cp "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" "${GITHUB_WORKSPACE}/mcp-swiss.mcpb"
 
           echo "BUNDLE_PATH=mcp-swiss-${VERSION}.mcpb" >> $GITHUB_ENV
@@ -67,9 +52,9 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
+          tag_name: v${{ inputs.version }}
           files: |
-            mcp-swiss-${{ steps.version.outputs.version }}.mcpb
+            mcp-swiss-${{ inputs.version }}.mcpb
             mcp-swiss.mcpb
 
       - name: Summary
