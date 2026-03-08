@@ -1,0 +1,36 @@
+# mcp-swiss
+> Swiss open data MCP server — 68 tools, 20 modules, zero API keys
+
+## What
+MCP (Model Context Protocol) server providing Swiss public data to AI assistants.
+
+## Tools (68 across 20 modules)
+- Transport: train/bus connections, departures, stations (SBB/PostBus)
+- Weather: MeteoSwiss live conditions, history
+- Hydrology: river/lake levels and temperatures (BAFU)
+- Geodata: geocoding, solar potential, municipalities (swisstopo)
+- Companies: business registry search (ZEFIX)
+- Holidays: public & school holidays by canton
+- Parliament: votes, councillors, sessions
+- Avalanche: SLF danger bulletins
+- Air Quality: NABEL station measurements
+- Swiss Post: postcode lookup, parcel tracking
+- Energy: electricity tariffs by municipality (ElCom)
+- Statistics: BFS population & demographic data
+- SNB Rates: CHF exchange rates, historical
+- Recycling: waste collection schedules (OpenERZ)
+- News: SRF headlines and search
+- Voting: popular vote results
+- Dams: federal dam registry
+- Hiking: trail closures and alerts
+- Real Estate: property prices, rent index
+- Traffic: ASTRA counting stations
+- Earthquakes: Swiss Seismological Service (SED)
+
+## Install
+npx mcp-swiss
+
+## Links
+- npm: https://www.npmjs.com/package/mcp-swiss
+- GitHub: https://github.com/vikramgorla/mcp-swiss
+- Docs: https://github.com/vikramgorla/mcp-swiss/blob/main/docs/tool-specs.md

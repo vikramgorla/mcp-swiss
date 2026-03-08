@@ -10,6 +10,9 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/vikramgorla/mcp-swiss/ci.yml?style=flat-square&label=CI)](https://github.com/vikramgorla/mcp-swiss/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-compatible-D52B1E?style=flat-square)](https://modelcontextprotocol.io)
+[![Downloads](https://img.shields.io/npm/dm/mcp-swiss.svg?style=flat-square)](https://www.npmjs.com/package/mcp-swiss)
+[![Stars](https://img.shields.io/github/stars/vikramgorla/mcp-swiss?style=flat-square)](https://github.com/vikramgorla/mcp-swiss)
+[![Node](https://img.shields.io/node/v/mcp-swiss?style=flat-square)](https://nodejs.org)
 
 [Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources)
 
