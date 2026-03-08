@@ -1,0 +1,13 @@
+node_modules
+tests
+docs
+*.md
+!README.md
+.git
+.github
+coverage
+*.test.ts
+*.spec.ts
+scripts
+assets
+memory
