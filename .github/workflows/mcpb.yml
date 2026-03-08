@@ -1,0 +1,82 @@
+name: MCPB Bundle
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 0.5.1)'
+        required: true
+
+jobs:
+  mcpb:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version && format('v{0}', inputs.version) || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build MCPB bundle
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BUNDLE_DIR=$(mktemp -d)
+
+          # Copy required files
+          cp -r dist/ "${BUNDLE_DIR}/dist/"
+          cp -r node_modules/ "${BUNDLE_DIR}/node_modules/"
+          cp package.json "${BUNDLE_DIR}/"
+          cp manifest.json "${BUNDLE_DIR}/"
+          [ -d "assets" ] && cp -r assets/ "${BUNDLE_DIR}/assets/" || true
+
+          # Create .mcpb
+          cd "${BUNDLE_DIR}"
+          zip -r "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" . -x "*.git*" "*.DS_Store"
+
+          echo "BUNDLE_PATH=mcp-swiss-${VERSION}.mcpb" >> $GITHUB_ENV
+          echo "BUNDLE_SIZE=$(du -h "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" | cut -f1)" >> $GITHUB_ENV
+
+      - name: Upload to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.BUNDLE_PATH }}
+
+      - name: Upload artifact (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpb-bundle
+          path: ${{ env.BUNDLE_PATH }}
+
+      - name: Summary
+        run: |
+          echo "### MCPB Bundle Built ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** ${{ env.BUNDLE_PATH }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Size:** ${{ env.BUNDLE_SIZE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Install:** Download and open with Claude Desktop" >> $GITHUB_STEP_SUMMARY
