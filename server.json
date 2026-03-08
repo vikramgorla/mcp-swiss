@@ -7,7 +7,7 @@
     "url": "https://github.com/vikramgorla/mcp-swiss",
     "source": "github"
   },
-  "version": "0.3.1-dev",
+  "version": "0.3.1",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/vikramgorla/mcp-swiss/main/assets/icon.svg",
@@ -25,7 +25,7 @@
     {
       "registryType": "npm",
       "identifier": "mcp-swiss",
-      "version": "0.3.1-dev",
+      "version": "0.3.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
