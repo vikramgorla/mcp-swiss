@@ -3,6 +3,8 @@
 > Complete human + machine-readable specification for all 68 MCP tools.
 > Generated from source
 
+> **Module filtering:** You don't have to load all 68 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+
 ---
 
 ## Table of Contents
