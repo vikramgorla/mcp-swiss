@@ -278,6 +278,49 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ---
 
+## Module Filtering
+
+By default, mcp-swiss loads all 20 modules (68 tools). For better token efficiency, load only the modules you need:
+
+### Select specific modules
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss", "--modules", "transport,weather"]
+    }
+  }
+}
+```
+
+### Use presets
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss", "--preset", "commuter"]
+    }
+  }
+}
+```
+
+| Preset | Modules | Tools | Token Savings |
+|--------|---------|-------|---------------|
+| `commuter` | transport, weather, holidays | 14 | 82% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams | 16 | 77% |
+| `business` | companies, geodata, post, energy, statistics, snb | 24 | 66% |
+| `citizen` | parliament, voting, holidays, news | 12 | 83% |
+| `minimal` | transport | 5 | 93% |
+| `full` | all 20 modules (default) | 68 | — |
+
+Combine preset + modules: `--preset commuter --modules parliament`
+
+List available: `npx mcp-swiss --list-modules` or `npx mcp-swiss --list-presets`
+
+---
+
 ## Demo Prompts
 
 Once connected, try asking your AI:
