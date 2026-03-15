@@ -9,8 +9,8 @@ import {
 // ── Module Registry ──────────────────────────────────────────────────────────
 
 describe("Module Registry", () => {
-  it("should have all 20 modules", () => {
-    expect(Object.keys(moduleRegistry)).toHaveLength(20);
+  it("should have all 21 modules", () => {
+    expect(Object.keys(moduleRegistry)).toHaveLength(21);
   });
 
   it("should contain every expected module name", () => {
@@ -35,6 +35,7 @@ describe("Module Registry", () => {
       "realestate",
       "traffic",
       "earthquakes",
+      "snow",
     ];
     for (const name of expected) {
       expect(moduleRegistry).toHaveProperty(name);
@@ -53,12 +54,12 @@ describe("Module Registry", () => {
     }
   });
 
-  it("total tool count should be 73", () => {
+  it("total tool count should be 76", () => {
     const total = Object.values(moduleRegistry).reduce(
       (sum, m) => sum + m.tools.length,
       0
     );
-    expect(total).toBe(73);
+    expect(total).toBe(76);
   });
 });
 
@@ -73,13 +74,14 @@ describe("Presets", () => {
     expect(presets.commuter).toEqual(["transport", "weather", "holidays"]);
   });
 
-  it("outdoor should have weather, avalanche, hiking, earthquakes, dams", () => {
+  it("outdoor should have weather, avalanche, hiking, earthquakes, dams, snow", () => {
     expect(presets.outdoor).toEqual([
       "weather",
       "avalanche",
       "hiking",
       "earthquakes",
       "dams",
+      "snow",
     ]);
   });
 
@@ -107,8 +109,8 @@ describe("Presets", () => {
     expect(presets.minimal).toEqual(["transport"]);
   });
 
-  it("full should have all 20 modules", () => {
-    expect(presets.full).toHaveLength(20);
+  it("full should have all 21 modules", () => {
+    expect(presets.full).toHaveLength(21);
     expect(new Set(presets.full)).toEqual(
       new Set(Object.keys(moduleRegistry))
     );
@@ -217,7 +219,7 @@ describe("CLI Arguments — parseArgs()", () => {
 describe("resolveModules()", () => {
   it("should return all modules when null is passed", () => {
     const active = resolveModules(null);
-    expect(active).toHaveLength(20);
+    expect(active).toHaveLength(21);
     expect(active.map((m) => m.name)).toEqual(Object.keys(moduleRegistry));
   });
 
