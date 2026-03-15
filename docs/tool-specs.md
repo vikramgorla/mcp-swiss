@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 68 MCP tools.
+> Complete human + machine-readable specification for all 73 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 68 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 73 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -14,7 +14,7 @@
 - [Geodata Module (6 tools)](#geodata-module)
 - [Companies Module (5 tools)](#companies-module)
 - [Holidays Module (3 tools)](#holidays-module)
-- [Parliament Module (4 tools)](#parliament-module)
+- [Parliament Module (9 tools)](#parliament-module)
 - [Avalanche Module (2 tools)](#avalanche-module)
 - [Air Quality Module (2 tools)](#air-quality-module)
 - [Swiss Post Module (4 tools)](#swiss-post-module)
@@ -1185,46 +1185,90 @@ Or if not a holiday:
 
 ## Parliament Module
 
-**Base API:** `https://ws.parlament.ch/odata.svc`  
+**Base API:** `https://api.openparldata.ch/v1`  
 **Auth:** None required  
-**Protocol:** OData v3 (`application/json`)
+**Data source:** [OpenParlData.ch](https://openparldata.ch) (CC BY 4.0)  
+**Protocol:** REST/JSON
 
 ---
 
 ## `search_parliament_business`
 
 **Module:** Parliament  
-**API source:** `https://ws.parlament.ch/odata.svc/Business`  
-**Description:** Search Swiss Parliament bills, motions, interpellations, questions and other business items (Geschäfte). Searches the national council and council of states.
+**API source:** `https://api.openparldata.ch/v1/affairs/`  
+**Description:** Search Swiss Parliament political affairs — bills, motions, interpellations, postulates, questions, and initiatives. Uses OpenParlData.ch full-text search across the Federal Assembly.
 
 ### Input
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | query | string | ✅ | Search term (e.g. 'Klimaschutz', 'AHV', 'Neutralität') |
-| type | string | ⬜ | Business type: `motion`, `interpellation`, `postulate`, `initiative`, `question`, `bill` |
-| year | number | ⬜ | Filter by submission year, e.g. 2024 |
+| limit | number | ⬜ | Max results (default: 5, max: 20) |
+
+### Output
+
+```json
+{
+  "count": 2,
+  "total": 96,
+  "query": "AHV",
+  "affairs": [
+    {
+      "id": 296480,
+      "number": "26.7028",
+      "title": "Unterstützung der Schweiz für die Klimaschutz-Resolution",
+      "type": "Fragestunde. Frage",
+      "typeCategory": "Fragestunde",
+      "status": "Eingereicht",
+      "date": "2026-03-03",
+      "url": "https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20267028"
+    }
+  ]
+}
+```
+
+### Notes
+
+- Returns results in German (DE) by default
+- `total` shows the full number of matching records in OpenParlData
+- `id` is the OpenParlData affair ID — use it with `get_parliament_votes`, `search_parliament_speeches`, `get_parliamentary_documents`
+
+---
+
+## `get_parliament_members`
+
+**Module:** Parliament  
+**API source:** `https://api.openparldata.ch/v1/persons/`  
+**Description:** List current or past Swiss Parliament members (National Council and Council of States). Filter by canton or party.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ⬜ | Canton name in German (e.g. 'Zürich', 'Bern', 'Genf') |
+| party | string | ⬜ | Party name or abbreviation (e.g. 'SVP', 'SP', 'FDP') |
+| active | boolean | ⬜ | Only active members (default: true) |
 | limit | number | ⬜ | Max results (default: 10, max: 50) |
 
 ### Output
 
 ```json
 {
-  "count": 5,
-  "query": "AHV",
-  "business": [
+  "count": 2,
+  "total": 253,
+  "members": [
     {
-      "id": 20240001,
-      "shortNumber": "24.001",
-      "type": "Motion",
-      "typeAbbr": "Mo.",
-      "title": "AHV-Reform 2025",
-      "submittedBy": "Müller Hans",
-      "submissionDate": "2024-03-01T00:00:00.000Z",
-      "status": "Eingereicht",
-      "department": "EDI",
-      "tags": ["AHV", "Sozialversicherung"],
-      "url": "https://www.parlament.ch/de/ratsbetrieb/suche-curia-vista/geschaeft?AffairId=20240001"
+      "id": 18579,
+      "name": "Cyril Aellen",
+      "party": "FDP-Liberale",
+      "partyFull": "FDP.Die Liberalen",
+      "canton": "Genf",
+      "council": "NR",
+      "group": "Fraktion RL",
+      "occupation": "Advokat/in",
+      "gender": "m",
+      "active": true,
+      "url": "https://www.parlament.ch/de/biografie/cyril-aellen/10803"
     }
   ]
 }
@@ -1232,42 +1276,42 @@ Or if not a holiday:
 
 ### Notes
 
-- Returns results in German (DE) by default (official language of the OData API)
-- Business types: motion (5), interpellation (8/9), postulate (6), initiative (1/3/13), question (7/16/17), bill (4/10/19)
-- `url` links directly to the Curia Vista parliamentary database entry
+- `id` is the OpenParlData person ID — use it with `get_politician_interests`
+- `council`: NR = Nationalrat (200 seats), SR = Ständerat (46 seats)
+- Canton filter uses German canton name (e.g. 'Zürich', not 'ZH')
 
 ---
 
-## `get_latest_votes`
+## `get_parliament_votes`
 
 **Module:** Parliament  
-**API source:** `https://ws.parlament.ch/odata.svc/Vote`  
-**Description:** Get the most recent parliamentary votes (roll-call votes) in the Swiss National Council or Council of States, with vote counts and outcome.
+**API source:** `https://api.openparldata.ch/v1/affairs/{id}/votings/`  
+**Description:** Get voting results for a specific parliamentary affair. Returns all recorded votes with yes/no/abstain counts.
 
 ### Input
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| limit | number | ⬜ | Number of recent votes to fetch (default: 10, max: 50) |
+| affair_id | number | ✅ | OpenParlData affair ID (from `search_parliament_business`) |
 
 ### Output
 
 ```json
 {
-  "count": 10,
+  "count": 2,
+  "affairId": 296480,
   "votes": [
     {
-      "voteId": 123456,
-      "registrationNumber": 2024001,
-      "businessNumber": "24.001",
-      "businessTitle": "AHV-Reform 2025",
-      "billTitle": "AHV-Reform Schlussabstimmung",
-      "session": "Frühjahrssession 2024",
-      "subject": "Schlussabstimmung",
-      "meaningYes": "Annahme",
-      "meaningNo": "Ablehnung",
-      "voteEnd": "2024-03-22T10:30:00.000Z",
-      "url": "https://www.parlament.ch/de/ratsbetrieb/abstimmungen/abstimmung#key=2024001"
+      "id": 5001,
+      "affairId": 296480,
+      "subject": "Gesamtabstimmung",
+      "meaningYes": "Annahme der Motion",
+      "meaningNo": "Ablehnung der Motion",
+      "yes": 102,
+      "no": 88,
+      "abstain": 5,
+      "absent": 5,
+      "date": "2026-03-10"
     }
   ]
 }
@@ -1275,48 +1319,164 @@ Or if not a holiday:
 
 ### Notes
 
-- Returns vote metadata only (not individual member votes)
-- `meaningYes` / `meaningNo` explain what each vote outcome means in context
-- Sorted by most recent first
+- Not all affairs have recorded votes — some return empty arrays
+- `meaningYes` / `meaningNo` explain what each vote outcome means
 
 ---
 
-## `search_councillors`
+## `get_session_schedule`
 
 **Module:** Parliament  
-**API source:** `https://ws.parlament.ch/odata.svc/MemberCouncil`  
-**Description:** Search for Swiss Members of Parliament (National Council or Council of States) by name, canton, party, or council.
+**API source:** `https://api.openparldata.ch/v1/meetings/`  
+**Description:** Get upcoming and recent Swiss parliament sessions (Sessionen). Shows session names, dates and types.
 
 ### Input
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| name | string | ✅ | Name or partial name of the councillor |
-| canton | string | ⬜ | Canton abbreviation (e.g. 'ZH', 'BE', 'GE', 'VS') |
-| party | string | ⬜ | Party abbreviation (e.g. 'SP', 'SVP', 'FDP', 'Grüne', 'Mitte') |
-| council | string | ⬜ | 'NR' for National Council (Nationalrat), 'SR' for Council of States (Ständerat) |
+| limit | number | ⬜ | Number of sessions to return (default: 5, max: 20) |
+
+### Output
+
+```json
+{
+  "count": 2,
+  "total": 182,
+  "sessions": [
+    {
+      "id": 30011,
+      "name": "Frühjahrssession 2026",
+      "abbreviation": "FS 26",
+      "type": "Ordentliche Sessionen (je 3 Wochen)",
+      "startDate": "2026-03-02",
+      "endDate": "2026-03-20",
+      "url": "https://www.parlament.ch/de/ratsbetrieb/sessionen/aktuelle-session"
+    }
+  ]
+}
+```
+
+### Notes
+
+- Swiss Parliament meets in 4 ordinary sessions per year: spring, summer, autumn, winter
+- Sorted by most recent first
+
+---
+
+## `search_parliament_speeches`
+
+**Module:** Parliament  
+**API source:** `https://api.openparldata.ch/v1/affairs/{id}/speeches/`  
+**Description:** Get debate speeches and contributions for a specific parliamentary affair. Returns speaker info and speech text.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| affair_id | number | ✅ | OpenParlData affair ID (from `search_parliament_business`) |
+| limit | number | ⬜ | Max speeches to return (default: 5, max: 20) |
+
+### Output
+
+```json
+{
+  "count": 2,
+  "total": 3,
+  "affairId": 296480,
+  "speeches": [
+    {
+      "id": 90001,
+      "speaker": "Pierre-Yves Maillard",
+      "personId": 18600,
+      "party": "SP",
+      "type": "Debattenbeitrag",
+      "text": "Herr Präsident, geschätzte Kolleginnen und Kollegen...",
+      "time": "2026-03-10T14:35:00",
+      "durationSeconds": 180
+    }
+  ]
+}
+```
+
+### Notes
+
+- Speech text is truncated to 500 characters per speech for response size
+- Not all affairs have speech records
+
+---
+
+## `get_politician_interests`
+
+**Module:** Parliament  
+**API source:** `https://api.openparldata.ch/v1/persons/{id}/interests/`  
+**Description:** Get declared interests and mandates of a Swiss parliament member — board memberships, consulting roles, organizations.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| person_id | number | ✅ | OpenParlData person ID (from `get_parliament_members`) |
+
+### Output
+
+```json
+{
+  "count": 2,
+  "personId": 18579,
+  "interests": [
+    {
+      "id": 17747,
+      "name": "Kalis Sàrl",
+      "type": "Gesellschaft mit beschränkter Haftung",
+      "role": "Gesellschafter(in)",
+      "payment": "Bezahlt",
+      "category": "Keine Angaben",
+      "url": null
+    }
+  ]
+}
+```
+
+### Notes
+
+- Declared interests are mandatory for Swiss parliament members
+- `payment`: "Bezahlt" (paid), "Ehrenamtlich" (honorary/unpaid)
+
+---
+
+## `search_cantonal_affairs`
+
+**Module:** Parliament  
+**API source:** `https://api.openparldata.ch/v1/affairs/`  
+**Description:** Search political affairs across Swiss cantonal parliaments (Kantonsräte). Covers all 26 cantons via OpenParlData.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ✅ | Canton abbreviation: ZH, BE, LU, UR, SZ, OW, NW, GL, ZG, FR, SO, BS, BL, SH, AR, AI, SG, GR, AG, TG, TI, VD, VS, NE, GE, JU |
+| query | string | ⬜ | Search term (e.g. 'Bildung', 'Verkehr') |
+| limit | number | ⬜ | Max results (default: 5, max: 20) |
 
 ### Output
 
 ```json
 {
   "count": 1,
-  "councillors": [
+  "total": 18979,
+  "canton": "ZH",
+  "query": "Verkehr",
+  "affairs": [
     {
-      "id": 4123,
-      "firstName": "Hans",
-      "lastName": "Müller",
-      "gender": "m",
+      "id": 350001,
+      "number": "KR-Nr. 123/2026",
+      "title": "Verkehrsberuhigung in Wohngebieten",
+      "type": "Postulat",
+      "typeCategory": "Postulat",
+      "status": "Eingereicht",
+      "date": "2026-02-15",
       "canton": "ZH",
-      "cantonName": "Zürich",
-      "council": "NR",
-      "councilName": "Nationalrat",
-      "parlGroup": "SVP",
-      "parlGroupName": "SVP-Fraktion",
-      "party": "SVP",
-      "partyName": "Schweizerische Volkspartei",
-      "birthCity": "Winterthur",
-      "url": "https://www.parlament.ch/de/biografie?CouncillorId=4123"
+      "url": "https://www.kantonsrat.zh.ch/geschaefte/123-2026"
     }
   ]
 }
@@ -1324,40 +1484,39 @@ Or if not a holiday:
 
 ### Notes
 
-- Only returns active (currently seated) councillors
-- `council`: NR = Nationalrat (200 seats), SR = Ständerat (46 seats)
-- Up to 20 results returned
+- Coverage varies by canton — some have more data than others
+- Without `query`, returns most recent affairs for the canton
 
 ---
 
-## `get_sessions`
+## `get_parliamentary_documents`
 
 **Module:** Parliament  
-**API source:** `https://ws.parlament.ch/odata.svc/Session`  
-**Description:** List Swiss parliamentary sessions (Sessionen) with dates. Returns current and past sessions.
+**API source:** `https://api.openparldata.ch/v1/affairs/{id}/docs/`  
+**Description:** Get official documents for a parliamentary affair — reports, committee opinions, federal council statements.
 
 ### Input
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| year | number | ⬜ | Filter by year (e.g. 2025) |
-| limit | number | ⬜ | Number of sessions to return (default: 10, max: 20) |
+| affair_id | number | ✅ | OpenParlData affair ID (from `search_parliament_business`) |
+| limit | number | ⬜ | Max documents to return (default: 5, max: 20) |
 
 ### Output
 
 ```json
 {
-  "count": 4,
-  "sessions": [
+  "count": 2,
+  "total": 2,
+  "affairId": 296480,
+  "documents": [
     {
-      "id": 5001,
-      "name": "Frühjahrssession 2025",
-      "abbreviation": "FS 25",
-      "type": "Ordentliche Session",
-      "startDate": "2025-03-03T00:00:00.000Z",
-      "endDate": "2025-03-21T00:00:00.000Z",
-      "title": "50. Legislatur, Frühjahrssession 2025",
-      "legislativePeriod": 50
+      "id": 80001,
+      "title": "Bericht der Kommission für Umwelt, Raumplanung und Energie",
+      "type": "Kommissionsbericht",
+      "url": "https://www.parlament.ch/centers/documents/report.pdf",
+      "filename": "report.pdf",
+      "date": "2026-02-28"
     }
   ]
 }
@@ -1365,8 +1524,48 @@ Or if not a holiday:
 
 ### Notes
 
-- The Swiss Parliament meets in 4 ordinary sessions per year: spring (March), summer (June), autumn (September), winter (December)
-- Sorted by most recent first
+- Not all affairs have associated documents
+- URLs link to official PDF documents on parlament.ch
+
+---
+
+## `get_committee_meetings`
+
+**Module:** Parliament  
+**API source:** `https://api.openparldata.ch/v1/meetings/`  
+**Description:** Get Swiss parliament committee/commission meeting schedule. Optionally filter by committee group ID.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| group_id | number | ⬜ | Committee group ID (omit for all committees) |
+| limit | number | ⬜ | Max meetings to return (default: 5, max: 20) |
+
+### Output
+
+```json
+{
+  "count": 2,
+  "total": 3293,
+  "meetings": [
+    {
+      "id": 30069,
+      "name": "Sechste Sitzung",
+      "date": "2026-03-10",
+      "endDate": null,
+      "state": "draft",
+      "groupId": 1664,
+      "url": null
+    }
+  ]
+}
+```
+
+### Notes
+
+- Meetings are sorted by most recent first
+- `groupId` can be used to filter subsequent queries to a specific committee
 
 ---
 

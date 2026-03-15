@@ -24,7 +24,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**68 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**73 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -33,7 +33,7 @@
 🗺️ Geodata      — swisstopo geocoding, solar potential, geographic layers
 🏢 Companies    — ZEFIX federal registry, all 700K+ Swiss companies
 🎄 Holidays     — Swiss public & school holidays by canton
-🏛️ Parliament   — Bills, votes, councillors, session schedule
+🏛️ Parliament   — Bills, votes, members, speeches, cantonal affairs (OpenParlData.ch)
 🏔️ Avalanche    — SLF danger bulletins and warning regions
 💨 Air Quality  — NABEL stations, Swiss legal limits (LRV)
 📮 Swiss Post   — Postcode lookup and parcel tracking
@@ -280,7 +280,7 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 20 modules (68 tools). For better token efficiency, load only the modules you need:
+By default, mcp-swiss loads all 20 modules (73 tools). For better token efficiency, load only the modules you need:
 
 ### Select specific modules
 ```json
@@ -308,12 +308,12 @@ By default, mcp-swiss loads all 20 modules (68 tools). For better token efficien
 
 | Preset | Modules | Tools | Token Savings |
 |--------|---------|-------|---------------|
-| `commuter` | transport, weather, holidays | 14 | 82% |
-| `outdoor` | weather, avalanche, hiking, earthquakes, dams | 16 | 77% |
-| `business` | companies, geodata, post, energy, statistics, snb | 24 | 66% |
-| `citizen` | parliament, voting, holidays, news | 12 | 83% |
+| `commuter` | transport, weather, holidays | 14 | 81% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams | 16 | 78% |
+| `business` | companies, geodata, post, energy, statistics, snb | 24 | 67% |
+| `citizen` | parliament, voting, holidays, news | 17 | 77% |
 | `minimal` | transport | 5 | 93% |
-| `full` | all 20 modules (default) | 68 | — |
+| `full` | all 20 modules (default) | 73 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -336,7 +336,7 @@ Once connected, try asking your AI:
 | *"What rivers are near Thun?"* | `list_hydro_stations` + `get_water_level` |
 | *"Plan my Saturday: train to Interlaken, check weather"* | Multiple tools chained |
 | *"Is next Monday a holiday in Zürich?"* | `get_public_holidays` |
-| *"What did the Swiss parliament vote on recently?"* | `get_latest_votes` |
+| *"What did the Swiss parliament vote on recently?"* | `search_parliament_business` |
 | *"What's the avalanche danger level in the Bernese Alps?"* | `get_avalanche_bulletin` |
 | *"What's the postcode for Zermatt?"* | `search_postcode` |
 | *"Track my Swiss Post parcel 99.12.345678.12345678"* | `track_parcel` |
@@ -347,7 +347,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 68 tools across 20 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 73 tools across 20 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -399,14 +399,19 @@ Once connected, try asking your AI:
 | `get_school_holidays` | School holiday periods by year and canton |
 | `is_holiday_today` | Quick check if today is a public holiday |
 
-### 🏛️ Parliament (4 tools)
+### 🏛️ Parliament (9 tools) — [OpenParlData.ch](https://openparldata.ch)
 
 | Tool | Description |
 |------|-------------|
-| `search_parliament_business` | Search bills, motions, interpellations |
-| `get_latest_votes` | Recent parliamentary vote results |
-| `search_councillors` | Find members of the National/States Council |
-| `get_sessions` | Parliamentary session schedule |
+| `search_parliament_business` | Search federal political affairs (bills, motions, questions) |
+| `get_parliament_members` | List parliament members by canton, party, or activity |
+| `get_parliament_votes` | Voting results for a specific affair |
+| `get_session_schedule` | Upcoming/recent parliament sessions |
+| `search_parliament_speeches` | Debate speeches for an affair |
+| `get_politician_interests` | Declared interests and mandates of a member |
+| `search_cantonal_affairs` | Search across 26 cantonal parliaments |
+| `get_parliamentary_documents` | Official documents for an affair |
+| `get_committee_meetings` | Committee/commission meeting schedule |
 
 ### 🏔️ Avalanche (2 tools)
 
@@ -530,7 +535,7 @@ All official Swiss open data — no API keys required:
 | [api3.geo.admin.ch](https://api3.geo.admin.ch) | swisstopo federal geodata | [API docs](https://api3.geo.admin.ch/api/doc.html) |
 | [zefix.admin.ch](https://www.zefix.admin.ch) | Federal company registry | [Swagger](https://www.zefix.admin.ch/ZefixREST/swagger-ui.html) |
 | [openholidaysapi.org](https://openholidaysapi.org) | Swiss public & school holidays | [API docs](https://openholidaysapi.org/swagger) |
-| [ws.parlament.ch](https://ws.parlament.ch) | Swiss Parliament OData (bills, votes, councillors) | [OData docs](https://ws.parlament.ch/odata.svc/$metadata) |
+| [OpenParlData.ch](https://openparldata.ch) | Swiss Parliament data — federal & cantonal (CC BY 4.0) | [API docs](https://api.openparldata.ch/documentation) |
 | [whiterisk.ch](https://whiterisk.ch) / [aws.slf.ch](https://aws.slf.ch) | SLF/WSL avalanche bulletins | [SLF](https://www.slf.ch/en/avalanche-bulletin-and-snow-situation.html) |
 | [geo.admin.ch](https://api3.geo.admin.ch) — BAFU/NABEL | Swiss air quality monitoring stations | [BAFU NABEL](https://www.bafu.admin.ch/bafu/en/home/topics/air/state/data/nabel.html) |
 | [geo.admin.ch](https://api3.geo.admin.ch) — swisstopo | Swiss postcodes (Amtliches Ortschaftenverzeichnis) | [geo.admin.ch](https://api3.geo.admin.ch/api/doc.html) |
