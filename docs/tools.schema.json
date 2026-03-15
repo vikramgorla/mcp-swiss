@@ -1439,6 +1439,51 @@
         }
       },
       "outputExample": { "count": 3, "center": { "lat": 46.948, "lon": 7.447 }, "radius_km": 50, "events": [] }
+    },
+    {
+      "name": "get_snow_conditions",
+      "module": "snow",
+      "description": "Get current snow conditions across Switzerland from SLF (WSL Institute for Snow and Avalanche Research)",
+      "apiSource": "https://measurement-api.slf.ch/public/api",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string" },
+          "min_altitude": { "type": "number" },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": { "count": 20, "stations": [{ "station": "Zermatt", "altitude_m": 3150, "canton": "VS", "snow_depth_cm": 245, "new_snow_24h_cm": 32 }] }
+    },
+    {
+      "name": "list_snow_stations",
+      "module": "snow",
+      "description": "List all SLF snow measurement stations in Switzerland (IMIS automatic + manual study plots)",
+      "apiSource": "https://measurement-api.slf.ch/public/api",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "canton": { "type": "string" },
+          "type": { "type": "string", "enum": ["imis", "study-plot"] },
+          "limit": { "type": "number" }
+        }
+      },
+      "outputExample": { "count": 20, "total_stations": 307, "stations": [{ "code": "DAV2", "name": "Bärentälli", "altitude_m": 2558, "canton": "GR", "type": "imis" }] }
+    },
+    {
+      "name": "get_snow_measurements",
+      "module": "snow",
+      "description": "Detailed snow and weather measurements for a specific SLF station",
+      "apiSource": "https://measurement-api.slf.ch/public/api",
+      "inputSchema": {
+        "type": "object",
+        "required": ["station_code"],
+        "properties": {
+          "station_code": { "type": "string" },
+          "type": { "type": "string", "enum": ["imis", "study-plot"] }
+        }
+      },
+      "outputExample": { "station_code": "DAV2", "type": "imis", "measurements": [{ "time": "2026-03-15T08:30:00Z", "snow_depth_cm": 139, "air_temp_c": -6.8 }] }
     }
   ]
 }

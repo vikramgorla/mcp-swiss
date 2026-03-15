@@ -32,7 +32,7 @@ describe('ElCom Energy API (live)', () => {
     }, TIMEOUT);
 
     it('finds Geneva (Genève)', async () => {
-      const result = JSON.parse(await handleEnergy('search_municipality_energy', { name: 'Gen' }));
+      const result = JSON.parse(await handleEnergy('search_municipality_energy', { name: 'Genève' }));
       expect(result.results.length).toBeGreaterThan(0);
       const geneve = result.results.find((m: { id: string }) => m.id === '6621');
       expect(geneve).toBeTruthy();

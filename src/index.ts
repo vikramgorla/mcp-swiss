@@ -26,6 +26,7 @@ import { hikingTools, handleHiking } from "./modules/hiking.js";
 import { realEstateTools, handleRealEstate } from "./modules/realestate.js";
 import { trafficTools, handleTraffic } from "./modules/traffic.js";
 import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
+import { snowTools, handleSnow } from "./modules/snow.js";
 
 // ── Module Registry ──────────────────────────────────────────────────────────
 
@@ -57,13 +58,14 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
   realestate:  { tools: realEstateTools,  handler: handleRealEstate },
   traffic:     { tools: trafficTools,     handler: handleTraffic },
   earthquakes: { tools: earthquakeTools,  handler: handleEarthquakes as ToolHandler },
+  snow:        { tools: snowTools,        handler: handleSnow },
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────
 
 export const presets: Record<string, string[]> = {
   commuter:  ["transport", "weather", "holidays"],
-  outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams"],
+  outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams", "snow"],
   business:  ["companies", "geodata", "post", "energy", "statistics", "snb"],
   citizen:   ["parliament", "voting", "holidays", "news"],
   minimal:   ["transport"],

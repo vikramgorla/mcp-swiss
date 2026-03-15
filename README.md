@@ -24,7 +24,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**73 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**76 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -280,7 +280,7 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 20 modules (73 tools). For better token efficiency, load only the modules you need:
+By default, mcp-swiss loads all 21 modules (76 tools). For better token efficiency, load only the modules you need:
 
 ### Select specific modules
 ```json
@@ -309,11 +309,11 @@ By default, mcp-swiss loads all 20 modules (73 tools). For better token efficien
 | Preset | Modules | Tools | Token Savings |
 |--------|---------|-------|---------------|
 | `commuter` | transport, weather, holidays | 14 | 81% |
-| `outdoor` | weather, avalanche, hiking, earthquakes, dams | 16 | 78% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow | 19 | 75% |
 | `business` | companies, geodata, post, energy, statistics, snb | 24 | 67% |
 | `citizen` | parliament, voting, holidays, news | 17 | 77% |
 | `minimal` | transport | 5 | 93% |
-| `full` | all 20 modules (default) | 73 | — |
+| `full` | all 21 modules (default) | 76 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -347,7 +347,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 73 tools across 20 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 76 tools across 21 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -522,6 +522,14 @@ Once connected, try asking your AI:
 | `get_earthquake_details` | Full details for a specific seismic event by SED event ID |
 | `search_earthquakes_by_location` | Earthquakes near given coordinates with configurable radius, time range, and limit |
 
+### ❄️ Snow Conditions / SLF (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_snow_conditions` | Current snow depth and new snow (24h) across Switzerland from SLF IMIS stations, filterable by canton/altitude |
+| `list_snow_stations` | All 307 SLF snow measurement stations (IMIS automatic + manual study plots) |
+| `get_snow_measurements` | Detailed snow and weather measurements for a specific SLF station |
+
 ---
 
 ## Data Sources
@@ -550,6 +558,7 @@ All official Swiss open data — no API keys required:
 | [pxweb.bfs.admin.ch](https://www.pxweb.bfs.admin.ch) | BFS property prices + rent index | [BFS housing](https://www.bfs.admin.ch/bfs/en/home/statistics/construction-housing.html) |
 | [geo.admin.ch](https://api3.geo.admin.ch) — ASTRA | Traffic counting stations + daily volumes | [ASTRA](https://www.astra.admin.ch) |
 | [arclink.ethz.ch](http://arclink.ethz.ch) | Swiss Seismological Service earthquakes (SED/ETH) | [SED](http://www.seismo.ethz.ch) |
+| [measurement-api.slf.ch](https://measurement-api.slf.ch/public/api) | SLF snow depth + measurements (IMIS + study plots, CC BY 4.0) | [SLF](https://www.slf.ch) |
 
 ---
 
