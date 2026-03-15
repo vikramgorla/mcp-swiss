@@ -29,6 +29,7 @@
 - [Real Estate Module (3 tools)](#real-estate)
 - [Traffic / ASTRA Module (3 tools)](#traffic)
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
+- [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
 
 ---
 
@@ -2468,5 +2469,50 @@ Search for earthquakes near given coordinates using the SED FDSN API.
 
 ---
 
+---
+
+## Snow Conditions
+
+### `get_snow_conditions`
+
+Get current snow conditions across Switzerland from SLF (WSL Institute for Snow and Avalanche Research). Returns snow depth and new snow (24h) for IMIS stations, sorted by snow depth. Data updated daily.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ❌ | Filter by canton abbreviation (e.g. GR, VS, BE, UR, TI) |
+| min_altitude | number | ❌ | Minimum station altitude in metres (e.g. 2000) |
+| limit | number | ❌ | Maximum number of stations to return (default: 20, max: 100) |
+
+---
+
+### `list_snow_stations`
+
+List all SLF snow measurement stations in Switzerland (IMIS automatic stations and manual study plots). Returns station code, name, altitude, canton, and type. Sorted by elevation descending.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ❌ | Filter by canton abbreviation (e.g. GR, VS, BE) |
+| type | string | ❌ | Station type: "imis" (automatic) or "study-plot" (manual). Returns both by default |
+| limit | number | ❌ | Maximum number of stations to return (default: 20, max: 200) |
+
+---
+
+### `get_snow_measurements`
+
+Get detailed snow and weather measurements for a specific SLF station. IMIS stations return 30-min data (snow depth, temperature, humidity, wind, radiation). Study plots return daily data (snow depth, new snow, water equivalent).
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station_code | string | ✅ | Station code (e.g. DAV2, WFJ2, 4AO0). Use list_snow_stations to find codes |
+| type | string | ❌ | Station type: "imis" (default) or "study-plot". Determines which API endpoint to query |
+
+---
+
 *Specification generated from mcp-swiss source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes)*
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow)*
