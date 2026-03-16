@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "mcp-swiss",
   "display_name": "Switzerland MCP \ud83c\udde8\ud83c\udded",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Swiss open data for AI \u2014 76 tools, zero API keys. Transport, weather, geodata, companies, parliament, and 16 more modules.",
   "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 76 tools across 21 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, and snow conditions (SLF). All APIs are free and require zero authentication.",
   "author": {
