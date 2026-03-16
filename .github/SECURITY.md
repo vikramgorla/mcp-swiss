@@ -25,15 +25,11 @@
 
 ## Reporting a vulnerability
 
-**Do not open a public GitHub issue for security vulnerabilities.**
+**Open a GitHub issue:** https://github.com/vikramgorla/mcp-swiss/issues/new
 
-Use one of:
+Since mcp-swiss handles no credentials, tokens, or personal data (all upstream APIs are public Swiss open data), public issue reporting is fine. If you believe the issue is sensitive, use GitHub's private vulnerability reporting:
 
-1. **GitHub private vulnerability reporting** — preferred  
-   Go to [Security → Report a vulnerability](https://github.com/vikramgorla/mcp-swiss/security/advisories/new)
-
-2. **Email**  
-   Send details to: `security@[maintainer-domain]` *(update this before going public)*
+- [Security → Report a vulnerability](https://github.com/vikramgorla/mcp-swiss/security/advisories/new)
 
 Please include:
 - Description of the vulnerability
@@ -41,14 +37,15 @@ Please include:
 - Potential impact
 - Suggested fix (if you have one)
 
-## Response timeline
+## Contributing a fix
 
-| Stage | Target |
-|-------|--------|
-| Acknowledgement | 48 hours |
-| Triage & severity assessment | 7 days |
-| Patch released | 30 days |
-| Public disclosure | After patch is released |
+This is a community-maintained open-source project. If you find a vulnerability, we'd love your help fixing it:
+
+1. Open a GitHub issue describing the vulnerability
+2. Fork the repo and submit a PR with the fix
+3. We'll review and merge as quickly as we can
+
+We don't guarantee specific response timelines, but we take security seriously and will address issues as fast as possible.
 
 ## Notes
 
