@@ -37,14 +37,15 @@ Please include:
 - Potential impact
 - Suggested fix (if you have one)
 
-## Response timeline
+## Contributing a fix
 
-| Stage | Target |
-|-------|--------|
-| Acknowledgement | 48 hours |
-| Triage & severity assessment | 7 days |
-| Patch released | 30 days |
-| Public disclosure | After patch is released |
+This is a community-maintained open-source project. If you find a vulnerability, we'd love your help fixing it:
+
+1. Open a GitHub issue describing the vulnerability
+2. Fork the repo and submit a PR with the fix
+3. We'll review and merge as quickly as we can
+
+We don't guarantee specific response timelines, but we take security seriously and will address issues as fast as possible.
 
 ## Notes
 
