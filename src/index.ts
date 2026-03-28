@@ -27,6 +27,7 @@ import { realEstateTools, handleRealEstate } from "./modules/realestate.js";
 import { trafficTools, handleTraffic } from "./modules/traffic.js";
 import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
 import { snowTools, handleSnow } from "./modules/snow.js";
+import { pollenTools, handlePollen } from "./modules/pollen.js";
 
 // ── Module Registry ──────────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
   traffic:     { tools: trafficTools,     handler: handleTraffic },
   earthquakes: { tools: earthquakeTools,  handler: handleEarthquakes as ToolHandler },
   snow:        { tools: snowTools,        handler: handleSnow },
+  pollen:      { tools: pollenTools,     handler: handlePollen },
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────
