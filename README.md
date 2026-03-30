@@ -278,6 +278,10 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ---
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/vikramgorla-mcp-swiss).
+
 ## Module Filtering
 
 By default, mcp-swiss loads all 21 modules (76 tools). For better token efficiency, load only the modules you need:
