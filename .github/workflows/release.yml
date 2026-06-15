@@ -47,7 +47,7 @@ jobs:
         run: echo "version=$(node -e 'process.stdout.write(require("./package.json").version)')" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const tag = `v${process.env.VERSION}`;
@@ -228,7 +228,7 @@ jobs:
           cp "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" "${GITHUB_WORKSPACE}/mcp-swiss.mcpb"
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.release.outputs.version }}
           files: |
