@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: v${{ inputs.version }}
 
@@ -50,7 +50,7 @@ jobs:
           echo "BUNDLE_SIZE=$(du -h "${GITHUB_WORKSPACE}/mcp-swiss-${VERSION}.mcpb" | cut -f1)" >> $GITHUB_ENV
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ inputs.version }}
           files: |
