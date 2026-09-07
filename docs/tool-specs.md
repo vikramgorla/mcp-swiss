@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 73 MCP tools.
+> Complete human + machine-readable specification for all 79 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 73 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 79 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -30,6 +30,7 @@
 - [Traffic / ASTRA Module (3 tools)](#traffic)
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
 - [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
+- [Pollen / MeteoSwiss Module (3 tools)](#pollen)
 
 ---
 
@@ -2514,5 +2515,44 @@ Get detailed snow and weather measurements for a specific SLF station. IMIS stat
 
 ---
 
+## Pollen
+
+### `get_pollen_current`
+
+Get current hourly pollen concentrations at a MeteoSwiss pollen monitoring station. Returns the most recent hours of data for 7 pollen types: Alder, Birch, Hazel, Beech, Ash, Oak, and Grasses. Source: MeteoSwiss.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Station code (e.g. "PZH" for Zürich, "PBE" for Bern, "PBS" for Basel). Use list_pollen_stations for all codes |
+
+---
+
+### `get_pollen_daily`
+
+Get daily pollen concentration averages at a MeteoSwiss pollen monitoring station. Returns daily readings for 7 pollen types over the requested number of days. Source: MeteoSwiss.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Station code (e.g. "PZH" for Zürich, "PBE" for Bern). Use list_pollen_stations for all codes |
+| days | number | ❌ | Number of recent days to return (default: 7, max: 90) |
+
+---
+
+### `list_pollen_stations`
+
+List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Returns station codes, names, cantons, altitude, and coordinates. Source: MeteoSwiss.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| canton | string | ❌ | Filter by canton abbreviation (e.g. ZH, BE, GE, TI) |
+
+---
+
 *Specification generated from mcp-swiss source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow)*
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen)*
