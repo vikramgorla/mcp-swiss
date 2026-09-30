@@ -24,7 +24,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**76 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**79 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -48,6 +48,8 @@
 🏠 Real Estate  — Swiss property prices, rent index, housing data (BFS)
 🚗 Traffic      — ASTRA counting stations, daily volumes
 🌍 Earthquakes  — Swiss Seismological Service (SED/ETH Zürich), FDSN API
+❄️ Snow         — SLF snow depth, stations, and measurements
+🌿 Pollen       — MeteoSwiss pollen concentrations at 16 stations
 ```
 
 ---
@@ -280,7 +282,7 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 21 modules (76 tools). For better token efficiency, load only the modules you need:
+By default, mcp-swiss loads all 22 modules (79 tools). For better token efficiency, load only the modules you need:
 
 ### Select specific modules
 ```json
@@ -313,7 +315,7 @@ By default, mcp-swiss loads all 21 modules (76 tools). For better token efficien
 | `business` | companies, geodata, post, energy, statistics, snb | 24 | 67% |
 | `citizen` | parliament, voting, holidays, news | 17 | 77% |
 | `minimal` | transport | 5 | 93% |
-| `full` | all 21 modules (default) | 76 | — |
+| `full` | all 22 modules (default) | 79 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -347,7 +349,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 76 tools across 21 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 79 tools across 22 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -530,6 +532,14 @@ Once connected, try asking your AI:
 | `list_snow_stations` | All 307 SLF snow measurement stations (IMIS automatic + manual study plots) |
 | `get_snow_measurements` | Detailed snow and weather measurements for a specific SLF station |
 
+### 🌿 Pollen / MeteoSwiss (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_pollen_current` | Current hourly pollen concentrations at any of 16 MeteoSwiss stations (7 types: Alder, Birch, Hazel, Beech, Ash, Oak, Grasses) |
+| `get_pollen_daily` | Daily pollen averages for trend analysis over configurable time range |
+| `list_pollen_stations` | All 16 MeteoSwiss automatic pollen monitoring stations with location details |
+
 ---
 
 ## Data Sources
@@ -559,6 +569,7 @@ All official Swiss open data — no API keys required:
 | [geo.admin.ch](https://api3.geo.admin.ch) — ASTRA | Traffic counting stations + daily volumes | [ASTRA](https://www.astra.admin.ch) |
 | [arclink.ethz.ch](http://arclink.ethz.ch) | Swiss Seismological Service earthquakes (SED/ETH) | [SED](http://www.seismo.ethz.ch) |
 | [measurement-api.slf.ch](https://measurement-api.slf.ch/public/api) | SLF snow depth + measurements (IMIS + study plots, CC BY 4.0) | [SLF](https://www.slf.ch) |
+| [data.geo.admin.ch](https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/) | MeteoSwiss pollen concentrations (16 automatic stations, CC BY) | [MeteoSwiss](https://www.meteoswiss.admin.ch) |
 
 ---
 

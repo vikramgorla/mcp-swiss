@@ -128,7 +128,7 @@ describe('MCP protocol: tools/list', () => {
     });
 
     const result = response.result as { tools: Tool[] };
-    expect(result.tools).toHaveLength(76);
+    expect(result.tools).toHaveLength(79);
   });
 
   it('each tool has name, description, inputSchema', async () => {
