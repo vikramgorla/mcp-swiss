@@ -8,6 +8,7 @@ permissions:
   contents: write
   pull-requests: write
   packages: write
+  id-token: write # npm Trusted Publishing (OIDC)
 
 # Only one release at a time
 concurrency:
@@ -71,6 +72,10 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Update npm for Trusted Publishing
+        # npm Trusted Publishing (OIDC) requires npm >= 11.5.1
+        run: npm install -g npm@latest && npm --version
+
       - name: Publish to npm
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -78,10 +83,9 @@ jobs:
           if npm view "mcp-swiss@${VERSION}" version 2>/dev/null; then
             echo "⚠️ mcp-swiss@${VERSION} already published, skipping"
           else
-            npm publish --access public
+            # Authenticates via GitHub OIDC (npm Trusted Publishing); no NPM_TOKEN needed
+            npm publish --access public --provenance
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Bump develop to next dev version
         if: success()
