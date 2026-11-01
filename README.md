@@ -15,6 +15,9 @@
 [![Node](https://img.shields.io/node/v/mcp-swiss?style=flat-square)](https://nodejs.org)
 [![.mcpb](https://img.shields.io/badge/.mcpb-One--Click_Install-D52B1E?style=flat-square)](https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb)
 [![Claude Desktop](https://img.shields.io/badge/Claude_Desktop-Install-D52B1E?style=flat-square&logo=anthropic&logoColor=white)](https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-io.github.vikramgorla%2Fswiss-D52B1E?style=flat-square)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.vikramgorla/swiss)
+[![Awesome MCP Servers](https://img.shields.io/badge/Awesome-MCP_Servers-fc60a8?style=flat-square&logo=awesomelists&logoColor=white)](https://github.com/punkpeye/awesome-mcp-servers#data-platforms)
+[![Glama](https://glama.ai/mcp/servers/vikramgorla/mcp-swiss/badges/score.svg)](https://glama.ai/mcp/servers/vikramgorla/mcp-swiss)
 
 [Install](#installation) · [Tools](#tools) · [Demo](#demo-prompts) · [Data Sources](#data-sources)
 
