@@ -8,13 +8,11 @@ on:
       - "docs/**"
       - "LICENSE"
       - ".github/PULL_REQUEST_TEMPLATE.md"
+  # No paths-ignore on PRs: Lint/Build/Unit Tests are required checks on
+  # develop, so they must report on docs-only PRs too (otherwise those PRs
+  # wait forever for checks that never start).
   pull_request:
     branches: [main, develop]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "LICENSE"
-      - ".github/PULL_REQUEST_TEMPLATE.md"
 
 # Cancel redundant runs: only keep the latest for each PR/branch
 concurrency:
