@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     branches: [main]
+  # Beta publishing lives here too: npm allows one Trusted Publisher workflow
+  # per package, and this file (release.yml) is the linked one.
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [develop]
 
 permissions:
   contents: write
@@ -12,12 +18,13 @@ permissions:
 
 # Only one release at a time
 concurrency:
-  group: release
+  group: release-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
   release:
     name: Build, Release & Publish
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -237,3 +244,49 @@ jobs:
           files: |
             mcp-swiss-${{ needs.release.outputs.version }}.mcpb
             mcp-swiss.mcpb
+
+  beta:
+    name: Publish Beta to npm
+    runs-on: ubuntu-latest
+    # Only after a successful CI run for a push to develop (not PRs),
+    # and skip automated dev-version bumps to avoid loops
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      !contains(github.event.workflow_run.head_commit.message, 'chore: bump dev version')
+    permissions:
+      contents: read
+      id-token: write # npm Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Update npm for Trusted Publishing
+        # npm Trusted Publishing (OIDC) requires npm >= 11.5.1
+        run: npm install -g npm@latest && npm --version
+
+      - name: Publish beta
+        run: |
+          # Beta version: base-version + beta.timestamp
+          BASE_VERSION=$(node -p 'require("./package.json").version')
+          BETA_VERSION="${BASE_VERSION}-beta.$(date +%Y%m%d%H%M%S)"
+          npm version "$BETA_VERSION" --no-git-tag-version
+          # Authenticates via GitHub OIDC (npm Trusted Publishing); no NPM_TOKEN needed
+          npm publish --access public --provenance --tag beta --loglevel verbose
