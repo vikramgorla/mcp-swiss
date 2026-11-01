@@ -108,7 +108,9 @@ jobs:
           # Merge main into develop to pick up the merge commit from the release PR
           git merge origin/main --no-edit
 
-          CURRENT=$(node -p "require('./package.json').version")
+          # Base the bump on the version just released from main, not develop's
+          # (develop may already carry a -dev bump)
+          CURRENT="${{ steps.version.outputs.version }}"
           MAJOR=$(echo $CURRENT | cut -d. -f1)
           MINOR=$(echo $CURRENT | cut -d. -f2)
           PATCH=$(echo $CURRENT | cut -d. -f3 | cut -d- -f1)
@@ -116,20 +118,29 @@ jobs:
           NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}-dev"
 
           BRANCH="chore/bump-dev-${NEXT_VERSION}"
-          git checkout -b "$BRANCH"
+          # -B: (re)create the branch from develop even if a stale one exists
+          git checkout -B "$BRANCH"
 
-          npm version "$NEXT_VERSION" --no-git-tag-version
+          npm version "$NEXT_VERSION" --no-git-tag-version --allow-same-version
           node -e "const f='server.json';const d=require('./'+f);d.version='${NEXT_VERSION}';d.packages[0].version='${NEXT_VERSION}';require('fs').writeFileSync(f,JSON.stringify(d,null,2)+'\n')"
 
           git add -A
+          if git diff --cached --quiet; then
+            echo "ℹ️ develop is already at ${NEXT_VERSION}, nothing to bump"
+            exit 0
+          fi
           git commit -m "chore: bump dev version to ${NEXT_VERSION}"
-          git push origin "$BRANCH"
+          # The branch is bot-owned; overwrite a leftover from an earlier run
+          git push --force origin "$BRANCH"
 
-          gh pr create --base develop --head "$BRANCH" \
-            --title "chore: bump dev version to ${NEXT_VERSION}" \
-            --body "Automated version bump after release v${CURRENT}. Merge when CI passes."
-
-          echo "✅ Dev bump PR created. It will be merged after CI passes."
+          if gh pr list --base develop --head "$BRANCH" --state open --json number -q '.[0].number' | grep -q .; then
+            echo "ℹ️ Bump PR for ${BRANCH} already open; branch updated"
+          else
+            gh pr create --base develop --head "$BRANCH" \
+              --title "chore: bump dev version to ${NEXT_VERSION}" \
+              --body "Automated version bump after release v${CURRENT}. Merge when CI passes."
+            echo "✅ Dev bump PR created. It will be merged after CI passes."
+          fi
 
   docker:
     name: Docker (Hub + GHCR)
