@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { readFileSync } from "fs";
+import { join } from "path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -28,6 +30,17 @@ import { trafficTools, handleTraffic } from "./modules/traffic.js";
 import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
 import { snowTools, handleSnow } from "./modules/snow.js";
 import { pollenTools, handlePollen } from "./modules/pollen.js";
+
+// Single source of truth: version from package.json (dist/index.js -> ../package.json)
+function readVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { version?: string };
+    return pkg.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+const VERSION = readVersion();
 
 // ── Module Registry ──────────────────────────────────────────────────────────
 
@@ -189,7 +202,7 @@ for (const mod of activeModules) {
 }
 
 const server = new Server(
-  { name: "mcp-swiss", version: "0.5.8" },
+  { name: "mcp-swiss", version: VERSION },
   { capabilities: { tools: {} } }
 );
 
