@@ -91,7 +91,7 @@ npx @smithery/cli@latest install mcp-swiss --client claude
 |-------|--------|
 | **URL** | https://github.com/punkpeye/awesome-mcp-servers |
 | **Submission** | Fork repo → edit README.md → submit PR |
-| **Status** | ❓ Not listed (needs PR) |
+| **Status** | ✅ Listed (punkpeye/awesome-mcp-servers#2928, merged 2026-03-16, from fork `vikramgorla/awesome-mcp-servers` branch `add-mcp-swiss`) |
 | **Priority** | 🔴 High — most starred MCP list, 738+ open PRs, community authority |
 
 **How to submit:**
@@ -204,14 +204,16 @@ npx @smithery/cli@latest install mcp-swiss --client claude
 
 ### Directory Summary Table
 
+> Status last verified 2026-11-01. Smithery (smithery.ai) is a separate directory from mcp.so and is not listed yet.
+
 | Directory | Priority | Submission Method | Status | Effort |
 |-----------|----------|-------------------|--------|--------|
 | Official MCP Registry | Critical | `mcp-publisher` CLI | ✅ Listed | Done |
-| mcp.so (Smithery) | High | GitHub issue | ❓ Check | Low |
-| Glama.ai | High | Web submission | ❓ Check | Low |
-| awesome-mcp-servers | High | GitHub PR | ❌ Not listed | Low |
+| mcp.so | High | GitHub issue | ✅ Listed ([page](https://mcp.so/server/mcp-swiss/vikramgorla)) | Done |
+| Glama.ai | High | Web submission + `glama.json` | ✅ Listed ([page](https://glama.ai/mcp/servers/vikramgorla/mcp-swiss)) | Done |
+| awesome-mcp-servers | High | PR from fork `vikramgorla/awesome-mcp-servers` | ✅ Listed under Data Platforms ([punkpeye/awesome-mcp-servers#2928](https://github.com/punkpeye/awesome-mcp-servers/pull/2928)) | Done |
 | Cline Marketplace | High | GitHub issue + logo | ❌ Not listed | Medium |
-| mcpservers.org | Medium | Web form | ❌ Not listed | Low |
+| mcpservers.org | Medium | Web form | ✅ Listed ([page](https://mcpservers.org/servers/vikramgorla/mcp-swiss)) | Done |
 | PulseMCP | Medium | Email | ❌ Not listed | Low |
 | MCP Market | Low-Med | Unknown | ❓ Check | Low |
 | MCP Directory | Low | Auto-indexed? | ❓ Check | None |
@@ -998,3 +1000,13 @@ mcpServers:
 ---
 
 *Report generated 2026-03-08 by Heidi 🏔️*
+
+---
+
+## Updating the awesome-mcp-servers entry
+
+The entry lives in `punkpeye/awesome-mcp-servers` → `README.md` → **📊 Data Platforms**, submitted from the fork `vikramgorla/awesome-mcp-servers`. To change it:
+
+1. Sync the fork with upstream (GitHub → fork → "Sync fork"), or `gh repo sync vikramgorla/awesome-mcp-servers`.
+2. Branch from the synced `main`, edit the single `vikramgorla/mcp-swiss` line (keep alphabetical order, the Glama score badge, and the legend emojis: 📇 TypeScript, ☁️ cloud service, 🏠 local service, 🍎/🪟/🐧 OS).
+3. Open a PR to `punkpeye/awesome-mcp-servers` `main` following its CONTRIBUTING.md.

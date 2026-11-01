@@ -18,12 +18,31 @@ jobs:
   publish:
     name: Publish to MCP Registry
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Wait for npm propagation
-        run: sleep 90
+        # Poll until the version in server.json is visible on npm (Release
+        # publishes it in parallel); up to ~20 minutes with backoff.
+        run: |
+          VERSION=$(jq -r '.packages[0].version' server.json)
+          NAME=$(jq -r '.packages[0].identifier' server.json)
+          delay=15
+          deadline=$(( $(date +%s) + 1200 ))
+          until curl -fsS "https://registry.npmjs.org/${NAME}/${VERSION}" -o /dev/null; do
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::${NAME}@${VERSION} not visible on npm after 20 minutes"
+              exit 1
+            fi
+            echo "⏳ ${NAME}@${VERSION} not on npm yet, retrying in ${delay}s"
+            sleep "$delay"
+            delay=$(( delay < 120 ? delay * 2 : 120 ))
+          done
+          echo "✅ ${NAME}@${VERSION} is on npm"
+          # Small buffer for the registry's own npm lookup
+          sleep 20
 
       - name: Install mcp-publisher
         run: |
