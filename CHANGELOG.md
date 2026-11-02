@@ -15,7 +15,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   - `swiss_search_tools` — keyword or module search; returns matching names, descriptions, and input schemas
   - `swiss_call_tool` — runs one tool after checking the arguments against that tool's schema
   - `swiss_list_modules` — module catalog
-- On this branch the full `tools/list` schema is 36,800 characters (~9,200 tokens). Discovery mode lists 1,312 characters (~330 tokens). Measured with `scripts/measure-schema-tokens.mjs` (characters / 4, annotations included for the meta-tools).
+- On this branch the full `tools/list` schema is 36,800 characters (~9,200 tokens). Discovery mode lists 1,312 characters (~328 tokens). Measured with `scripts/measure-schema-tokens.mjs` (characters / 4; annotations included for the meta-tools).
 
 ---
 
