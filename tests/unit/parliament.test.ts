@@ -4,6 +4,7 @@ import {
   mockAffairsResponse,
   mockPersonsResponse,
   mockVotingsResponse,
+  mockLargeVotingsResponse,
   mockMeetingsResponse,
   mockSpeechesResponse,
   mockInterestsResponse,
@@ -277,10 +278,10 @@ describe("get_parliament_votes", () => {
     expect(result.count).toBe(0);
   });
 
-  it("handles null vote_date", async () => {
+  it("handles a null vote date", async () => {
     const withNullDate = {
       ...mockVotingsResponse,
-      data: [{ ...mockVotingsResponse.data[0], vote_date: null }],
+      data: [{ ...mockVotingsResponse.data[0], date: null }],
     };
     mockFetch(withNullDate);
     const result = JSON.parse(
@@ -718,33 +719,29 @@ describe("unknown parliament tool", () => {
   });
 });
 
-// ── truncate coverage ─────────────────────────────────────────────────────────
+// ── oversized responses ───────────────────────────────────────────────────────
 
-describe("parliament truncate — large response", () => {
-  it("truncates oversized response to maxBytes + ellipsis", async () => {
-    // Generate many records to exceed 48KB
-    const bigData = Array.from({ length: 200 }, (_, i) => ({
-      id: i,
-      fullname: "X".repeat(200),
-      firstname: "Y".repeat(100),
-      lastname: "Z".repeat(100),
-      party_de: "Test Party",
-      party_harmonized_de: "Test Party Full",
-      electoral_district_de: "Zürich",
-      parliament_sector: "NR",
-      parliamentary_group_name_de: "Test Group",
-      occupation_de: "Politician",
-      active: true,
-      gender: "m",
-      image_url_external: null,
-      website_parliament_url_de: null,
-    }));
-    mockFetch({ meta: { total_records: 200 }, data: bigData });
-    const raw = await handleParliament("get_parliament_members", {
-      limit: 50,
-    });
-    expect(raw.endsWith("…")).toBe(true);
-    expect(raw.length).toBeLessThanOrEqual(48001);
+describe("oversized responses", () => {
+  it("drops entries instead of cutting the JSON string", async () => {
+    mockFetch(mockLargeVotingsResponse);
+    const raw = await handleParliament("get_parliament_votes", { affair_id: 241062 });
+
+    expect(raw.length).toBeLessThanOrEqual(48000);
+    const result = JSON.parse(raw); // the old slice-and-append-"…" made this throw
+    expect(result.total).toBe(847);
+    expect(result.count).toBeLessThan(847);
+    expect(result.count + result.omitted).toBe(847);
+    expect(result.votes).toHaveLength(result.count);
+    expect(result.votes.at(-1)).toHaveProperty("yes", 30);
+  });
+
+  it("leaves a response that fits untouched", async () => {
+    mockFetch(mockVotingsResponse);
+    const result = JSON.parse(
+      await handleParliament("get_parliament_votes", { affair_id: 296480 })
+    );
+    expect(result.count).toBe(2);
+    expect(result.omitted).toBeUndefined();
   });
 });
 

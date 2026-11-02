@@ -111,8 +111,8 @@ describe("get_station_passengers", () => {
   });
 
   it("throws on HTTP error", async () => {
-    mockFetchError(503);
-    await expect(handleSbbData("get_station_passengers", { station: "Bern" })).rejects.toThrow("HTTP 503");
+    mockFetchError(500);
+    await expect(handleSbbData("get_station_passengers", { station: "Bern" })).rejects.toThrow("HTTP 500");
   });
 });
 
@@ -153,8 +153,8 @@ describe("get_station_punctuality", () => {
   });
 
   it("throws on HTTP error", async () => {
-    mockFetchError(502);
-    await expect(handleSbbData("get_station_punctuality", { station: "Bern" })).rejects.toThrow("HTTP 502");
+    mockFetchError(500);
+    await expect(handleSbbData("get_station_punctuality", { station: "Bern" })).rejects.toThrow("HTTP 500");
   });
 });
 

@@ -119,8 +119,98 @@ describe('get_weather_history', () => {
       end_date: '2026-03-07',
     });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('startdt=2026-03-01');
-    expect(calledUrl).toContain('enddt=2026-03-07');
+    // startdt/enddt are ignored by api.existenz.ch, which then returns the last 24 h
+    expect(calledUrl).toContain('startdate=2026-03-01');
+    expect(calledUrl).toContain('enddate=2026-03-07');
+    expect(calledUrl).not.toContain('startdt=');
+  });
+});
+
+// ── history resolution ────────────────────────────────────────────────────────
+
+describe('get_weather_history resolution', () => {
+  /** n readings per parameter at 10-minute spacing, as the station reports. */
+  function payload(readings: number) {
+    const start = Date.UTC(2026, 2, 1) / 1000;
+    return {
+      source: 'SwissMetNet',
+      payload: Array.from({ length: readings }, (_, i) => ({
+        timestamp: start + i * 600,
+        loc: 'BER',
+        par: 'tt',
+        val: 5 + (i % 20) / 2,
+      })),
+    };
+  }
+
+  it('returns raw readings when the range is small', async () => {
+    mockFetch(payload(50));
+    const result = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-03-01', end_date: '2026-03-01',
+    }));
+    expect(result.resolution).toBe('raw');
+    expect(result.count).toBe(50);
+    expect(result.data[0]).toHaveProperty('param');
+  });
+
+  it('summarises a long range instead of returning megabytes', async () => {
+    mockFetch(payload(40000));
+    const body = await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-03-01', end_date: '2026-03-28',
+    });
+    const result = JSON.parse(body);
+    // 40k raw readings would be several MB; no MCP client can use that.
+    expect(body.length).toBeLessThan(50000);
+    expect(result.resolution).toBe('daily');
+    expect(result.readings_summarised).toBe(40000);
+    expect(result.note).toMatch(/raw/);
+
+    const bucket = result.data[0];
+    expect(bucket.period).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(bucket.min).toBeLessThanOrEqual(bucket.mean);
+    expect(bucket.mean).toBeLessThanOrEqual(bucket.max);
+    expect(bucket.readings).toBeGreaterThan(0);
+  });
+
+  it('keeps hourly detail when that still fits', async () => {
+    mockFetch(payload(900));
+    const result = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-03-01', end_date: '2026-03-07',
+    }));
+    expect(result.resolution).toBe('hourly');
+    expect(result.data[0].period).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
+  });
+
+  it('honours an explicit resolution, including raw over budget', async () => {
+    mockFetch(payload(40000));
+    const raw = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-03-01', end_date: '2026-03-28', resolution: 'raw',
+    }));
+    expect(raw.resolution).toBe('raw');
+    expect(raw.count).toBe(40000);
+    expect(raw.note).toBeUndefined();
+
+    mockFetch(payload(50));
+    const daily = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-03-01', end_date: '2026-03-01', resolution: 'daily',
+    }));
+    expect(daily.resolution).toBe('daily');
+  });
+
+  it('ignores readings with no usable value', async () => {
+    mockFetch({
+      source: 'SwissMetNet',
+      payload: [
+        { timestamp: 1741273800, loc: 'BER', par: 'tt', val: 8 },
+        { timestamp: 1741273860, loc: 'BER', par: 'tt', val: Number.NaN },
+        { timestamp: 1741273920, loc: 'BER', par: 'tt', val: 10 },
+      ],
+    });
+    const result = JSON.parse(await handleWeather('get_weather_history', {
+      station: 'BER', start_date: '2026-03-01', end_date: '2026-03-01', resolution: 'daily',
+    }));
+    expect(result.data[0].readings).toBe(2);
+    expect(result.data[0].mean).toBe(9);
   });
 });
 
@@ -192,8 +282,10 @@ describe('get_water_history', () => {
       end_date: '2026-03-07',
     });
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('startdt=2026-03-01');
-    expect(calledUrl).toContain('enddt=2026-03-07');
+    // startdt/enddt are ignored by api.existenz.ch, which then returns the last 24 h
+    expect(calledUrl).toContain('startdate=2026-03-01');
+    expect(calledUrl).toContain('enddate=2026-03-07');
+    expect(calledUrl).not.toContain('startdt=');
   });
 });
 
@@ -281,12 +373,14 @@ describe('fallback when payload is not an array', () => {
     expect(result.payload).toEqual({ unexpected: 'format' });
   });
 
-  it('get_weather_history falls back to raw JSON when payload is not array', async () => {
+  it('get_weather_history explains an empty payload (32-day window)', async () => {
     mockFetch({ source: 'test', payload: 'not-an-array' });
     const result = JSON.parse(await handleWeather('get_weather_history', {
       station: 'BER', start_date: '2026-01-01', end_date: '2026-01-02',
     }));
-    expect(result.payload).toBe('not-an-array');
+    expect(result.count).toBe(0);
+    expect(result.note).toMatch(/32 days/);
+    expect(result.note).toContain('2026-01-01');
   });
 
   it('get_water_level falls back to raw JSON when payload is not array', async () => {
@@ -295,12 +389,13 @@ describe('fallback when payload is not an array', () => {
     expect(result.payload).toBeNull();
   });
 
-  it('get_water_history falls back to raw JSON when payload is not array', async () => {
+  it('get_water_history explains an empty payload (32-day window)', async () => {
     mockFetch({ source: 'test', payload: {} });
     const result = JSON.parse(await handleWeather('get_water_history', {
       station: '2135', start_date: '2026-01-01', end_date: '2026-01-02',
     }));
-    expect(result.payload).toEqual({});
+    expect(result.count).toBe(0);
+    expect(result.note).toMatch(/32 days/);
   });
 });
 

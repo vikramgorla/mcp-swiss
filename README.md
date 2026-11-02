@@ -27,7 +27,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**82 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**94 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -52,7 +52,11 @@
 🚗 Traffic      — ASTRA counting stations, daily volumes
 🌍 Earthquakes  — Swiss Seismological Service (SED/ETH Zürich), FDSN API
 ❄️ Snow         — SLF snow depth, stations, and measurements
-🌿 Pollen       — MeteoSwiss pollen concentrations at 16 stations
+🌿 Pollen       — MeteoSwiss pollen concentrations at the published stations
+🏠 Buildings    — Federal register of buildings and dwellings (GWR)
+📂 Catalogue    — opendata.swiss dataset search, metadata, and downloads
+🌡️ Meteo OGD    — SwissMetNet stations and measurements (STAC CSV)
+🧭 Map layers   — geo.admin layer search, identify, and attribute find
 🚉 SBB Data     — station passengers, punctuality, and step-free access
 ```
 
@@ -237,7 +241,7 @@ Open VS Code `settings.json` and add:
 
 ### Any MCP Client
 
-`mcp-swiss` uses **stdio transport** and requires no environment variables. The universal config:
+`mcp-swiss` uses **stdio transport** and requires no environment variables. Upstream calls time out after 30 seconds (`MCP_SWISS_TIMEOUT_MS` overrides that) and retry once on a dropped connection or a rate limit. The universal config:
 
 ```json
 {
@@ -284,9 +288,40 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ---
 
+## Streamable HTTP
+
+stdio is still the default. For a local HTTP client, run:
+
+```bash
+npx mcp-swiss --http
+```
+
+That listens on `127.0.0.1:3000` and serves MCP at `POST /mcp` (also `GET` and `DELETE`) plus `GET /health`. `--port`, `--host`, `PORT`, `HOST`, and `MCP_TRANSPORT=http` are the other switches.
+
+A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to start unless both `MCP_AUTH_TOKEN` and `MCP_ALLOWED_HOSTS` are set. Sessions are capped (`MCP_MAX_SESSIONS`, default 64) and idle ones expire. This is the transport half of [#64](https://github.com/vikramgorla/mcp-swiss/issues/64). It does not deploy a hosted instance.
+
+---
+
 ## Module Filtering
 
-By default, mcp-swiss loads all 23 modules (82 tools). For better token efficiency, load only the modules you need:
+By default, mcp-swiss loads all 27 modules (94 tools). The full `tools/list` schema is about 9,300 tokens (37,011 characters). For a smaller startup list, load only the modules you need.
+
+### Discovery mode
+
+Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 9,300):
+
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss", "--discovery"]
+    }
+  }
+}
+```
+
+`MCP_SWISS_MODE=discovery` and `--mode discovery` do the same thing. `swiss_search_tools` finds tools by keyword or module and returns their input schemas. `swiss_call_tool` checks those arguments, then runs the tool. `swiss_list_modules` is the catalog. The default, with no flag, is still the full tool list.
 
 ### Select specific modules
 ```json
@@ -315,11 +350,11 @@ By default, mcp-swiss loads all 23 modules (82 tools). For better token efficien
 | Preset | Modules | Tools | Token Savings |
 |--------|---------|-------|---------------|
 | `commuter` | transport, weather, holidays | 14 | 83% |
-| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow | 19 | 77% |
-| `business` | companies, geodata, post, energy, statistics, snb | 24 | 71% |
-| `citizen` | parliament, voting, holidays, news | 17 | 79% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow, pollen | 22 | 74% |
+| `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 68% |
+| `citizen` | parliament, voting, holidays, news | 17 | 80% |
 | `minimal` | transport | 5 | 94% |
-| `full` | all 23 modules (default) | 82 | — |
+| `full` | all 27 modules (default) | 94 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -353,7 +388,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 82 tools across 23 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 94 tools across 27 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -393,7 +428,7 @@ Once connected, try asking your AI:
 |------|-------------|
 | `search_companies` | Search by name, canton, legal form |
 | `get_company` | Full company details by ZEFIX `ehraid` |
-| `search_companies_by_address` | Companies registered at an address |
+| `search_companies_by_locality` | Companies seated in a commune or town (ZEFIX has no street search) |
 | `list_cantons` | All 26 Swiss cantons |
 | `list_legal_forms` | AG, GmbH, and all Swiss legal forms |
 
@@ -423,14 +458,14 @@ Once connected, try asking your AI:
 
 | Tool | Description |
 |------|-------------|
-| `get_avalanche_bulletin` | Current avalanche bulletin with danger levels and PDF links |
-| `list_avalanche_regions` | All 22 Swiss avalanche warning regions |
+| `get_avalanche_bulletin` | Live SLF bulletin: danger level, problems, advice for a region or coordinate |
+| `list_avalanche_regions` | The 135 SLF/EAWS warning regions |
 
 ### 💨 Air Quality (2 tools)
 
 | Tool | Description |
 |------|-------------|
-| `list_air_quality_stations` | All 14 NABEL monitoring stations |
+| `list_air_quality_stations` | All 16 NABEL monitoring stations, plus any code the live layer adds |
 | `get_air_quality` | Station info, Swiss legal limits (LRV), and BAFU data links |
 
 ### 📮 Swiss Post (4 tools)
@@ -504,6 +539,14 @@ Once connected, try asking your AI:
 | `get_trail_closures` | Swiss trail closures and hiking alerts from swisstopo |
 | `get_trail_closures_nearby` | Trail closures near given coordinates |
 
+### 🏠 Buildings / GWR (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_buildings` | Find buildings in the federal register (GWR) by address and return EGIDs |
+| `get_building` | Full building record by EGID: year, floors, heating, parcel, entrances, dwellings |
+| `buildings_near` | Buildings nearest a WGS84 point, closest first |
+
 ### 🏠 Real Estate (3 tools)
 
 | Tool | Description |
@@ -540,9 +583,33 @@ Once connected, try asking your AI:
 
 | Tool | Description |
 |------|-------------|
-| `get_pollen_current` | Current hourly pollen concentrations at any of 16 MeteoSwiss stations (7 types: Alder, Birch, Hazel, Beech, Ash, Oak, Grasses) |
-| `get_pollen_daily` | Daily pollen averages for trend analysis over configurable time range |
-| `list_pollen_stations` | All 16 MeteoSwiss automatic pollen monitoring stations with location details |
+| `get_pollen_current` | Current hourly pollen concentrations at a published MeteoSwiss station |
+| `get_pollen_daily` | Daily pollen averages over a configurable range |
+| `list_pollen_stations` | Published MeteoSwiss pollen stations (the list is no longer a frozen 16) |
+
+### 📂 Open Data Catalogue (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_opendata` | Search the opendata.swiss catalogue (CKAN) by keyword, optionally limited to one publisher |
+| `get_opendata_dataset` | Metadata for one dataset: publisher, description, keywords, and a short resource summary |
+| `list_opendata_resources` | Download links and services for a dataset, with an optional format filter |
+
+### 🌡️ MeteoSwiss OGD (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_ogd_stations` | Stations in a MeteoSwiss OGD STAC collection (SwissMetNet by default, plus precipitation, climate, phenology, and totaliser networks) |
+| `get_ogd_recent` | Latest measurements for one station, parsed from the now/recent CSV asset |
+| `get_ogd_history` | Historical measurements for a date range, parsed from the historical or recent CSV assets |
+
+### 🧭 Map Layers / geo.admin (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_map_layers` | Search or list layers in the geo.admin ech MapServer catalogue |
+| `identify_map_layer` | Features at a WGS84 point on one layer, keeping the current version of time-series layers |
+| `find_map_features` | Find features on one layer by attribute value |
 
 ### 🚉 SBB Open Data (3 tools)
 
@@ -582,6 +649,9 @@ All official Swiss open data — no API keys required:
 | [arclink.ethz.ch](http://arclink.ethz.ch) | Swiss Seismological Service earthquakes (SED/ETH) | [SED](http://www.seismo.ethz.ch) |
 | [measurement-api.slf.ch](https://measurement-api.slf.ch/public/api) | SLF snow depth + measurements (IMIS + study plots, CC BY 4.0) | [SLF](https://www.slf.ch) |
 | [data.geo.admin.ch](https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/) | MeteoSwiss pollen concentrations (16 automatic stations, CC BY) | [MeteoSwiss](https://www.meteoswiss.admin.ch) |
+| [api3.geo.admin.ch](https://api3.geo.admin.ch/rest/services/ech/MapServer) | Federal map layers: search, identify, and attribute find | [geo.admin API](https://api3.geo.admin.ch/api/doc.html) |
+| [data.geo.admin.ch STAC](https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-smn) | MeteoSwiss OGD station measurements (CSV assets, CC BY) | [MeteoSwiss open data](https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html) |
+| [ckan.opendata.swiss](https://ckan.opendata.swiss/api/3/action/) | National open data catalogue (datasets and resources) | [opendata.swiss](https://opendata.swiss) |
 | [data.sbb.ch](https://data.sbb.ch/api/explore/v2.1/) | SBB station passengers, punctuality, and platform accessibility | [SBB Open Data](https://data.sbb.ch/) |
 
 ---
@@ -641,6 +711,7 @@ We welcome contributions! mcp-swiss follows a strict PR-based workflow to keep t
 
 - Node.js 20+
 - No API keys or accounts needed
+- Optional: `MCP_SWISS_TIMEOUT_MS` — per-request upstream timeout in milliseconds (default 30000)
 
 ## License
 

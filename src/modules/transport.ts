@@ -115,70 +115,70 @@ function slimStation(s: Station) {
 export const transportTools = [
   {
     name: "search_stations",
-    description: "Search for Swiss public transport stations/stops by name or coordinates",
+    description: "Search public transport stations/stops by name or coordinates",
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Station name to search for" },
-        x: { type: "number", description: "Longitude (WGS84)" },
-        y: { type: "number", description: "Latitude (WGS84)" },
-        type: { type: "string", description: "Filter: all, station, poi, address" },
+        query: { type: "string", description: "Station name" },
+        x: { type: "number", description: "Latitude (WGS84)" },
+        y: { type: "number", description: "Longitude (WGS84)" },
+        type: { type: "string", enum: ["all", "station", "poi", "address"] },
       },
     },
   },
   {
     name: "get_connections",
-    description: "Get train/bus connections between two Swiss locations",
+    description: "Train/bus connections between two locations",
     inputSchema: {
       type: "object",
       required: ["from", "to"],
       properties: {
-        from: { type: "string", description: "Departure station/address" },
-        to: { type: "string", description: "Arrival station/address" },
-        date: { type: "string", description: "Date YYYY-MM-DD (default: today)" },
-        time: { type: "string", description: "Time HH:MM (default: now)" },
-        limit: { type: "number", description: "Number of connections (1-16, default: 4)" },
-        isArrivalTime: { type: "boolean", description: "True if time is arrival time" },
+        from: { type: "string", description: "Station or address" },
+        to: { type: "string", description: "Station or address" },
+        date: { type: "string", description: "YYYY-MM-DD, default: today" },
+        time: { type: "string", description: "HH:MM, default: now" },
+        limit: { type: "number", description: "1-16, default: 4" },
+        isArrivalTime: { type: "boolean", description: "Treat time as arrival time" },
       },
     },
   },
   {
     name: "get_departures",
-    description: "Get live departures from a Swiss transport station",
+    description: "Live departures from a station",
     inputSchema: {
       type: "object",
       required: ["station"],
       properties: {
         station: { type: "string", description: "Station name" },
-        limit: { type: "number", description: "Number of departures (default: 10)" },
-        datetime: { type: "string", description: "DateTime YYYY-MM-DDTHH:MM (default: now)" },
+        limit: { type: "number", description: "default: 10" },
+        datetime: { type: "string", description: "YYYY-MM-DDTHH:MM, default: now" },
       },
     },
   },
   {
     name: "get_arrivals",
-    description: "Get live arrivals at a Swiss transport station",
+    description: "Live arrivals at a station",
     inputSchema: {
       type: "object",
       required: ["station"],
       properties: {
         station: { type: "string", description: "Station name" },
-        limit: { type: "number", description: "Number of arrivals (default: 10)" },
-        datetime: { type: "string", description: "DateTime YYYY-MM-DDTHH:MM (default: now)" },
+        limit: { type: "number", description: "default: 10" },
+        datetime: { type: "string", description: "YYYY-MM-DDTHH:MM, default: now" },
       },
     },
   },
   {
     name: "get_nearby_stations",
-    description: "Find Swiss public transport stations near given coordinates",
+    description: "Stations near coordinates",
     inputSchema: {
       type: "object",
       required: ["x", "y"],
       properties: {
-        x: { type: "number", description: "Longitude (WGS84)" },
-        y: { type: "number", description: "Latitude (WGS84)" },
-        limit: { type: "number", description: "Number of results (default: 10)" },
-        distance: { type: "number", description: "Max distance in meters" },
+        x: { type: "number", description: "Latitude (WGS84)" },
+        y: { type: "number", description: "Longitude (WGS84)" },
+        limit: { type: "number", description: "Max results" },
+        distance: { type: "number", description: "Max distance (m)" },
       },
     },
   },
@@ -247,7 +247,18 @@ export async function handleTransport(name: string, args: Record<string, unknown
         type: "station",
       });
       const data = await fetchJSON<{ stations: Station[] }>(url);
-      return JSON.stringify(data.stations.map(slimStation));
+
+      // /locations ignores limit and distance, but returns the distance of
+      // every station, so both are applied here.
+      const maxDistance = args.distance as number | undefined;
+      const limit = args.limit as number | undefined;
+      let stations = [...data.stations].sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+      if (maxDistance !== undefined) {
+        stations = stations.filter((s) => s.distance !== null && s.distance <= maxDistance);
+      }
+      if (limit !== undefined) stations = stations.slice(0, Math.max(0, limit));
+
+      return JSON.stringify(stations.map(slimStation));
     }
 
     default:
