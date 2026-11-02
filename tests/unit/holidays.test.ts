@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { handleHolidays } from '../../src/modules/holidays.js';
+import { swissToday } from '../../src/utils/date.js';
 import {
   mockPublicHolidaysAll,
   mockPublicHolidaysZH,
@@ -211,9 +212,28 @@ describe('is_holiday_today', () => {
     vi.stubGlobal('fetch', fetchMock);
     await handleHolidays('is_holiday_today', {});
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = swissToday();
     expect(calledUrl).toContain(`validFrom=${today}`);
     expect(calledUrl).toContain(`validTo=${today}`);
+  });
+
+  // 00:30 CEST on the national day is still 22:30 UTC the day before
+  it('uses the Swiss calendar date, not the UTC one', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-01T00:30:00+02:00'));
+    try {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true, status: 200, statusText: 'OK',
+        json: () => Promise.resolve(mockHolidayTodayNational),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const result = JSON.parse(await handleHolidays('is_holiday_today', {}));
+      expect(result.date).toBe('2026-08-01');
+      expect(fetchMock.mock.calls[0][0]).toContain('validFrom=2026-08-01');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('prefers nationwide holiday when both national and regional match', async () => {

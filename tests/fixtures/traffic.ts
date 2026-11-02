@@ -194,8 +194,29 @@ export const mockFindCantonZHResponse = {
   results: [mockZHStation1, mockZHStationNullData],
 };
 
+/** Zurich HB in LV95, the reference point used by the nearby tests. */
+export const ZURICH_LV95 = { e: 2683200, n: 1247900 };
+
+/** ~600 m from ZURICH_LV95. */
+export const mockNearbyClose = {
+  ...mockNearbyStation,
+  featureId: 1001,
+  id: 1001,
+  attributes: { ...mockNearbyStation.attributes, mlocname: "ZUERICH, NAH", canton: "ZH" },
+  geometry: { x: ZURICH_LV95.e + 600, y: ZURICH_LV95.n, spatialReference: { wkid: 2056 } },
+};
+
+/** ~8 km from ZURICH_LV95: inside the query box, outside a 5 km radius. */
+export const mockNearbyFar = {
+  ...mockNearbyStation,
+  featureId: 1002,
+  id: 1002,
+  attributes: { ...mockNearbyStation.attributes, mlocname: "ZUERICH, FERN", canton: "ZH" },
+  geometry: { x: ZURICH_LV95.e + 8000, y: ZURICH_LV95.n, spatialReference: { wkid: 2056 } },
+};
+
 export const mockIdentifyNearbyResponse = {
-  results: [mockNearbyStation],
+  results: [mockNearbyFar, mockNearbyClose],
 };
 
 export const mockEmptyResponse = {

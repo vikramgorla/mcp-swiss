@@ -112,32 +112,52 @@ export const mockVotingsResponse = {
     {
       id: 5001,
       affair_id: 296480,
-      meaning_yes_de: "Annahme der Motion",
-      meaning_no_de: "Ablehnung der Motion",
-      total_yes: 102,
-      total_no: 88,
-      total_abstain: 5,
-      total_absent: 5,
-      total_excused: 0,
-      total_president: 0,
-      vote_date: "2026-03-10T14:30:00",
-      subject_de: "Gesamtabstimmung",
+      title_de: "Gesamtabstimmung",
+      type_de: "Schlussabstimmung",
+      meaning_of_yes_de: "Annahme der Motion",
+      meaning_of_no_de: "Ablehnung der Motion",
+      results_yes: 102,
+      results_no: 88,
+      results_abstention: 5,
+      results_absent: 5,
+      date: "2026-03-10T14:30:00",
     },
     {
       id: 5002,
       affair_id: 296480,
-      meaning_yes_de: "Eintreten",
-      meaning_no_de: "Nichteintreten",
-      total_yes: 120,
-      total_no: 75,
-      total_abstain: 3,
-      total_absent: 2,
-      total_excused: 0,
-      total_president: 0,
-      vote_date: "2026-03-10T10:00:00",
-      subject_de: "Eintretensdebatte",
+      title_de: "Eintretensdebatte",
+      type_de: null,
+      meaning_of_yes_de: "Eintreten",
+      meaning_of_no_de: "Nichteintreten",
+      results_yes: 120,
+      results_no: 75,
+      results_abstention: 3,
+      results_absent: 2,
+      date: "2026-03-10T10:00:00",
     },
   ],
+};
+
+/**
+ * Affair 241062 (Kantonsrat Luzern, Volksinitiativen "Luzerner Kulturlandschaft")
+ * carries 847 recorded votes; served in full that is ~138K chars, well over the
+ * 48K response budget.
+ */
+export const mockLargeVotingsResponse = {
+  meta: { offset: 0, limit: 1000, total_records: 847 },
+  data: Array.from({ length: 847 }, (_, i) => ({
+    id: 106191 - i,
+    affair_id: 241062,
+    title_de: "2./B\u00e4rtsch",
+    type_de: i < 3 ? "Schlussabstimmung" : null,
+    meaning_of_yes_de: "Zustimmung",
+    meaning_of_no_de: "Ablehnung",
+    results_yes: 30,
+    results_no: 80,
+    results_abstention: null,
+    results_absent: 1,
+    date: "2019-10-22T00:00:00",
+  })),
 };
 
 export const mockMeetingsResponse = {

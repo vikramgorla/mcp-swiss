@@ -152,6 +152,26 @@ describe("Parliament API (live — OpenParlData.ch)", () => {
     }, 60_000);
   });
 
+  // ── get_parliament_votes ─────────────────────────────────────────────────
+
+  describe("get_parliament_votes", () => {
+    // Kantonsrat Luzern, "Luzerner Kulturlandschaft" — 847 recorded votes
+    it("returns parsable JSON with real tallies", async () => {
+      const raw = await handleParliament("get_parliament_votes", {
+        affair_id: 241062,
+      });
+      expect(raw.length).toBeLessThan(MAX_BYTES);
+
+      const result = JSON.parse(raw);
+      expect(result.votes.length).toBeGreaterThan(0);
+      const v = result.votes[0];
+      expect(typeof v.yes).toBe("number");
+      expect(typeof v.no).toBe("number");
+      expect(v.subject).toBeTruthy();
+      expect(v.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }, 60_000);
+  });
+
   // ── get_committee_meetings ───────────────────────────────────────────────
 
   describe("get_committee_meetings", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { handleGeodata } from '../../src/modules/geodata.js';
+import { handleGeodata, geodataTools } from '../../src/modules/geodata.js';
 import {
   mockGeocodeResponse,
   mockIdentifyResponse,
@@ -68,22 +68,80 @@ describe('geocode', () => {
 // ── reverse_geocode ───────────────────────────────────────────────────────────
 
 describe('reverse_geocode', () => {
-  it('returns slim results with count', async () => {
-    mockFetch(mockGeocodeResponse);
+  const address = {
+    attributes: {
+      strname_deinr: 'Bundesplatz 3',
+      dplz4: 3011,
+      dplzname: 'Bern',
+      ggdename: 'Bern',
+      gdekt: 'BE',
+      egid: '1234567',
+    },
+    geometry: { x: 7.444192, y: 46.946774 },
+  };
+  const far = {
+    attributes: { strname_deinr: 'Weit weg 1', dplz4: 3000, dplzname: 'Bern' },
+    geometry: { x: 7.4455, y: 46.9478 },
+  };
+  const municipality = {
+    attributes: { gemname: 'Bern', kanton: 'BE', gde_nr: 351 },
+  };
+
+  /** Address lookup first, municipality lookup second (both run in parallel). */
+  function mockLayers(addresses: unknown[], municipalities: unknown[]) {
+    const fetchMock = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true, status: 200, statusText: 'OK',
+        json: () => Promise.resolve({
+          results: String(url).includes('gebaeude_wohnungs_register') ? addresses : municipalities,
+        }),
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('returns the nearest address with its municipality', async () => {
+    mockLayers([far, address], [municipality]);
     const result = JSON.parse(await handleGeodata('reverse_geocode', {
       lat: 46.946774, lng: 7.444192,
     }));
-    expect(result.count).toBe(1);
-    expect(Array.isArray(result.results)).toBe(true);
+    expect(result.address).toBe('Bundesplatz 3');   // nearest, not first
+    expect(result.postcode).toBe(3011);
+    expect(result.municipality).toBe('Bern');
+    expect(result.bfs_municipality_number).toBe(351);
+    expect(result.canton).toBe('BE');
+    expect(result.address_distance_m).toBe(0);
   });
 
-  it('result has coordinates', async () => {
-    mockFetch(mockGeocodeResponse);
+  it('queries both layers with an envelope, never a bare "lat,lng" search', async () => {
+    const fetchMock = mockLayers([address], [municipality]);
+    await handleGeodata('reverse_geocode', { lat: 46.946774, lng: 7.444192 });
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls).toHaveLength(2);
+    for (const url of urls) {
+      const params = new URL(url).searchParams;
+      expect(url).toContain('/identify');
+      expect(params.get('geometryType')).toBe('esriGeometryEnvelope');
+      expect(params.get('geometry')!.split(',')).toHaveLength(4);
+    }
+    expect(urls.some((u) => u.includes('gebaeude_wohnungs_register'))).toBe(true);
+    expect(urls.some((u) => u.includes('swissboundaries3d-gemeinde-flaeche'))).toBe(true);
+  });
+
+  it('still reports the municipality when no address is nearby', async () => {
+    mockLayers([], [municipality]);
     const result = JSON.parse(await handleGeodata('reverse_geocode', {
-      lat: 46.946774, lng: 7.444192,
+      lat: 46.5581, lng: 7.9625,
     }));
-    expect(typeof result.results[0].lat).toBe('number');
-    expect(typeof result.results[0].lon).toBe('number');
+    expect(result.address).toBeNull();
+    expect(result.municipality).toBe('Bern');
+    expect(result.note).toMatch(/No address within/);
+  });
+
+  it('requires numeric coordinates', async () => {
+    mockLayers([], []);
+    await expect(handleGeodata('reverse_geocode', { lat: 'x' })).rejects.toThrow('lat and lng');
   });
 });
 
@@ -107,6 +165,23 @@ describe('search_places', () => {
     const calledUrl = fetchMock.mock.calls[0][0] as string;
     const parsed = new URL(calledUrl);
     expect(parsed.searchParams.get('searchText')).toBe('Matterhorn');
+  });
+
+  it("always searches type=locations (featuresearch needs a layer and 400s)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      json: () => Promise.resolve(mockGeocodeResponse),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await handleGeodata('search_places', { query: 'Bern', type: 'featuresearch' });
+    const parsed = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(parsed.searchParams.get('type')).toBe('locations');
+  });
+
+  it("does not advertise a type parameter", () => {
+    const tool = geodataTools.find((t) => t.name === 'search_places')!;
+    const schema = tool.inputSchema as { properties: Record<string, unknown> };
+    expect(schema.properties.type).toBeUndefined();
   });
 });
 

@@ -128,6 +128,32 @@ describe('Traffic API (live)', () => {
     expect(result.radius_m).toBe(20000);
   });
 
+  it('get_traffic_nearby stays inside the radius', async () => {
+    const radius = 3000;
+    const result = JSON.parse(await handleTraffic('get_traffic_nearby', {
+      lat: 47.3769,
+      lon: 8.5417,
+      radius,
+    }));
+    // The bug this guards: the radius was sent as a pixel tolerance, so a few
+    // km returned stations from the whole country.
+    for (const station of result.stations) {
+      expect(station.distance_m).toBeLessThanOrEqual(radius);
+    }
+    const cantons = new Set(result.stations.map((s: { canton: string }) => s.canton));
+    expect(cantons.size).toBeLessThanOrEqual(2);
+  });
+
+  it('get_traffic_nearby grows with the radius', async () => {
+    const near = JSON.parse(await handleTraffic('get_traffic_nearby', {
+      lat: 47.3769, lon: 8.5417, radius: 2000,
+    }));
+    const far = JSON.parse(await handleTraffic('get_traffic_nearby', {
+      lat: 47.3769, lon: 8.5417, radius: 20000,
+    }));
+    expect(far.count).toBeGreaterThan(near.count);
+  });
+
   it('get_traffic_nearby response is under 50K chars', async () => {
     const result = await handleTraffic('get_traffic_nearby', {
       lat: 47.3769,

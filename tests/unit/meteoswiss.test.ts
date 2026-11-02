@@ -160,8 +160,9 @@ describe("list_ogd_stations", () => {
   });
 
   it("throws on HTTP error", async () => {
-    installFetch(() => ({ status: 503, json: {} }));
-    await expect(handleMeteoswiss("list_ogd_stations", {})).rejects.toThrow("HTTP 503");
+    // 500 is not retried. 503 is, and a persistent 503 waits out Retry-After.
+    installFetch(() => ({ status: 500, json: {} }));
+    await expect(handleMeteoswiss("list_ogd_stations", {})).rejects.toThrow("HTTP 500");
   });
 });
 

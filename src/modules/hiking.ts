@@ -37,6 +37,8 @@ interface FindResult {
   featureId: number;
   id: number;
   attributes: ClosureAttributes;
+  /** LV95 polyline parts, present when the request asks for geometry. */
+  geometry?: { paths?: number[][][] };
 }
 
 interface FindResponse {
@@ -119,27 +121,23 @@ export const hikingTools = [
   {
     name: "get_trail_closures",
     description:
-      "Get current Swiss hiking trail closures and detours from the official ASTRA/Schweizer Wanderwege dataset. " +
-      "Filter by closure reason (e.g. Steinschlag, Bauarbeiten, Hangrutsch) or type (closure, detour). " +
-      "If no parameters are given, returns all active closures. " +
-      "Data source: swisstopo ch.astra.wanderland-sperrungen_umleitungen.",
+      "Current hiking trail closures and detours (ASTRA/Schweizer Wanderwege)",
     inputSchema: {
       type: "object",
       properties: {
         reason: {
           type: "string",
-          description:
-            "Optional search term for closure reason (e.g. 'Steinschlag', 'Bauarbeiten', 'Hangrutsch', 'Hochwasser'). " +
-            "Matches against the reason field (German or English). Case-insensitive partial match.",
+          description: "Partial match, e.g. Steinschlag, Bauarbeiten, Hangrutsch",
         },
         type: {
           type: "string",
           enum: ["closure", "detour"],
-          description: "Optional: filter by type — 'closure' (Sperrung) or 'detour' (Umleitung). If omitted, returns both.",
+          description: "Omit for both",
         },
         limit: {
           type: "number",
-          description: "Maximum number of results to return. Default: 20. Max: 100.",
+          description: "max 100",
+          default: 20,
         },
       },
     },
@@ -147,23 +145,22 @@ export const hikingTools = [
   {
     name: "get_trail_closures_nearby",
     description:
-      "Find Swiss hiking trail closures and detours near a given GPS coordinate. " +
-      "Converts WGS84 coordinates to Swiss LV95 and queries the swisstopo identify endpoint. " +
-      "Returns closures within the specified radius.",
+      "Hiking trail closures and detours near a WGS84 point",
     inputSchema: {
       type: "object",
       properties: {
         lat: {
           type: "number",
-          description: "Latitude in WGS84 (e.g. 46.9480 for Bern).",
+          description: "Latitude (WGS84)",
         },
         lon: {
           type: "number",
-          description: "Longitude in WGS84 (e.g. 7.4474 for Bern).",
+          description: "Longitude (WGS84)",
         },
         radius: {
           type: "number",
-          description: "Search radius in metres. Default: 10000 (10 km). Max: 50000.",
+          description: "Metres, max 50000",
+          default: 10000,
         },
       },
       required: ["lat", "lon"],
@@ -279,22 +276,28 @@ async function handleGetTrailClosuresNearby(
   // Convert WGS84 → LV95
   const [e, n] = wgs84ToLv95(lat, lon);
 
-  // Build map extent based on radius (approx 1 metre = 1 LV95 unit)
-  const extent = `${e - radius},${n - radius},${e + radius},${n + radius}`;
+  // An LV95 box around the point, then filter on the real distance to each
+  // closure's geometry. `tolerance` counts screen pixels, so passing the radius
+  // there (with a 1x1 px display) turned this into a nationwide search.
+  const bbox = `${e - radius},${n - radius},${e + radius},${n + radius}`;
 
   const url = buildUrl(`${BASE}/identify`, {
     layers: `all:${LAYER}`,
-    geometry: `${e},${n}`,
-    geometryType: "esriGeometryPoint",
+    geometry: bbox,
+    geometryType: "esriGeometryEnvelope",
     sr: 2056,
-    tolerance: radius,
-    imageDisplay: "1,1,100",
-    mapExtent: extent,
-    returnGeometry: false,
+    tolerance: 0,
+    returnGeometry: true,
   });
 
   const data = await fetchJSON<FindResponse>(url);
-  const closures = deduplicate((data.results ?? []).map(slimClosure));
+  const withinRadius = (data.results ?? [])
+    .map((f) => ({ f, distance_m: distanceToPaths(e, n, f.geometry?.paths) }))
+    .filter((r) => r.distance_m <= radius)
+    .sort((a, b) => a.distance_m - b.distance_m);
+  const closures = deduplicate(
+    withinRadius.map(({ f, distance_m }) => ({ ...slimClosure(f), distance_m }))
+  );
 
   const result = {
     count: closures.length,
@@ -318,6 +321,22 @@ async function handleGetTrailClosuresNearby(
     return JSON.stringify(trimmed);
   }
   return json;
+}
+
+/**
+ * Distance in metres from an LV95 point to the closest vertex of a polyline.
+ * Vertices are dense enough (a few metres apart) for a proximity search.
+ */
+function distanceToPaths(e: number, n: number, paths?: number[][][]): number {
+  if (!paths?.length) return Number.POSITIVE_INFINITY;
+  let best = Number.POSITIVE_INFINITY;
+  for (const path of paths) {
+    for (const [x, y] of path) {
+      const d = Math.hypot(x - e, y - n);
+      if (d < best) best = d;
+    }
+  }
+  return Math.round(best);
 }
 
 // ── Main dispatcher ───────────────────────────────────────────────────────────

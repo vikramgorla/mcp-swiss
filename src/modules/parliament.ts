@@ -1,6 +1,8 @@
 // Data source: OpenParlData.ch (CC BY 4.0)
 // Swiss Parliament data — federal and cantonal affairs, members, votes, speeches
 
+import { fetchBody } from "../utils/http.js";
+
 const BASE = "https://api.openparldata.ch/v1";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -17,20 +19,34 @@ interface OpenParlResponse<T> {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Truncate a string response to keep under 50K chars */
-function truncate(json: string, maxBytes = 48000): string {
-  if (json.length <= maxBytes) return json;
-  return json.slice(0, maxBytes) + "…";
+const MAX_CHARS = 48000;
+
+/**
+ * Serialise a payload, dropping list entries until it fits the response budget.
+ * Cutting the JSON text instead would hand the client something it cannot parse.
+ * `build` gets the entries that survived and how many were dropped.
+ */
+function fit<T>(items: T[], build: (kept: T[], dropped: number) => unknown): string {
+  let keep = items.length;
+  for (;;) {
+    const json = JSON.stringify(build(items.slice(0, keep), items.length - keep));
+    if (json.length <= MAX_CHARS || keep === 0) return json;
+    keep = Math.max(0, Math.floor(keep * (MAX_CHARS / json.length)) - 1);
+  }
 }
 
 /** Fetch OpenParlData endpoint — follows redirects, returns typed response */
 async function apiFetch<T>(url: string): Promise<OpenParlResponse<T>> {
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) {
-    throw new Error(`OpenParlData API error: HTTP ${res.status} for ${url}`);
-  }
-  const json = (await res.json()) as OpenParlResponse<T>;
-  return json;
+  return fetchBody<OpenParlResponse<T>>(
+    url,
+    { redirect: "follow", rawStatus: true },
+    async (res) => {
+      if (!res.ok) {
+        throw new Error(`OpenParlData API error: HTTP ${res.status} for ${url}`);
+      }
+      return res.json() as Promise<OpenParlResponse<T>>;
+    }
+  );
 }
 
 /** Build URL with query parameters, ensuring trailing slash on path */
@@ -55,7 +71,7 @@ export const parliamentTools = [
   {
     name: "search_parliament_business",
     description:
-      "Search Swiss Parliament political affairs — bills, motions, interpellations, postulates, questions, and initiatives. Uses OpenParlData.ch full-text search across the Federal Assembly (Bundesversammlung).",
+      "Full-text search of federal parliament affairs (bills, motions, interpellations, postulates, questions, initiatives). For cantonal parliaments use search_cantonal_affairs",
     inputSchema: {
       type: "object" as const,
       required: ["query"],
@@ -63,11 +79,12 @@ export const parliamentTools = [
         query: {
           type: "string",
           description:
-            "Search term (e.g. 'Klimaschutz', 'AHV', 'Neutralität')",
+            "German term, e.g. Klimaschutz, AHV",
         },
         limit: {
           type: "number",
-          description: "Max results (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -75,27 +92,29 @@ export const parliamentTools = [
   {
     name: "get_parliament_members",
     description:
-      "List current or past Swiss Parliament members (National Council and Council of States). Filter by canton or party.",
+      "Federal parliament members (National Council, Council of States), filterable by canton/party",
     inputSchema: {
       type: "object" as const,
       properties: {
         canton: {
           type: "string",
           description:
-            "Canton name in German to filter by (e.g. 'Zürich', 'Bern', 'Genf', 'Waadt')",
+            "Canton name in German, e.g. Zürich, Genf, Waadt",
         },
         party: {
           type: "string",
           description:
-            "Party name or abbreviation to search (e.g. 'SVP', 'SP', 'FDP', 'Grüne', 'Mitte')",
+            "Party name/abbreviation, e.g. SVP, SP, FDP, Grüne, Mitte",
         },
         active: {
           type: "boolean",
-          description: "Only active (currently seated) members (default: true)",
+          description: "Only currently seated members",
+          default: true,
         },
         limit: {
           type: "number",
-          description: "Max results (default: 10, max: 50)",
+          description: "max 50",
+          default: 10,
         },
       },
     },
@@ -103,7 +122,7 @@ export const parliamentTools = [
   {
     name: "get_parliament_votes",
     description:
-      "Get voting results for a specific parliamentary affair (Geschäft). Returns all recorded votes for the given affair ID from OpenParlData.",
+      "Recorded votes on a parliamentary affair (Geschäft)",
     inputSchema: {
       type: "object" as const,
       required: ["affair_id"],
@@ -111,7 +130,7 @@ export const parliamentTools = [
         affair_id: {
           type: "number",
           description:
-            "OpenParlData affair ID (get from search_parliament_business results)",
+            "OpenParlData affair ID (from search_parliament_business)",
         },
       },
     },
@@ -119,13 +138,14 @@ export const parliamentTools = [
   {
     name: "get_session_schedule",
     description:
-      "Get upcoming and recent Swiss parliament sessions (Sessionen). Shows session names, dates and types.",
+      "Upcoming and recent federal parliament sessions",
     inputSchema: {
       type: "object" as const,
       properties: {
         limit: {
           type: "number",
-          description: "Number of sessions to return (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -133,7 +153,7 @@ export const parliamentTools = [
   {
     name: "search_parliament_speeches",
     description:
-      "Get debate speeches and contributions for a specific parliamentary affair. Returns speaker info and speech details.",
+      "Debate speeches on a parliamentary affair",
     inputSchema: {
       type: "object" as const,
       required: ["affair_id"],
@@ -141,11 +161,12 @@ export const parliamentTools = [
         affair_id: {
           type: "number",
           description:
-            "OpenParlData affair ID (get from search_parliament_business results)",
+            "OpenParlData affair ID (from search_parliament_business)",
         },
         limit: {
           type: "number",
-          description: "Max speeches to return (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -153,7 +174,7 @@ export const parliamentTools = [
   {
     name: "get_politician_interests",
     description:
-      "Get declared interests and mandates of a Swiss parliament member — board memberships, consulting roles, organizations.",
+      "Declared interests and mandates (boards, consulting roles) of a federal parliament member",
     inputSchema: {
       type: "object" as const,
       required: ["person_id"],
@@ -161,7 +182,7 @@ export const parliamentTools = [
         person_id: {
           type: "number",
           description:
-            "OpenParlData person ID (get from get_parliament_members results)",
+            "OpenParlData person ID (from get_parliament_members)",
         },
       },
     },
@@ -169,7 +190,7 @@ export const parliamentTools = [
   {
     name: "search_cantonal_affairs",
     description:
-      "Search political affairs across Swiss cantonal parliaments (Kantonsräte). Covers all 26 cantons via OpenParlData.",
+      "Search affairs in a cantonal parliament (Kantonsrat), all 26 cantons",
     inputSchema: {
       type: "object" as const,
       required: ["canton"],
@@ -177,15 +198,16 @@ export const parliamentTools = [
         canton: {
           type: "string",
           description:
-            "Canton abbreviation: ZH, BE, LU, UR, SZ, OW, NW, GL, ZG, FR, SO, BS, BL, SH, AR, AI, SG, GR, AG, TG, TI, VD, VS, NE, GE, JU",
+            "Canton code, e.g. ZH",
         },
         query: {
           type: "string",
-          description: "Search term (optional, e.g. 'Bildung', 'Verkehr')",
+          description: "German term, e.g. Bildung",
         },
         limit: {
           type: "number",
-          description: "Max results (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -193,7 +215,7 @@ export const parliamentTools = [
   {
     name: "get_parliamentary_documents",
     description:
-      "Get official documents for a parliamentary affair — reports, committee opinions, federal council statements.",
+      "Official documents (reports, committee opinions, Federal Council statements) for a parliamentary affair",
     inputSchema: {
       type: "object" as const,
       required: ["affair_id"],
@@ -201,11 +223,12 @@ export const parliamentTools = [
         affair_id: {
           type: "number",
           description:
-            "OpenParlData affair ID (get from search_parliament_business results)",
+            "OpenParlData affair ID (from search_parliament_business)",
         },
         limit: {
           type: "number",
-          description: "Max documents to return (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -213,18 +236,19 @@ export const parliamentTools = [
   {
     name: "get_committee_meetings",
     description:
-      "Get Swiss parliament committee/commission meeting schedule. Optionally filter by committee group ID.",
+      "Federal parliament committee meeting schedule",
     inputSchema: {
       type: "object" as const,
       properties: {
         group_id: {
           type: "number",
           description:
-            "Committee group ID to filter (optional — omit for all committees)",
+            "Committee group ID (omit for all)",
         },
         limit: {
           type: "number",
-          description: "Max meetings to return (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -274,14 +298,13 @@ async function searchParliamentBusiness(args: {
     url: a.url_external_de,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: affairs.length,
-      total: resp.meta.total_records,
-      query: args.query,
-      affairs,
-    })
-  );
+  return fit(affairs, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    query: args.query,
+    affairs: kept,
+  }));
 }
 
 interface PersonRecord {
@@ -346,28 +369,26 @@ async function getParliamentMembers(args: {
     url: p.website_parliament_url_de,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: members.length,
-      total: resp.meta.total_records,
-      members,
-    })
-  );
+  return fit(members, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    members: kept,
+  }));
 }
 
 interface VotingRecord {
   id: number;
   affair_id: number;
-  meaning_yes_de: string;
-  meaning_no_de: string;
-  total_yes: number;
-  total_no: number;
-  total_abstain: number;
-  total_absent: number;
-  total_excused: number;
-  total_president: number;
-  vote_date: string | null;
-  subject_de: string;
+  title_de: string | null;
+  type_de: string | null;
+  meaning_of_yes_de: string | null;
+  meaning_of_no_de: string | null;
+  results_yes: number | null;
+  results_no: number | null;
+  results_abstention: number | null;
+  results_absent: number | null;
+  date: string | null;
   [key: string]: unknown;
 }
 
@@ -383,23 +404,24 @@ async function getParliamentVotes(args: {
   const votes = resp.data.map((v) => ({
     id: v.id,
     affairId: v.affair_id,
-    subject: v.subject_de,
-    meaningYes: v.meaning_yes_de,
-    meaningNo: v.meaning_no_de,
-    yes: v.total_yes,
-    no: v.total_no,
-    abstain: v.total_abstain,
-    absent: v.total_absent,
-    date: v.vote_date ? v.vote_date.split("T")[0] : null,
+    subject: v.title_de,
+    type: v.type_de,
+    meaningYes: v.meaning_of_yes_de,
+    meaningNo: v.meaning_of_no_de,
+    yes: v.results_yes,
+    no: v.results_no,
+    abstain: v.results_abstention,
+    absent: v.results_absent,
+    date: v.date ? v.date.split("T")[0] : null,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: votes.length,
-      affairId: args.affair_id,
-      votes,
-    })
-  );
+  return fit(votes, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    affairId: args.affair_id,
+    votes: kept,
+  }));
 }
 
 interface MeetingRecord {
@@ -440,13 +462,12 @@ async function getSessionSchedule(args: {
     url: m.url_external_de,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: sessions.length,
-      total: resp.meta.total_records,
-      sessions,
-    })
-  );
+  return fit(sessions, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    sessions: kept,
+  }));
 }
 
 interface SpeechRecord {
@@ -488,14 +509,13 @@ async function searchParliamentSpeeches(args: {
     durationSeconds: s.duration_seconds,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: speeches.length,
-      total: resp.meta.total_records,
-      affairId: args.affair_id,
-      speeches,
-    })
-  );
+  return fit(speeches, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    affairId: args.affair_id,
+    speeches: kept,
+  }));
 }
 
 interface InterestRecord {
@@ -531,13 +551,13 @@ async function getPoliticianInterests(args: {
     url: i.url,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: interests.length,
-      personId: args.person_id,
-      interests,
-    })
-  );
+  return fit(interests, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    personId: args.person_id,
+    interests: kept,
+  }));
 }
 
 async function searchCantonalAffairs(args: {
@@ -572,15 +592,14 @@ async function searchCantonalAffairs(args: {
     url: a.url_external_de,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: affairs.length,
-      total: resp.meta.total_records,
-      canton: args.canton.toUpperCase(),
-      query: args.query || null,
-      affairs,
-    })
-  );
+  return fit(affairs, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    canton: args.canton.toUpperCase(),
+    query: args.query || null,
+    affairs: kept,
+  }));
 }
 
 interface DocRecord {
@@ -614,14 +633,13 @@ async function getParliamentaryDocuments(args: {
     date: d.date ? d.date.split("T")[0] : null,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: docs.length,
-      total: resp.meta.total_records,
-      affairId: args.affair_id,
-      documents: docs,
-    })
-  );
+  return fit(docs, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    affairId: args.affair_id,
+    documents: kept,
+  }));
 }
 
 async function getCommitteeMeetings(args: {
@@ -654,13 +672,12 @@ async function getCommitteeMeetings(args: {
     url: m.url_external_de,
   }));
 
-  return truncate(
-    JSON.stringify({
-      count: meetings.length,
-      total: resp.meta.total_records,
-      meetings,
-    })
-  );
+  return fit(meetings, (kept, dropped) => ({
+    count: kept.length,
+    total: resp.meta.total_records,
+    omitted: dropped || undefined,
+    meetings: kept,
+  }));
 }
 
 // ── Main dispatcher ───────────────────────────────────────────────────────────
