@@ -304,10 +304,11 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
 
   // BFS PxWeb can take >60 s on a cold cache (then answers in ~0.1 s)
   const data = await fetchJSON<PxWebResponse>(url, {
-    timeoutMs: 120_000,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    // BFS PxWeb regularly takes longer than the 30s default.
+    timeoutMs: 120_000,
   });
 
   if (mode === "switzerland") {
