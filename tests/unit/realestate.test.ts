@@ -1,14 +1,19 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { handleRealEstate, realEstateTools } from "../../src/modules/realestate.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  handleRealEstate,
+  realEstateTools,
+  clearRealEstateCache,
+} from "../../src/modules/realestate.js";
 import {
   mockCkanSearchResults,
   mockCkanSearchResultsEmpty,
   mockCkanSearchResultsFallback,
   mockCkanSearchFailed,
-  mockCpiLatest,
-  mockCpiYear2020,
-  mockCpiNoData,
-  mockCpiSmall,
+  cpiStoreRows,
+  mockImpiAssetList,
+  mockImpiAssetListNoMaster,
+  mockImpiData,
+  mockImpiDataTruncated,
 } from "../fixtures/realestate.js";
 
 function mockFetch(payload: unknown, status = 200) {
@@ -25,22 +30,56 @@ function mockFetch(payload: unknown, status = 200) {
 
 function mockFetchSequence(payloads: unknown[]) {
   let call = 0;
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockImplementation(() => {
-      const payload = payloads[Math.min(call++, payloads.length - 1)];
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        json: () => Promise.resolve(payload),
-      });
-    })
-  );
+  const fetchMock = vi.fn().mockImplementation(() => {
+    const payload = payloads[Math.min(call++, payloads.length - 1)];
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.resolve(payload),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
+
+/** The IMPI handler makes two calls: the asset listing, then the data file. */
+function mockImpi() {
+  return mockFetchSequence([mockImpiAssetList, mockImpiData]);
+}
+
+/** Serves `rows` the way the data.zg.ch rowstore does: _offset/_limit paging and a jahr filter. */
+function mockCpiStore(rows = cpiStoreRows) {
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    const u = new URL(String(url));
+    const jahr = u.searchParams.get("jahr");
+    const matching = jahr ? rows.filter((r) => r.jahr === jahr) : rows;
+    const offset = Number(u.searchParams.get("_offset") ?? 0);
+    const limit = Number(u.searchParams.get("_limit") ?? 20);
+    const payload = {
+      resultCount: matching.length,
+      offset,
+      limit,
+      results: matching.slice(offset, offset + limit),
+    };
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.resolve(payload),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+beforeEach(() => {
+  clearRealEstateCache();
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearRealEstateCache();
 });
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
@@ -80,52 +119,91 @@ describe("realEstateTools", () => {
 
 // ── get_property_price_index — default (all types, full range) ───────────────
 
-describe("get_property_price_index — defaults", () => {
-  it("returns full series without args", async () => {
+describe("get_property_price_index — live BFS series", () => {
+  it("fetches the current data file via the stable order number", async () => {
+    const fetchMock = mockImpi();
     const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
-    expect(result.type).toBe("all");
-    expect(result.baseline).toBe("Q4 2019 = 100");
-    expect(result.series.length).toBeGreaterThan(50);
+
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls[0]).toContain("dam-api.bfs.admin.ch");
+    expect(urls[0]).toContain("orderNr=ds-x-05.06.03.01.02");
+    expect(urls[1]).toBe("https://dam-api.bfs.admin.ch/hub/api/dam/assets/36753640/master");
+    expect(result.data_url).toBe(urls[1]);
+  });
+
+  it("returns the published values, not a smoothed curve", async () => {
+    mockImpi();
+    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
+    expect(result.series[0]).toEqual({ period: "2017-Q1", index: 90.4561 });
+    expect(result.series).toContainEqual({ period: "2017-Q4", index: 93.2599 });
+    expect(result.series).toContainEqual({ period: "2019-Q4", index: 100 });
+    expect(result.series).toContainEqual({ period: "2020-Q1", index: 99.2443 });
+  });
+
+  it("series is not monotonic — quarters do fall", async () => {
+    mockImpi();
+    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
+    const values = (result.series as Array<{ index: number }>).map((s) => s.index);
+    const drops = values.filter((v, i) => i > 0 && v < values[i - 1]);
+    expect(drops.length).toBeGreaterThan(0);
+  });
+
+  it("houses and apartments are separate series, not an offset of the total", async () => {
+    mockImpi();
+    const all = JSON.parse(await handleRealEstate("get_property_price_index", {}));
+    const houses = JSON.parse(
+      await handleRealEstate("get_property_price_index", { type: "houses" })
+    );
+    const apartments = JSON.parse(
+      await handleRealEstate("get_property_price_index", { type: "apartments" })
+    );
+    const gaps = all.series.map(
+      (s: { index: number }, i: number) => +(houses.series[i].index - s.index).toFixed(4)
+    );
+    expect(new Set(gaps).size).toBeGreaterThan(3);
+    expect(houses.series[0].index).toBe(89.7446);
+    expect(apartments.series[0].index).toBe(91.1885);
+  });
+
+  it("starts at 2017-Q1 — the series has no earlier quarters", async () => {
+    mockImpi();
+    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
+    expect(result.from).toBe("2017-Q1");
+    for (const s of result.series as Array<{ period: string }>) {
+      expect(parseInt(s.period.slice(0, 4), 10)).toBeGreaterThanOrEqual(2017);
+    }
+  });
+
+  it("names the source, the data file and the publication date", async () => {
+    mockImpi();
+    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
     expect(result.source).toContain("BFS");
+    expect(result.source).toContain("IMPI");
+    expect(result.data_as_of).toBe("30.07.2026");
+    expect(result.source_url).toContain("bfs.admin.ch");
+    expect(result.baseline).toBe("Q4 2019 = 100");
+    expect(result.scope).toContain("Switzerland");
   });
 
-  it("latest_period is the most recent quarter", async () => {
-    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
-    expect(result.latest_period).toMatch(/^\d{4}-Q\d$/);
+  it("all three types are 100 in the Q4 2019 base quarter", async () => {
+    for (const type of ["all", "houses", "apartments"]) {
+      mockImpi();
+      const result = JSON.parse(
+        await handleRealEstate("get_property_price_index", { type, from: "2019Q4", to: "2019Q4" })
+      );
+      expect(result.series).toEqual([{ period: "2019-Q4", index: 100 }]);
+    }
   });
 
-  it("Q4 2019 index for all types is 100.0", async () => {
-    const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", { from: "2019Q4", to: "2019Q4" })
-    );
-    expect(result.series).toHaveLength(1);
-    expect(result.series[0].index).toBe(100.0);
-    expect(result.series[0].period).toBe("2019-Q4");
-  });
-
-  it("Q4 2019 houses index is 100.0", async () => {
-    const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", {
-        type: "houses",
-        from: "2019Q4",
-        to: "2019Q4",
-      })
-    );
-    expect(result.series[0].index).toBe(100.0);
-  });
-
-  it("Q4 2019 apartments index is 100.0", async () => {
-    const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", {
-        type: "apartments",
-        from: "2019Q4",
-        to: "2019Q4",
-      })
-    );
-    expect(result.series[0].index).toBe(100.0);
+  it("caches the series for the process", async () => {
+    const fetchMock = mockImpi();
+    await handleRealEstate("get_property_price_index", {});
+    await handleRealEstate("get_property_price_index", { type: "houses" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("response is under 50K chars", async () => {
+    mockImpi();
     const raw = await handleRealEstate("get_property_price_index", {});
     expect(raw.length).toBeLessThan(50000);
   });
@@ -135,26 +213,27 @@ describe("get_property_price_index — defaults", () => {
 
 describe("get_property_price_index — type filter", () => {
   it("returns houses index when type=houses", async () => {
+    mockImpi();
     const result = JSON.parse(
       await handleRealEstate("get_property_price_index", { type: "houses" })
     );
     expect(result.type).toBe("houses");
-    expect(result.series[0]).toHaveProperty("index");
-    // Houses index on 2019-Q4 should be 100
     const q4 = result.series.find((s: { period: string }) => s.period === "2019-Q4");
-    expect(q4?.index).toBe(100.0);
+    expect(q4?.index).toBe(100);
   });
 
   it("returns apartments index when type=apartments", async () => {
+    mockImpi();
     const result = JSON.parse(
       await handleRealEstate("get_property_price_index", { type: "apartments" })
     );
     expect(result.type).toBe("apartments");
     const q4 = result.series.find((s: { period: string }) => s.period === "2019-Q4");
-    expect(q4?.index).toBe(100.0);
+    expect(q4?.index).toBe(100);
   });
 
   it("throws for invalid type", async () => {
+    mockImpi();
     await expect(
       handleRealEstate("get_property_price_index", { type: "commercial" })
     ).rejects.toThrow("Invalid type");
@@ -165,39 +244,36 @@ describe("get_property_price_index — type filter", () => {
 
 describe("get_property_price_index — date range", () => {
   it("filters by from (year only)", async () => {
+    mockImpi();
     const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", { from: "2022" })
+      await handleRealEstate("get_property_price_index", { from: "2019" })
     );
-    expect(result.from).toMatch(/^2022-Q1/);
+    expect(result.from).toBe("2019-Q1");
     for (const s of result.series as Array<{ period: string }>) {
-      const [year] = s.period.split("-Q");
-      expect(parseInt(year, 10)).toBeGreaterThanOrEqual(2022);
+      expect(parseInt(s.period.slice(0, 4), 10)).toBeGreaterThanOrEqual(2019);
     }
   });
 
   it("filters by to (year only)", async () => {
-    const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", { to: "2019" })
-    );
+    mockImpi();
+    const result = JSON.parse(await handleRealEstate("get_property_price_index", { to: "2019" }));
     for (const s of result.series as Array<{ period: string }>) {
-      const [year] = s.period.split("-Q");
-      expect(parseInt(year, 10)).toBeLessThanOrEqual(2019);
+      expect(parseInt(s.period.slice(0, 4), 10)).toBeLessThanOrEqual(2019);
     }
   });
 
   it("filters by from Q notation", async () => {
+    mockImpi();
     const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", { from: "2024Q2" })
+      await handleRealEstate("get_property_price_index", { from: "2018Q2" })
     );
-    expect(result.series[0].period).toBe("2024-Q2");
+    expect(result.series[0].period).toBe("2018-Q2");
   });
 
   it("filters by to with dash notation", async () => {
+    mockImpi();
     const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", {
-        from: "2020Q1",
-        to: "2020-Q4",
-      })
+      await handleRealEstate("get_property_price_index", { from: "2020Q1", to: "2020-Q4" })
     );
     expect(result.series).toHaveLength(4);
     expect(result.from).toBe("2020-Q1");
@@ -205,49 +281,78 @@ describe("get_property_price_index — date range", () => {
   });
 
   it("throws for invalid from format", async () => {
+    mockImpi();
     await expect(
       handleRealEstate("get_property_price_index", { from: "not-a-quarter" })
     ).rejects.toThrow("Invalid from value");
   });
 
   it("throws for invalid to format", async () => {
+    mockImpi();
     await expect(
       handleRealEstate("get_property_price_index", { to: "bad-value" })
     ).rejects.toThrow("Invalid to value");
   });
 
-  it("throws when no data in range", async () => {
+  it("reports the covered period when the range is outside the series", async () => {
+    mockImpi();
     await expect(
-      handleRealEstate("get_property_price_index", { from: "2030Q1" })
-    ).rejects.toThrow("No data available");
+      handleRealEstate("get_property_price_index", { to: "2010" })
+    ).rejects.toThrow("2017-Q1");
+  });
+});
+
+// ── get_property_price_index — upstream failures ─────────────────────────────
+
+describe("get_property_price_index — upstream failures", () => {
+  it("errors with the BFS page when no data file is published", async () => {
+    mockFetchSequence([mockImpiAssetListNoMaster]);
+    await expect(handleRealEstate("get_property_price_index", {})).rejects.toThrow(
+      "impi.html"
+    );
+  });
+
+  it("rejects a data file whose series do not line up", async () => {
+    mockFetchSequence([mockImpiAssetList, mockImpiDataTruncated]);
+    await expect(handleRealEstate("get_property_price_index", {})).rejects.toThrow(
+      "unexpected shape"
+    );
+  });
+
+  it("does not cache a failed fetch", async () => {
+    mockFetchSequence([mockImpiAssetListNoMaster]);
+    await expect(handleRealEstate("get_property_price_index", {})).rejects.toThrow();
+    const fetchMock = mockImpi();
+    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
+    expect(result.series).toHaveLength(16);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 
 // ── get_property_price_index — trend ────────────────────────────────────────
 
 describe("get_property_price_index — trend", () => {
-  it("includes yoy trend for full data", async () => {
+  it("computes the year-on-year change from the published values", async () => {
+    mockImpi();
     const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
-    expect(result.trend).not.toBeNull();
-    expect(typeof result.trend.change_yoy).toBe("number");
-    expect(result.trend.change_yoy_label).toMatch(/vs \d{4}-Q\d/);
+    // 2020-Q4 103.1292 vs 2019-Q4 100
+    expect(result.trend.change_yoy).toBe(3.13);
+    expect(result.trend.change_yoy_label).toBe("2020-Q4 vs 2019-Q4");
   });
 
-  it("trend is null for single data point with no prior year", async () => {
+  it("trend is null when the prior year is outside the range", async () => {
+    mockImpi();
     const result = JSON.parse(
-      await handleRealEstate("get_property_price_index", { from: "2009Q4", to: "2009Q4" })
+      await handleRealEstate("get_property_price_index", { from: "2017Q1", to: "2017Q1" })
     );
     expect(result.trend).toBeNull();
   });
 
-  it("has dataset_id field", async () => {
+  it("links the opendata.swiss dataset", async () => {
+    mockImpi();
     const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
-    expect(result.dataset_id).toContain("wohnimmobilien");
-  });
-
-  it("source_url points to opendata.swiss", async () => {
-    const result = JSON.parse(await handleRealEstate("get_property_price_index", {}));
-    expect(result.source_url).toContain("opendata.swiss");
+    expect(result.dataset_url).toContain("opendata.swiss");
+    expect(result.dataset_url).toContain("wohnimmobilien");
   });
 });
 
@@ -361,16 +466,16 @@ describe("search_real_estate_data — errors", () => {
 
 describe("get_rent_index — latest", () => {
   it("returns CPI series data", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
     expect(result.index_name).toContain("Consumer Price Index");
-    expect(result.baseline).toContain("1982");
+    expect(result.baseline).toBe("Dezember 1982 = 100");
     expect(result.series.length).toBeGreaterThan(0);
     expect(result.source).toContain("BFS");
   });
 
   it("each series point has year, month, index", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
     for (const row of result.series) {
       expect(typeof row.year).toBe("number");
@@ -380,7 +485,7 @@ describe("get_rent_index — latest", () => {
   });
 
   it("has latest and data_points fields", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
     expect(result.latest).toBeDefined();
     expect(result.latest.index).toBeGreaterThan(0);
@@ -388,36 +493,73 @@ describe("get_rent_index — latest", () => {
   });
 
   it("includes yoy_change_percent when 13+ months", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
-    // mockCpiLatest has 24 months so yoy should be set
     expect(result.yoy_change_percent).not.toBeNull();
     expect(typeof result.yoy_change_percent).toBe("number");
   });
 
   it("yoy_change is null for < 13 months", async () => {
-    mockFetch(mockCpiSmall);
-    const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
+    mockCpiStore();
+    const result = JSON.parse(await handleRealEstate("get_rent_index", { limit: 6 }));
     expect(result.yoy_change_percent).toBeNull();
   });
 
   it("response is under 50K chars", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const raw = await handleRealEstate("get_rent_index", {});
     expect(raw.length).toBeLessThan(50000);
   });
 
   it("has source_url and ckan_dataset fields", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
     expect(result.source_url).toContain("data.zg.ch");
     expect(result.ckan_dataset).toContain("opendata.swiss");
   });
 
   it("has note explaining relationship to property price index", async () => {
-    mockFetch(mockCpiLatest);
+    mockCpiStore();
     const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
     expect(result.note).toContain("get_property_price_index");
+  });
+});
+
+// ── get_rent_index — window derived from the store ───────────────────────────
+
+describe("get_rent_index — window", () => {
+  it("ends on the store's last row, whatever the row count is", async () => {
+    mockCpiStore();
+    const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
+    const last = cpiStoreRows[cpiStoreRows.length - 1];
+    expect(result.latest.month).toBe(last.monat);
+    expect(result.latest.year).toBe(Number(last.jahr));
+  });
+
+  it("follows the store when a month is appended", async () => {
+    // A hard-coded offset drifts the moment the store grows; this is that month.
+    const grown = [...cpiStoreRows, { jahr: "2025", monat: "November", index: "171.2" }];
+    mockCpiStore(grown);
+    const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
+    expect(result.latest.month).toBe("November");
+    expect(result.latest.year).toBe(2025);
+    expect(result.coverage).toBe("Dezember 1982 – November 2025");
+  });
+
+  it("asks for the offset the store's row count implies", async () => {
+    const fetchMock = mockCpiStore();
+    await handleRealEstate("get_rent_index", { limit: 12 });
+    const offsets = fetchMock.mock.calls
+      .map((call) => new URL(String(call[0])))
+      .filter((u) => u.searchParams.get("_limit") === "12")
+      .map((u) => Number(u.searchParams.get("_offset")));
+    expect(offsets).toEqual([cpiStoreRows.length - 12]);
+  });
+
+  it("reports the coverage the store actually has", async () => {
+    mockCpiStore();
+    const result = JSON.parse(await handleRealEstate("get_rent_index", {}));
+    expect(result.coverage).toBe("Dezember 1982 – Oktober 2025");
   });
 });
 
@@ -425,7 +567,7 @@ describe("get_rent_index — latest", () => {
 
 describe("get_rent_index — year filter", () => {
   it("filters to specific year", async () => {
-    mockFetch(mockCpiYear2020);
+    mockCpiStore();
     const result = JSON.parse(
       await handleRealEstate("get_rent_index", { year: 2020 })
     );
@@ -435,18 +577,28 @@ describe("get_rent_index — year filter", () => {
   });
 
   it("returns 12 months for a full year", async () => {
-    mockFetch(mockCpiYear2020);
+    mockCpiStore();
     const result = JSON.parse(
       await handleRealEstate("get_rent_index", { year: 2020 })
     );
     expect(result.series).toHaveLength(12);
   });
 
-  it("throws when year has no data", async () => {
-    mockFetch(mockCpiNoData);
+  it("asks the store to filter rather than guessing an offset", async () => {
+    const fetchMock = mockCpiStore();
+    await handleRealEstate("get_rent_index", { year: 2022 });
+    const yearCall = fetchMock.mock.calls
+      .map((call) => new URL(String(call[0])))
+      .find((u) => u.searchParams.has("jahr"));
+    expect(yearCall?.searchParams.get("jahr")).toBe("2022");
+    expect(yearCall?.searchParams.get("_offset")).toBeNull();
+  });
+
+  it("throws with the real coverage when the year has no data", async () => {
+    mockCpiStore();
     await expect(
       handleRealEstate("get_rent_index", { year: 2030 })
-    ).rejects.toThrow("No CPI data found for year 2030");
+    ).rejects.toThrow("No CPI data for year 2030. The series covers Dezember 1982 – Oktober 2025.");
   });
 });
 
@@ -454,20 +606,22 @@ describe("get_rent_index — year filter", () => {
 
 describe("get_rent_index — limit", () => {
   it("respects limit param", async () => {
-    mockFetch({ ...mockCpiSmall, limit: 6, results: mockCpiLatest.results.slice(0, 6) });
+    mockCpiStore();
     const result = JSON.parse(
       await handleRealEstate("get_rent_index", { limit: 6 })
     );
-    expect(result.series.length).toBeLessThanOrEqual(6);
+    expect(result.series).toHaveLength(6);
   });
 
   it("clamps limit to 60 max", async () => {
-    mockFetch(mockCpiLatest);
-    // Should not throw even with large limit
+    const fetchMock = mockCpiStore();
     const result = JSON.parse(
       await handleRealEstate("get_rent_index", { limit: 999 })
     );
-    expect(result).toBeDefined();
+    expect(result.series).toHaveLength(60);
+    const limits = fetchMock.mock.calls
+      .map((call) => new URL(String(call[0])).searchParams.get("_limit"));
+    expect(limits).toContain("60");
   });
 });
 
@@ -489,12 +643,16 @@ describe("search_real_estate_data — fallback failure handling", () => {
 // ── get_rent_index — empty series edge case ───────────────────────────────────
 
 describe("get_rent_index — edge cases", () => {
-  it("handles empty series gracefully (period becomes N/A)", async () => {
-    // Return data only for 2019, request year 2099 → should throw
-    mockFetch(mockCpiNoData);
+  it("rejects a year the store does not cover", async () => {
+    mockCpiStore();
     await expect(
       handleRealEstate("get_rent_index", { year: 2099 })
-    ).rejects.toThrow("No CPI data found");
+    ).rejects.toThrow("No CPI data for year 2099");
+  });
+
+  it("throws when the store is empty", async () => {
+    mockCpiStore([]);
+    await expect(handleRealEstate("get_rent_index", {})).rejects.toThrow("CPI series is empty");
   });
 });
 
@@ -502,6 +660,7 @@ describe("get_rent_index — edge cases", () => {
 
 describe("get_property_price_index — Q-prefix notation", () => {
   it("parses Q1 2020 format", async () => {
+    mockImpi();
     const result = JSON.parse(
       await handleRealEstate("get_property_price_index", { from: "Q1 2020", to: "Q4 2020" })
     );

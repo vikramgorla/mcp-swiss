@@ -1,7 +1,10 @@
-import { fetchJSON } from "../utils/http.js";
+import { cached } from "../utils/cache.js";
+import { buildUrl, fetchJSON } from "../utils/http.js";
 
 const GEO_ADMIN = "https://api3.geo.admin.ch/rest/services/api/MapServer";
 const NABELSTATIONEN_LAYER = "ch.bafu.nabelstationen";
+/** Envelope covering Switzerland, used to pull the whole station layer at once. */
+const CH_ENVELOPE = "5.5,45.5,10.9,48.1";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,24 +31,34 @@ interface NabelStationFeature {
   attributes: StationAttributes;
 }
 
-interface NabelStationResponse {
-  feature?: NabelStationFeature;
+interface NabelIdentifyResponse {
+  results?: NabelStationFeature[];
 }
 
-// ── Known NABEL stations (BAFU/EMPA national monitoring network) ─────────────
-// Source: geo.admin.ch ch.bafu.nabelstationen layer
-// These are the official NABEL (Nationales Beobachtungsnetz für Luftfremdstoffe) stations
+// ── NABEL stations (BAFU/EMPA national monitoring network) ───────────────────
+// Codes, names and coordinates match the geo.admin.ch ch.bafu.nabelstationen
+// layer, which is the full network (16 sites). The layer carries no canton,
+// altitude or site type, so those stay here; list_air_quality_stations merges
+// in any code the layer gains later, so a new site is never silently missing.
 
-const NABEL_STATIONS: Record<
-  string,
-  { name: string; canton: string; lat: number; lon: number; altitude_m?: number; environment: string }
-> = {
+interface NabelStation {
+  name: string;
+  canton?: string;
+  lat: number;
+  lon: number;
+  altitude_m?: number;
+  environment?: string;
+}
+
+const NABEL_STATIONS: Record<string, NabelStation> = {
   BAS: { name: "Basel-Binningen", canton: "BS", lat: 47.541081, lon: 7.583264, altitude_m: 316, environment: "urban" },
   BER: { name: "Bern-Bollwerk", canton: "BE", lat: 46.950993, lon: 7.440866, altitude_m: 540, environment: "urban" },
+  BRM: { name: "Beromünster", canton: "LU", lat: 47.189614, lon: 8.175434, altitude_m: 797, environment: "rural" },
   CHA: { name: "Chaumont", canton: "NE", lat: 47.049465, lon: 6.979204, altitude_m: 1136, environment: "rural-elevated" },
   DAV: { name: "Davos", canton: "GR", lat: 46.815199, lon: 9.855859, altitude_m: 1590, environment: "alpine" },
   DUE: { name: "Duebendorf", canton: "ZH", lat: 47.404842, lon: 8.608474, altitude_m: 432, environment: "suburban" },
   HAE: { name: "Haerkingen", canton: "SO", lat: 47.311911, lon: 7.8205, altitude_m: 430, environment: "rural-roadside" },
+  JUN: { name: "Jungfraujoch", canton: "VS", lat: 46.547499, lon: 7.985071, altitude_m: 3578, environment: "high-alpine" },
   LAU: { name: "Lausanne", canton: "VD", lat: 46.522018, lon: 6.639701, altitude_m: 540, environment: "urban" },
   LUG: { name: "Lugano", canton: "TI", lat: 46.011117, lon: 8.957165, altitude_m: 273, environment: "urban" },
   MAG: { name: "Magadino-Cadenazzo", canton: "TI", lat: 46.160376, lon: 8.933939, altitude_m: 203, environment: "rural" },
@@ -53,7 +66,7 @@ const NABEL_STATIONS: Record<
   RIG: { name: "Rigi-Seebodenalp", canton: "SZ", lat: 47.06741, lon: 8.46333, altitude_m: 1030, environment: "alpine" },
   SIO: { name: "Sion-Aerodrome", canton: "VS", lat: 46.220201, lon: 7.341966, altitude_m: 482, environment: "urban" },
   TAE: { name: "Taenikon", canton: "TG", lat: 47.479771, lon: 8.904686, altitude_m: 540, environment: "rural" },
-  ZUE: { name: "Zürich-Kaserne", canton: "ZH", lat: 47.3769, lon: 8.5417, altitude_m: 409, environment: "urban" },
+  ZUE: { name: "Zürich-Kaserne", canton: "ZH", lat: 47.377586, lon: 8.530406, altitude_m: 409, environment: "urban" },
 };
 
 // ── Swiss legal air quality limits (LRV - Luftreinhalteordnung, Swiss Clean Air Act) ──
@@ -73,7 +86,7 @@ export const airqualityTools = [
   {
     name: "list_air_quality_stations",
     description:
-      "List all official Swiss NABEL (Nationales Beobachtungsnetz für Luftfremdstoffe) air quality monitoring stations operated by BAFU/EMPA. Returns station codes, names, cantons, coordinates, and environment types.",
+      "List NABEL air-quality monitoring stations (BAFU/Empa)",
     inputSchema: {
       type: "object",
       properties: {},
@@ -82,7 +95,7 @@ export const airqualityTools = [
   {
     name: "get_air_quality",
     description:
-      "Get information about a Swiss NABEL air quality monitoring station, including location, environment type, Swiss legal limits (LRV), and a direct link to the BAFU live data portal. Use station codes from list_air_quality_stations (e.g. BER=Bern, ZUE=Zürich, LUG=Lugano).",
+      "NABEL station info: location, environment type, legal limits (LRV) and a link to BAFU live data (no measurements returned)",
     inputSchema: {
       type: "object",
       required: ["station"],
@@ -90,7 +103,7 @@ export const airqualityTools = [
         station: {
           type: "string",
           description:
-            "NABEL station code (e.g. BER, ZUE, LUG, BAS, DAV). Use list_air_quality_stations for all codes.",
+            "Station code, e.g. BER, ZUE, LUG, BAS, DAV",
         },
       },
     },
@@ -103,14 +116,56 @@ function normalizeStationCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
-async function fetchStationFromApi(stationCode: string): Promise<NabelStationFeature | null> {
-  const url = `${GEO_ADMIN}/${NABELSTATIONEN_LAYER}/${encodeURIComponent(stationCode)}?returnGeometry=true&sr=4326`;
-  try {
-    const data = await fetchJSON<NabelStationResponse>(url);
-    return data?.feature ?? null;
-  } catch {
-    return null;
+// One identify call returns the whole layer, so both tools work off a single
+// cached copy instead of one request per lookup.
+const STATIONS_TTL_MS = 24 * 60 * 60 * 1000;
+
+const liveStations = cached(STATIONS_TTL_MS, async () => {
+  const url = buildUrl(`${GEO_ADMIN}/identify`, {
+    geometryType: "esriGeometryEnvelope",
+    geometry: CH_ENVELOPE,
+    mapExtent: CH_ENVELOPE,
+    imageDisplay: "100,100,96",
+    tolerance: 0,
+    layers: `all:${NABELSTATIONEN_LAYER}`,
+    returnGeometry: true,
+    sr: 4326,
+    limit: 200,
+  });
+  const data = await fetchJSON<NabelIdentifyResponse>(url);
+  const found: Record<string, NabelStation> = {};
+  for (const f of data.results ?? []) {
+    const code = normalizeStationCode(f.featureId ?? f.id ?? "");
+    const geometry = f.geometry;
+    if (!code || !geometry) continue;
+    found[code] = { name: f.attributes?.name ?? code, lat: geometry.y, lon: geometry.x };
   }
+  return found;
+});
+
+/** Clear the station-layer cache (for testing) */
+export function clearAirQualityCache(): void {
+  liveStations.clear();
+}
+
+/**
+ * The curated table, plus any station the layer reports that it does not list
+ * yet. A layer outage falls back to the table rather than failing the call.
+ */
+async function allStations(): Promise<Record<string, NabelStation>> {
+  let live: Record<string, NabelStation>;
+  try {
+    live = await liveStations.get();
+  } catch {
+    return { ...NABEL_STATIONS };
+  }
+  const merged: Record<string, NabelStation> = { ...live, ...NABEL_STATIONS };
+  return Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)));
+}
+
+function describe(info: NabelStation): string {
+  const canton = info.canton ? ` (${info.canton})` : "";
+  return info.environment ? `${info.name}${canton} — ${info.environment}` : `${info.name}${canton}`;
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
@@ -121,10 +176,9 @@ export async function handleAirQuality(
 ): Promise<string> {
   switch (name) {
     case "list_air_quality_stations": {
-      // Build compact station dict from our hardcoded registry (confirmed via geo.admin.ch API)
       const stations: Record<string, string> = {};
-      for (const [code, info] of Object.entries(NABEL_STATIONS)) {
-        stations[code] = `${info.name} (${info.canton}) — ${info.environment}`;
+      for (const [code, info] of Object.entries(await allStations())) {
+        stations[code] = describe(info);
       }
       return JSON.stringify({
         count: Object.keys(stations).length,
@@ -138,34 +192,23 @@ export async function handleAirQuality(
 
     case "get_air_quality": {
       const code = normalizeStationCode(args.station as string);
-      const local = NABEL_STATIONS[code];
+      const stations = await allStations();
+      const station = stations[code];
 
-      if (!local) {
-        const knownCodes = Object.keys(NABEL_STATIONS).join(", ");
+      if (!station) {
         throw new Error(
-          `Unknown NABEL station code "${code}". Known stations: ${knownCodes}. ` +
+          `Unknown NABEL station code "${code}". Known stations: ${Object.keys(stations).join(", ")}. ` +
             `Use list_air_quality_stations to see all options.`
         );
       }
 
-      // Optionally enrich from live geo.admin.ch API (non-blocking fallback)
-      let apiName: string | undefined;
-      try {
-        const feature = await fetchStationFromApi(code);
-        apiName = feature?.attributes?.name;
-      } catch {
-        // continue with local data
-      }
-
-      const stationName = apiName ?? local.name;
-
       return JSON.stringify({
         station: code,
-        name: stationName,
-        canton: local.canton,
-        coordinates: { lat: local.lat, lon: local.lon },
-        altitude_m: local.altitude_m,
-        environment: local.environment,
+        name: station.name,
+        canton: station.canton,
+        coordinates: { lat: station.lat, lon: station.lon },
+        altitude_m: station.altitude_m,
+        environment: station.environment,
         network: "NABEL",
         operator: "BAFU / EMPA",
         source: "geo.admin.ch — ch.bafu.nabelstationen",

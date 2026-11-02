@@ -3,6 +3,8 @@
 // Coverage: Zurich city ZIP codes (8001–8099)
 // No authentication required
 
+import { swissToday } from "../utils/date.js";
+
 import { fetchJSON, buildUrl } from "../utils/http.js";
 
 const BASE = "https://openerz.metaodi.ch/api";
@@ -56,13 +58,9 @@ interface CollectionEntry {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns today's date as YYYY-MM-DD in local time */
+/** Today in Switzerland, not on whatever timezone the server runs in. */
 function todayISO(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return swissToday();
 }
 
 /** Returns the first and last day of a given month/year as YYYY-MM-DD */
@@ -117,27 +115,24 @@ export const recyclingTools = [
   {
     name: "get_waste_collection",
     description:
-      "Get upcoming waste collection dates for a Zurich city ZIP code. Returns the next scheduled pickups sorted by date. " +
-      "Currently covers Zurich city only (ZIP codes 8001–8099). " +
-      "Powered by OpenERZ (openerz.metaodi.ch).",
+      "Upcoming waste collection dates for a ZIP code. Zurich city only (8001–8099, OpenERZ)",
     inputSchema: {
       type: "object",
       required: ["zip"],
       properties: {
         zip: {
           type: "string",
-          description: "Zurich city ZIP code (e.g. '8001', '8004', '8032'). Covers 8001–8099.",
+          description: "e.g. 8004",
         },
         type: {
           type: "string",
-          description:
-            "Waste type to filter by (e.g. 'cardboard', 'waste', 'paper', 'organic', 'textile', 'special', 'mobile'). " +
-            "If omitted, returns all types.",
+          description: "Omit for all",
           enum: SUPPORTED_WASTE_TYPES,
         },
         limit: {
           type: "number",
-          description: "Maximum number of upcoming collection dates to return. Default: 5.",
+          description: "max 100",
+          default: 5,
         },
       },
     },
@@ -145,10 +140,7 @@ export const recyclingTools = [
   {
     name: "list_waste_types",
     description:
-      "List all supported waste collection types for Zurich city. " +
-      "Returns each type with its description and local name. " +
-      "Currently covers Zurich city only (ZIP codes 8001–8099). " +
-      "Powered by OpenERZ (openerz.metaodi.ch).",
+      "List waste collection types. Zurich city only (OpenERZ)",
     inputSchema: {
       type: "object",
       properties: {},
@@ -157,25 +149,22 @@ export const recyclingTools = [
   {
     name: "get_waste_calendar",
     description:
-      "Get a full monthly waste collection calendar for a Zurich city ZIP code. " +
-      "Returns all collection events grouped by date for the given month. " +
-      "Currently covers Zurich city only (ZIP codes 8001–8099). " +
-      "Powered by OpenERZ (openerz.metaodi.ch).",
+      "Monthly waste collection calendar for a ZIP code. Zurich city only (8001–8099, OpenERZ)",
     inputSchema: {
       type: "object",
       required: ["zip"],
       properties: {
         zip: {
           type: "string",
-          description: "Zurich city ZIP code (e.g. '8001', '8004', '8032'). Covers 8001–8099.",
+          description: "e.g. 8004",
         },
         month: {
           type: "number",
-          description: "Month number (1–12). Defaults to the current month.",
+          description: "1–12, default: current month",
         },
         year: {
           type: "number",
-          description: "Year (e.g. 2026). Defaults to the current year.",
+          description: "default: current year",
         },
       },
     },
@@ -236,13 +225,11 @@ export async function handleRecycling(
         throw new Error("zip is required (e.g. '8001')");
       }
 
-      const now = new Date();
+      const [thisYear, thisMonth] = swissToday().split("-").map(Number);
       const month = typeof args.month === "number"
-        ? Math.max(1, Math.min(args.month, 12))
-        : now.getMonth() + 1;
-      const year = typeof args.year === "number"
-        ? args.year
-        : now.getFullYear();
+        ? Math.max(1, Math.min(Math.trunc(args.month), 12))
+        : thisMonth;
+      const year = typeof args.year === "number" ? Math.trunc(args.year) : thisYear;
 
       const { start, end } = monthRange(month, year);
 

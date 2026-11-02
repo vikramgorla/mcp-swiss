@@ -67,4 +67,22 @@ describe('Transport API (live)', () => {
     expect(result[0]).toHaveProperty('name');
     expect(result[0]).toHaveProperty('lat');
   });
+
+  it('get_nearby_stations honours limit and distance', async () => {
+    const unfiltered = JSON.parse(await handleTransport('get_nearby_stations', {
+      x: 47.3769, y: 8.5417,
+    }));
+    expect(unfiltered.length).toBeGreaterThan(2);
+
+    const limited = JSON.parse(await handleTransport('get_nearby_stations', {
+      x: 47.3769, y: 8.5417, limit: 2,
+    }));
+    expect(limited).toHaveLength(2);
+
+    const close = JSON.parse(await handleTransport('get_nearby_stations', {
+      x: 47.3769, y: 8.5417, distance: 200,
+    }));
+    expect(close.length).toBeLessThan(unfiltered.length);
+    for (const s of close) expect(s.distance).toBeLessThanOrEqual(200);
+  });
 });

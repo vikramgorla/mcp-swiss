@@ -1,48 +1,68 @@
-import { fetchJSON } from "../utils/http.js";
+import { cached } from "../utils/cache.js";
+import { fetchBody, fetchJSON } from "../utils/http.js";
 
 const BASE = "https://www.zefix.admin.ch/ZefixREST/api/v1";
+
+const CANTONS = [
+  { code: "AG", name: "Aargau" }, { code: "AI", name: "Appenzell Innerrhoden" },
+  { code: "AR", name: "Appenzell Ausserrhoden" }, { code: "BE", name: "Bern" },
+  { code: "BL", name: "Basel-Landschaft" }, { code: "BS", name: "Basel-Stadt" },
+  { code: "FR", name: "Fribourg" }, { code: "GE", name: "Geneva" },
+  { code: "GL", name: "Glarus" }, { code: "GR", name: "Graubünden" },
+  { code: "JU", name: "Jura" }, { code: "LU", name: "Lucerne" },
+  { code: "NE", name: "Neuchâtel" }, { code: "NW", name: "Nidwalden" },
+  { code: "OW", name: "Obwalden" }, { code: "SG", name: "St. Gallen" },
+  { code: "SH", name: "Schaffhausen" }, { code: "SO", name: "Solothurn" },
+  { code: "SZ", name: "Schwyz" }, { code: "TG", name: "Thurgau" },
+  { code: "TI", name: "Ticino" }, { code: "UR", name: "Uri" },
+  { code: "VD", name: "Vaud" }, { code: "VS", name: "Valais" },
+  { code: "ZG", name: "Zug" }, { code: "ZH", name: "Zürich" },
+];
+
+const CANTON_CODES = CANTONS.map((c) => c.code);
 
 export const companiesTools = [
   {
     name: "search_companies",
-    description: "Search Swiss company registry (ZEFIX) by name, canton, or legal form",
+    description: "Search the ZEFIX commercial register by company name, optionally filtered by canton/legal form",
     inputSchema: {
       type: "object",
       required: ["name"],
       properties: {
-        name: { type: "string", description: "Company name or partial name to search" },
-        canton: { type: "string", description: "Canton abbreviation (e.g. ZH, BE, GE, ZG)" },
-        legal_form: { type: "string", description: "Legal form code (e.g. 0106=GmbH, 0101=AG)" },
-        limit: { type: "number", description: "Max results (default: 20)" },
+        name: { type: "string", description: "Full or partial name, min 3 chars; * is a wildcard" },
+        canton: { type: "string", enum: CANTON_CODES, description: "Canton of the registered seat" },
+        legal_form: { type: "number", description: "Legal form id, e.g. 3=AG, 4=GmbH (see list_legal_forms)" },
+        limit: { type: "number", default: 20, maximum: 100 },
       },
     },
   },
   {
     name: "get_company",
-    description: "Get full details of a Swiss company by its ZEFIX internal ID (ehraid). Use search_companies first to find the ehraid — it is returned in company search results.",
+    description: "Full company details by ZEFIX ehraid (from search_companies)",
     inputSchema: {
       type: "object",
       required: ["ehraid"],
       properties: {
-        ehraid: { type: "number", description: "Company internal ZEFIX ID (ehraid integer, e.g. 119283). Returned by search_companies." },
+        ehraid: { type: "number", description: "e.g. 119283" },
       },
     },
   },
   {
-    name: "search_companies_by_address",
-    description: "Search Swiss companies registered at a specific address or locality",
+    name: "search_companies_by_locality",
+    description: "Companies whose registered seat is in a commune/town. ZEFIX has no street-address search",
     inputSchema: {
       type: "object",
-      required: ["address"],
+      required: ["locality"],
       properties: {
-        address: { type: "string", description: "Address or locality name" },
-        limit: { type: "number", description: "Max results (default: 20)" },
+        locality: { type: "string", description: "Commune or town, e.g. Zug, Lausanne" },
+        name: { type: "string", description: "Optional name filter, min 3 chars" },
+        limit: { type: "number", default: 20, maximum: 100 },
       },
     },
   },
   {
     name: "list_cantons",
-    description: "List all Swiss cantons with their codes",
+    description: "List cantons with codes",
     inputSchema: {
       type: "object",
       properties: {},
@@ -50,7 +70,7 @@ export const companiesTools = [
   },
   {
     name: "list_legal_forms",
-    description: "List all Swiss company legal forms (AG, GmbH, etc.)",
+    description: "List company legal forms (AG, GmbH, ...) with the ids used by search_companies",
     inputSchema: {
       type: "object",
       properties: {},
@@ -58,93 +78,186 @@ export const companiesTools = [
   },
 ];
 
+// ── ZEFIX reference data ─────────────────────────────────────────────────────
+// legalForm/registerOffice/community are small lists that change a few times a
+// year. Cache them: a canton filter needs the registry-office ids of that
+// canton, and a locality filter needs the community ids of that commune.
+
+interface ZefixName { de: string; fr: string; it: string; en: string }
+interface LegalForm { id: number; name: ZefixName; kurzform: ZefixName }
+interface RegisterOffice { id: number; canton: string }
+interface Community { id: number; name: string; canton: string; alternateNames: string[] | null }
+
+const REFERENCE_TTL_MS = 60 * 60 * 1000; // 1 h, as in snb.ts
+
+const legalForms = cached(REFERENCE_TTL_MS, () => fetchJSON<LegalForm[]>(`${BASE}/legalForm.json`));
+const offices = cached(REFERENCE_TTL_MS, () => fetchJSON<RegisterOffice[]>(`${BASE}/registerOffice.json`));
+const communities = cached(REFERENCE_TTL_MS, () => fetchJSON<Community[]>(`${BASE}/community.json`));
+
+/** Clear the reference-data caches (for testing) */
+export function clearCompaniesCache(): void {
+  legalForms.clear();
+  offices.clear();
+  communities.clear();
+}
+
+/** Strip diacritics and case so "geneve" matches "Genève". */
+function fold(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+interface CompanyShort {
+  name: string;
+  ehraid: number;
+  uidFormatted: string;
+  legalSeat: string;
+  registerOfficeId: number;
+  legalFormId: number;
+  status: string;
+  shabDate: string | null;
+  deleteDate: string | null;
+  cantonalExcerptWeb: string;
+}
+
+/** 100 slimmed hits is ~20 KB; more would blow the response budget. */
+function maxEntries(limit: unknown): number {
+  const n = Number(limit);
+  return Number.isFinite(n) && n >= 1 ? Math.min(Math.floor(n), 100) : 20;
+}
+
+interface SearchResponse {
+  list?: CompanyShort[];
+  hasMoreResults?: boolean;
+  error?: unknown;
+}
+
+async function search(body: Record<string, unknown>): Promise<string> {
+  const data = await fetchBody<SearchResponse | null>(
+    `${BASE}/firm/search.json`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ languageKey: "en", ...body }),
+      rawStatus: true,
+    },
+    async (response) => {
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      return response.json() as Promise<SearchResponse>;
+    }
+  );
+  if (!data) return JSON.stringify({ companies: [], hasMoreResults: false }, null, 2);
+  // ZEFIX answers "no result" and "filter too narrow" with a 200 + error body.
+  if (data.error || !data.list?.length) return JSON.stringify({ companies: [], hasMoreResults: false }, null, 2);
+
+  const [forms, regOffices] = await Promise.all([legalForms.get(), offices.get()]);
+  const formById = new Map(forms.map((f) => [f.id, f]));
+  const cantonByOffice = new Map(regOffices.map((o) => [o.id, o.canton]));
+
+  const companies = data.list.map((c) => ({
+    name: c.name,
+    ehraid: c.ehraid,
+    uid: c.uidFormatted,
+    legalSeat: c.legalSeat,
+    canton: cantonByOffice.get(c.registerOfficeId) ?? null,
+    legalFormId: c.legalFormId,
+    legalForm: formById.get(c.legalFormId)?.kurzform.de ?? null,
+    status: c.status,
+    shabDate: c.shabDate,
+    deleteDate: c.deleteDate,
+    excerpt: c.cantonalExcerptWeb,
+  }));
+
+  return JSON.stringify({ companies, hasMoreResults: data.hasMoreResults ?? false }, null, 2);
+}
+
+// ── Detail ───────────────────────────────────────────────────────────────────
+
+/** Newest journal entries kept by get_company; the full list runs to 60 KB+. */
+const MAX_SHAB_PUB = 10;
+
+interface CompanyFull extends CompanyShort {
+  shabPub?: unknown[];
+}
+
 export async function handleCompanies(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
     case "search_companies": {
       const body: Record<string, unknown> = {
         name: args.name as string,
-        maxEntries: (args.limit as number) ?? 20,
-        languageKey: "en",
+        maxEntries: maxEntries(args.limit),
       };
-      if (args.canton) body.cantonAbbreviation = [args.canton as string];
-      if (args.legal_form) body.legalFormCode = args.legal_form as string;
 
-      const response = await fetch(`${BASE}/firm/search.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (response.status === 404) {
-        return JSON.stringify({ companies: [], hasMoreResults: false }, null, 2);
+      if (args.canton !== undefined) {
+        const canton = String(args.canton).toUpperCase();
+        const ids = (await offices.get()).filter((o) => o.canton === canton).map((o) => o.id);
+        if (ids.length === 0) {
+          throw new Error(`Unknown canton "${args.canton as string}". Use list_cantons for the 26 valid codes.`);
+        }
+        // ZEFIX filters by registry district, and each canton runs one (VS: three).
+        body.registryOffices = ids;
       }
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const data = await response.json() as { list?: unknown[]; hasMoreResults?: boolean; error?: unknown };
-      if (data.error) return JSON.stringify({ companies: [], hasMoreResults: false }, null, 2);
-      return JSON.stringify({ companies: data.list ?? [], hasMoreResults: data.hasMoreResults ?? false }, null, 2);
+
+      if (args.legal_form !== undefined) {
+        const id = Number(args.legal_form);
+        if (!Number.isInteger(id) || !(await legalForms.get()).some((f) => f.id === id)) {
+          throw new Error(`Unknown legal_form "${String(args.legal_form)}". Use list_legal_forms for the valid ids.`);
+        }
+        body.legalForms = [id];
+      }
+
+      return search(body);
     }
 
     case "get_company": {
-      // ZEFIX firm/{id}.json uses the internal ehraid integer (not CHE uid)
-      const ehraid = args.ehraid as number;
-      const url = `${BASE}/firm/${ehraid}.json`;
-      const data = await fetchJSON<unknown>(url);
-      return JSON.stringify(data, null, 2);
-    }
+      // ZEFIX firm/{id}.json uses the internal ehraid integer (not the CHE uid).
+      const raw = String(args.ehraid ?? "").trim();
+      if (!/^\d+$/.test(raw)) {
+        throw new Error(`Invalid ehraid "${raw}": expected digits only, e.g. 119283. Get it from search_companies (not the CHE-xxx.xxx.xxx uid).`);
+      }
 
-    case "search_companies_by_address": {
-      const body = {
-        name: args.address as string,
-        maxEntries: (args.limit as number) ?? 20,
-        languageKey: "en",
+      const data = await fetchJSON<CompanyFull>(`${BASE}/firm/${raw}.json`);
+
+      const [forms, regOffices] = await Promise.all([legalForms.get(), offices.get()]);
+      const shabPub = Array.isArray(data.shabPub) ? data.shabPub : [];
+      const slim = {
+        ...data,
+        canton: regOffices.find((o) => o.id === data.registerOfficeId)?.canton ?? null,
+        legalForm: forms.find((f) => f.id === data.legalFormId)?.name.en ?? null,
+        shabPub: shabPub.slice(0, MAX_SHAB_PUB),
+        shabPubTotal: shabPub.length,
       };
-      const response = await fetch(`${BASE}/firm/search.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (response.status === 404) return JSON.stringify({ companies: [], hasMoreResults: false }, null, 2);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const data = await response.json() as { list?: unknown[]; hasMoreResults?: boolean; error?: unknown };
-      if (data.error) return JSON.stringify({ companies: [], hasMoreResults: false }, null, 2);
-      return JSON.stringify({ companies: data.list ?? [], hasMoreResults: data.hasMoreResults ?? false }, null, 2);
+      return JSON.stringify(slim, null, 2);
     }
 
-    case "list_cantons": {
-      // ZEFIX /cantons and /legalForms endpoints require authentication (403).
-      // Return hardcoded authoritative list instead.
-      const cantons = [
-        { code: "AG", name: "Aargau" }, { code: "AI", name: "Appenzell Innerrhoden" },
-        { code: "AR", name: "Appenzell Ausserrhoden" }, { code: "BE", name: "Bern" },
-        { code: "BL", name: "Basel-Landschaft" }, { code: "BS", name: "Basel-Stadt" },
-        { code: "FR", name: "Fribourg" }, { code: "GE", name: "Geneva" },
-        { code: "GL", name: "Glarus" }, { code: "GR", name: "Graubünden" },
-        { code: "JU", name: "Jura" }, { code: "LU", name: "Lucerne" },
-        { code: "NE", name: "Neuchâtel" }, { code: "NW", name: "Nidwalden" },
-        { code: "OW", name: "Obwalden" }, { code: "SG", name: "St. Gallen" },
-        { code: "SH", name: "Schaffhausen" }, { code: "SO", name: "Solothurn" },
-        { code: "SZ", name: "Schwyz" }, { code: "TG", name: "Thurgau" },
-        { code: "TI", name: "Ticino" }, { code: "UR", name: "Uri" },
-        { code: "VD", name: "Vaud" }, { code: "VS", name: "Valais" },
-        { code: "ZG", name: "Zug" }, { code: "ZH", name: "Zürich" },
-      ];
-      return JSON.stringify(cantons, null, 2);
+    case "search_companies_by_locality": {
+      const wanted = fold(String(args.locality ?? ""));
+      if (!wanted) throw new Error("locality is required, e.g. Zug or Lausanne.");
+
+      const matches = (await communities.get()).filter(
+        (c) => fold(c.name) === wanted || (c.alternateNames ?? []).some((a) => fold(a) === wanted),
+      );
+      if (matches.length === 0) {
+        throw new Error(`No Swiss commune named "${String(args.locality)}". ZEFIX indexes the registered seat by commune, so a street address will not match.`);
+      }
+
+      const body: Record<string, unknown> = {
+        legalSeats: matches.map((c) => c.id),
+        maxEntries: maxEntries(args.limit),
+      };
+      if (args.name) body.name = args.name as string;
+      return search(body);
     }
+
+    case "list_cantons":
+      return JSON.stringify(CANTONS, null, 2);
 
     case "list_legal_forms": {
-      // ZEFIX /legalForms requires authentication (403). Return common Swiss legal forms.
-      const forms = [
-        { code: "0101", name: "Einzelunternehmen", nameEn: "Sole proprietorship" },
-        { code: "0103", name: "Kollektivgesellschaft", nameEn: "General partnership" },
-        { code: "0104", name: "Kommanditgesellschaft", nameEn: "Limited partnership" },
-        { code: "0105", name: "Aktiengesellschaft (AG)", nameEn: "Corporation (AG)" },
-        { code: "0106", name: "Gesellschaft mit beschränkter Haftung (GmbH)", nameEn: "Limited liability company (GmbH)" },
-        { code: "0107", name: "Genossenschaft", nameEn: "Cooperative" },
-        { code: "0108", name: "Verein", nameEn: "Association" },
-        { code: "0109", name: "Stiftung", nameEn: "Foundation" },
-        { code: "0110", name: "Kommanditaktiengesellschaft", nameEn: "Partnership limited by shares" },
-        { code: "0113", name: "Filiale ausländischer Gesellschaft", nameEn: "Branch of foreign company" },
-        { code: "0114", name: "Institut des öffentlichen Rechts", nameEn: "Public law institution" },
-      ];
+      const forms = (await legalForms.get())
+        .filter((f) => f.id > 0)
+        .map((f) => ({ id: f.id, abbr: f.kurzform.de, name: f.name.de, nameEn: f.name.en }));
       return JSON.stringify(forms, null, 2);
     }
 

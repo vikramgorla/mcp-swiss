@@ -1,255 +1,342 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { handleAvalanche, avalancheTools, SWISS_AVALANCHE_REGIONS } from "../../src/modules/avalanche.js";
+import {
+  winterBulletins,
+  springBulletin,
+  winterGeojson,
+  emptyBulletins,
+  emptyGeojson,
+  bulletinList,
+} from "../fixtures/avalanche.js";
+
+/** Answers each request in turn; the last response repeats. */
+function mockFetch(...responses: unknown[]) {
+  const urls: string[] = [];
+  let i = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation((url: string) => {
+      urls.push(url);
+      const data = responses[i] ?? responses[responses.length - 1];
+      i++;
+      return Promise.resolve({ ok: true, status: 200, statusText: "OK", json: () => Promise.resolve(data) });
+    })
+  );
+  return urls;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 // ── Tool definitions ──────────────────────────────────────────────────────────
 
 describe("avalancheTools", () => {
-  it("exports exactly 2 tools", () => {
+  it("exports both tools with object schemas", () => {
     expect(avalancheTools).toHaveLength(2);
-  });
-
-  it("has get_avalanche_bulletin tool", () => {
-    const tool = avalancheTools.find((t) => t.name === "get_avalanche_bulletin");
-    expect(tool).toBeDefined();
-    expect(tool?.description).toContain("SLF");
-    expect(tool?.inputSchema.type).toBe("object");
-  });
-
-  it("has list_avalanche_regions tool", () => {
-    const tool = avalancheTools.find((t) => t.name === "list_avalanche_regions");
-    expect(tool).toBeDefined();
-    expect(tool?.description).toContain("SLF");
-    expect(tool?.inputSchema.type).toBe("object");
-  });
-
-  it("get_avalanche_bulletin has language enum", () => {
-    const tool = avalancheTools.find((t) => t.name === "get_avalanche_bulletin");
-    const langProp = tool?.inputSchema.properties?.language as Record<string, unknown>;
-    expect(langProp?.enum).toEqual(["de", "en", "fr", "it"]);
-  });
-
-  it("list_avalanche_regions has canton filter property", () => {
-    const tool = avalancheTools.find((t) => t.name === "list_avalanche_regions");
-    expect(tool?.inputSchema.properties).toHaveProperty("canton");
-  });
-});
-
-// ── SWISS_AVALANCHE_REGIONS ───────────────────────────────────────────────────
-
-describe("SWISS_AVALANCHE_REGIONS", () => {
-  it("has 22 regions", () => {
-    expect(SWISS_AVALANCHE_REGIONS).toHaveLength(22);
-  });
-
-  it("all regions have id, name, canton, elevation_m", () => {
-    for (const r of SWISS_AVALANCHE_REGIONS) {
-      expect(r.id).toMatch(/^CH-\d+$/);
-      expect(r.name).toBeTruthy();
-      expect(r.canton).toBeTruthy();
-      expect(typeof r.elevation_m).toBe("number");
-      expect(r.elevation_m).toBeGreaterThan(0);
+    for (const tool of avalancheTools) {
+      expect(tool.inputSchema.type).toBe("object");
+      expect(tool.description.length).toBeGreaterThan(20);
     }
   });
 
-  it("includes major Swiss avalanche regions", () => {
-    const names = SWISS_AVALANCHE_REGIONS.map((r) => r.name);
-    expect(names).toContain("Central Graubünden");
-    expect(names).toContain("Bernese Alps North");
-    expect(names).toContain("Ticino North");
-    expect(names).toContain("Jura");
+  it("describes live danger levels rather than links", () => {
+    const tool = avalancheTools.find((t) => t.name === "get_avalanche_bulletin");
+    expect(tool?.description).toMatch(/danger level/i);
+    expect(tool?.description).not.toMatch(/\blinks?\b/i);
   });
 
-  it("IDs are unique", () => {
-    const ids = SWISS_AVALANCHE_REGIONS.map((r) => r.id);
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(ids.length);
+  it("takes region, coordinates, language and date", () => {
+    const tool = avalancheTools.find((t) => t.name === "get_avalanche_bulletin");
+    expect(Object.keys(tool!.inputSchema.properties)).toEqual(["region", "lat", "lon", "language", "date"]);
+    const language = tool!.inputSchema.properties.language as { enum: string[] };
+    expect(language.enum).toEqual(["de", "en", "fr", "it"]);
+  });
+
+  it("list_avalanche_regions takes search and canton", () => {
+    const tool = avalancheTools.find((t) => t.name === "list_avalanche_regions");
+    expect(tool?.inputSchema.properties).toHaveProperty("search");
+    expect(tool?.inputSchema.properties).toHaveProperty("canton");
+  });
+
+  it("neither tool requires an argument", () => {
+    for (const tool of avalancheTools) {
+      expect((tool.inputSchema as { required?: string[] }).required ?? []).toHaveLength(0);
+    }
   });
 });
 
-// ── get_avalanche_bulletin ────────────────────────────────────────────────────
+// ── Warning regions ───────────────────────────────────────────────────────────
 
-describe("get_avalanche_bulletin", () => {
-  it("returns date, source, bulletin_url, danger_scale, schedule, note", async () => {
+describe("SWISS_AVALANCHE_REGIONS", () => {
+  it("holds the 135 EAWS micro-regions SLF issues bulletins for", () => {
+    expect(SWISS_AVALANCHE_REGIONS).toHaveLength(135);
+  });
+
+  it("uses four-digit EAWS ids, unique, with a name", () => {
+    const ids = SWISS_AVALANCHE_REGIONS.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const region of SWISS_AVALANCHE_REGIONS) {
+      expect(region.id).toMatch(/^CH-\d{4}$/);
+      expect(region.name).toBeTruthy();
+    }
+  });
+
+  it("carries a canton everywhere except Liechtenstein", () => {
+    const without = SWISS_AVALANCHE_REGIONS.filter((r) => r.canton === null);
+    expect(without.map((r) => r.id)).toEqual(["CH-3311"]);
+    for (const region of SWISS_AVALANCHE_REGIONS) {
+      if (region.canton !== null) expect(region.canton).toMatch(/^[A-Z]{2}$/);
+    }
+  });
+
+  it("includes regions the bulletin actually names", () => {
+    const byId = new Map(SWISS_AVALANCHE_REGIONS.map((r) => [r.id, r.name]));
+    expect(byId.get("CH-5123")).toBe("Davos");
+    expect(byId.get("CH-4222")).toBe("Zermatt");
+    expect(byId.get("CH-7114")).toBe("St. Moritz");
+  });
+});
+
+// ── get_avalanche_bulletin, in season ─────────────────────────────────────────
+
+describe("get_avalanche_bulletin in season", () => {
+  it("returns the danger level and problems for a region id", async () => {
+    mockFetch(winterBulletins);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "CH-5123" }));
+
+    expect(result.bulletin_in_force).toBe(true);
+    expect(result.region).toEqual({ id: "CH-5123", name: "Davos", canton: "GR" });
+    expect(result.danger.level).toBe(3);
+    expect(result.danger.label).toBe("considerable");
+    expect(result.danger.within_level).toBe("neutral");
+    expect(result.problems[0].type).toBe("persistent_weak_layers");
+    expect(result.problems[0].elevation).toBe("above 2200 m");
+    expect(result.problems[0].aspects).toContain("NE");
+    expect(result.valid).toEqual({ startTime: "2026-02-10T07:00:00Z", endTime: "2026-02-10T16:00:00Z" });
+    expect(result.source.provider).toContain("SLF");
+  });
+
+  it("matches a region by name, case-insensitively", async () => {
+    mockFetch(winterBulletins);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "davos" }));
+    expect(result.region.id).toBe("CH-5123");
+  });
+
+  it("picks the bulletin the region belongs to, not the first one", async () => {
+    mockFetch(winterBulletins);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "CH-7114" }));
+    expect(result.danger.within_level).toBe("plus");
+    expect(result.problems[0].elevation).toBe("above 2000 m");
+    expect(result.covers_regions).toContain("CH-7114");
+  });
+
+  it("strips HTML out of the advice and summary texts", async () => {
+    mockFetch(winterBulletins);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "CH-5123" }));
+    for (const text of [result.snowpack, result.weather_outlook, result.tendency, result.problems[0].advice]) {
+      expect(text).toBeTruthy();
+      expect(text).not.toMatch(/[<>]/);
+    }
+    expect(result.snowpack.startsWith("Snowpack: ")).toBe(true);
+  });
+
+  it("reports both periods when the danger changes during the day", async () => {
+    mockFetch(springBulletin);
+    const region = springBulletin.bulletins[0].regions[0].regionID;
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region }));
+
+    expect(result.danger.period).toBe("all_day");
+    expect(result.danger_by_period).toHaveLength(2);
+    expect(result.danger_by_period.map((d: { period: string }) => d.period)).toEqual(["all_day", "later"]);
+    expect(result.danger_by_period[1].level).toBe(3);
+  });
+
+  it("summarises the whole country when no region is given", async () => {
+    mockFetch(winterBulletins);
     const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", {}));
-    expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.source).toContain("SLF");
-    expect(result.bulletin_url).toBeDefined();
-    expect(result.danger_scale).toBeDefined();
-    expect(result.schedule).toBeDefined();
-    expect(result.note).toBeTruthy();
+
+    expect(result.scope).toBe("Switzerland");
+    expect(result.areas).toHaveLength(2);
+    expect(result.areas[0].danger[0].level).toBe(3);
+    expect(result.areas[0].regions[0]).toHaveProperty("id");
+    // no prose in the overview
+    expect(result.snowpack).toBeUndefined();
   });
 
-  it("returns interactive_map and pdf_full URLs", async () => {
+  it("resolves a coordinate through the geojson outlines", async () => {
+    const urls = mockFetch(winterGeojson);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { lat: 46.02, lon: 7.749 }));
+
+    expect(urls[0]).toContain("/geojson");
+    expect(result.bulletin_in_force).toBe(true);
+    expect(result.point).toEqual({ lat: 46.02, lon: 7.749 });
+    expect(result.danger.level).toBe(3);
+    expect(result.covers_regions).toContain("CH-4222");
+  });
+
+  it("says so when a coordinate falls outside every warning region", async () => {
+    mockFetch(winterGeojson);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { lat: 46.801, lon: 9.836 }));
+    expect(result.note).toContain("No warning region covers");
+  });
+
+  it("passes the requested language and date to the API", async () => {
+    const urls = mockFetch(winterBulletins);
+    await handleAvalanche("get_avalanche_bulletin", { region: "CH-5123", language: "de", date: "2026-02-10" });
+    expect(urls[0]).toContain("/caaml/de/json");
+    expect(urls[0]).toContain("activeAt=2026-02-10T11%3A00%3A00Z");
+  });
+
+  it("falls back to English for an unsupported language", async () => {
+    const urls = mockFetch(winterBulletins);
+    await handleAvalanche("get_avalanche_bulletin", { language: "es" });
+    expect(urls[0]).toContain("/caaml/en/json");
+  });
+
+  it("stays well under the response size budget", async () => {
+    mockFetch(winterBulletins);
+    const raw = await handleAvalanche("get_avalanche_bulletin", {});
+    expect(raw.length).toBeLessThan(50000);
+  });
+});
+
+// ── get_avalanche_bulletin, out of season ─────────────────────────────────────
+
+describe("get_avalanche_bulletin out of season", () => {
+  it("reports no bulletin in force instead of failing", async () => {
+    mockFetch(emptyBulletins, bulletinList);
     const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", {}));
-    expect(result.bulletin_url.interactive_map).toContain("whiterisk.ch");
-    expect(result.bulletin_url.pdf_full).toContain("aws.slf.ch");
+
+    expect(result.bulletin_in_force).toBe(false);
+    expect(result.season).toMatch(/winter season/i);
+    expect(result.last_bulletin).toEqual({
+      published: "2026-05-17T15:00:00Z",
+      valid_until: "2026-05-18T15:00:00Z",
+    });
+    expect(result.source.pdf).toContain("aws.slf.ch");
   });
 
-  it("returns PDF URLs for all 4 languages", async () => {
+  it("echoes what was asked for", async () => {
+    mockFetch(emptyBulletins, bulletinList);
+    const result = JSON.parse(
+      await handleAvalanche("get_avalanche_bulletin", { region: "CH-5123", date: "2026-08-01" })
+    );
+    expect(result.bulletin_in_force).toBe(false);
+    expect(result.requested.region).toBe("CH-5123");
+    expect(result.requested.date).toBe("2026-08-01");
+  });
+
+  it("handles an empty geojson for a coordinate the same way", async () => {
+    mockFetch(emptyGeojson, bulletinList);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { lat: 46.02, lon: 7.749 }));
+    expect(result.bulletin_in_force).toBe(false);
+    expect(result.requested.lat).toBe(46.02);
+  });
+
+  it("still answers when the bulletin list is unavailable", async () => {
+    let call = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => {
+        call++;
+        if (call === 1) {
+          return Promise.resolve({ ok: true, status: 200, statusText: "OK", json: () => Promise.resolve(emptyBulletins) });
+        }
+        return Promise.resolve({ ok: false, status: 503, statusText: "Service Unavailable", json: () => Promise.resolve({}) });
+      })
+    );
     const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", {}));
-    const pdfs = result.bulletin_url.pdf_regions;
-    expect(pdfs.de).toContain("/de");
-    expect(pdfs.en).toContain("/en");
-    expect(pdfs.fr).toContain("/fr");
-    expect(pdfs.it).toContain("/it");
+    expect(result.bulletin_in_force).toBe(false);
+    expect(result.last_bulletin).toBeUndefined();
   });
 
-  it("danger_scale has entries for levels 1-5", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", {}));
-    expect(Object.keys(result.danger_scale)).toHaveLength(5);
-    expect(result.danger_scale["1"]).toContain("Low");
-    expect(result.danger_scale["5"]).toContain("Very High");
+  it("explains a region that is in the list but not in today's bulletin", async () => {
+    mockFetch(winterBulletins, bulletinList);
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "CH-8111" }));
+    expect(result.bulletin_in_force).toBe(false);
+    expect(result.note).toContain("CH-8111");
+  });
+});
+
+// ── Argument handling ─────────────────────────────────────────────────────────
+
+describe("argument handling", () => {
+  it("rejects an unknown region without calling the API", async () => {
+    const urls = mockFetch(winterBulletins);
+    // A lookup failure has to reach the client as isError, not as a result
+    // object the agent would read as data.
+    await expect(
+      handleAvalanche("get_avalanche_bulletin", { region: "Mordor" })
+    ).rejects.toThrow(/Mordor.*list_avalanche_regions/);
+    expect(urls).toHaveLength(0);
   });
 
-  it("uses English by default", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", {}));
-    expect(result.bulletin_url.pdf_full).toContain("/en");
-    expect(result.bulletin_url.interactive_map).toContain("/en/");
+  it("rejects a lone coordinate", async () => {
+    mockFetch(winterBulletins);
+    await expect(handleAvalanche("get_avalanche_bulletin", { lat: 46.02 })).rejects.toThrow(
+      "lat and lon must be given together"
+    );
   });
 
-  it("uses German when language=de", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { language: "de" }));
-    expect(result.bulletin_url.pdf_full).toContain("/de");
-    expect(result.bulletin_url.interactive_map).toContain("/de/");
+  it("rejects a coordinate that is not a number", async () => {
+    mockFetch(winterBulletins);
+    await expect(handleAvalanche("get_avalanche_bulletin", { lat: "north", lon: 7.7 })).rejects.toThrow(
+      "lat and lon must be numbers"
+    );
   });
 
-  it("uses French when language=fr", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { language: "fr" }));
-    expect(result.bulletin_url.pdf_full).toContain("/fr");
+  it("rejects an unparseable date", async () => {
+    mockFetch(winterBulletins);
+    await expect(handleAvalanche("get_avalanche_bulletin", { date: "last winter" })).rejects.toThrow("Invalid date");
   });
 
-  it("uses Italian when language=it", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { language: "it" }));
-    expect(result.bulletin_url.pdf_full).toContain("/it");
-  });
-
-  it("falls back to English for invalid language", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { language: "es" }));
-    expect(result.bulletin_url.pdf_full).toContain("/en");
-  });
-
-  it("returns region info when region ID matches", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "CH-9" }));
-    expect(result.region).toBeDefined();
-    expect(result.region.id).toBe("CH-9");
-    expect(result.region.name).toBe("Central Graubünden");
-    expect(result.region.canton).toBe("GR");
-    expect(result.region.typical_elevation_m).toBe(2500);
-    expect(result.region.bulletin_link).toContain("CH-9");
-    expect(result.tip).toContain("Central Graubünden");
-  });
-
-  it("matches region by name (partial, case-insensitive)", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "bernese alps" }));
-    expect(result.region).toBeDefined();
-    expect(result.region.name).toContain("Bernese Alps");
-  });
-
-  it("matches region by canton abbreviation (exact canton match)", async () => {
-    // ZH only appears in canton strings, not region names — reliable canton-match test
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "ZH" }));
-    expect(result.region).toBeDefined();
-    expect(result.region.canton).toContain("ZH");
-  });
-
-  it("returns not_found + tip for unknown region", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { region: "XYZ-99" }));
-    expect(result.region_not_found).toBe("XYZ-99");
-    expect(result.tip).toContain("list_avalanche_regions");
-  });
-
-  it("response is under 50K chars", async () => {
-    const result = await handleAvalanche("get_avalanche_bulletin", {});
-    expect(result.length).toBeLessThan(50000);
-  });
-
-  it("response is valid JSON", async () => {
-    const result = await handleAvalanche("get_avalanche_bulletin", {});
-    expect(() => JSON.parse(result)).not.toThrow();
-  });
-
-  it("schedule has morning and afternoon times", async () => {
-    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", {}));
-    expect(result.schedule.morning_bulletin).toContain("08:00");
-    expect(result.schedule.afternoon_update).toContain("17:00");
-    expect(result.schedule.season).toContain("October");
+  it("throws for an unknown tool name", async () => {
+    await expect(handleAvalanche("does_not_exist", {})).rejects.toThrow("Unknown avalanche tool: does_not_exist");
   });
 });
 
 // ── list_avalanche_regions ────────────────────────────────────────────────────
 
 describe("list_avalanche_regions", () => {
-  it("returns count, source, regions array, usage, and bulletin_map", async () => {
+  it("lists every region without a filter, without any network call", async () => {
+    const urls = mockFetch({});
     const result = JSON.parse(await handleAvalanche("list_avalanche_regions", {}));
-    expect(result.count).toBe(22);
-    expect(result.source).toContain("SLF");
-    expect(Array.isArray(result.regions)).toBe(true);
-    expect(result.usage).toContain("get_avalanche_bulletin");
-    expect(result.bulletin_map).toContain("whiterisk.ch");
+    expect(result.count).toBe(135);
+    expect(result.total).toBe(135);
+    expect(result.regions).toHaveLength(135);
+    expect(urls).toHaveLength(0);
   });
 
-  it("returns all 22 regions without filter", async () => {
-    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", {}));
-    expect(result.regions).toHaveLength(22);
-    expect(result.count).toBe(22);
+  it("filters by canton on an exact code", async () => {
+    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "gr" }));
+    expect(result.count).toBeGreaterThan(30);
+    expect(result.count).toBeLessThan(result.total);
+    for (const region of result.regions) expect(region.canton).toBe("GR");
   });
 
-  it("each region has id, name, canton, typical_elevation_m", async () => {
-    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", {}));
-    for (const r of result.regions) {
-      expect(r.id).toMatch(/^CH-\d+$/);
-      expect(r.name).toBeTruthy();
-      expect(r.canton).toBeTruthy();
-      expect(typeof r.typical_elevation_m).toBe("number");
-    }
+  it("searches on id and on name", async () => {
+    const byName = JSON.parse(await handleAvalanche("list_avalanche_regions", { search: "zermatt" }));
+    expect(byName.regions).toEqual([{ id: "CH-4222", name: "Zermatt", canton: "VS" }]);
+
+    const byId = JSON.parse(await handleAvalanche("list_avalanche_regions", { search: "CH-71" }));
+    expect(byId.count).toBeGreaterThan(1);
+    for (const region of byId.regions) expect(region.id.startsWith("CH-71")).toBe(true);
   });
 
-  it("filters by canton GR", async () => {
-    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "GR" }));
-    expect(result.regions.length).toBeGreaterThan(0);
-    expect(result.count).toBe(result.regions.length);
-    for (const r of result.regions) {
-      expect(r.canton).toContain("GR");
-    }
+  it("combines canton and search", async () => {
+    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "TI", search: "leventina" }));
+    expect(result.count).toBe(2);
   });
 
-  it("filters by canton VS", async () => {
-    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "VS" }));
-    expect(result.regions.length).toBeGreaterThan(0);
-    for (const r of result.regions) {
-      expect(r.canton).toContain("VS");
-    }
-  });
-
-  it("canton filter is case-insensitive", async () => {
-    const upper = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "GR" }));
-    const lower = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "gr" }));
-    expect(upper.count).toBe(lower.count);
-  });
-
-  it("returns empty array for unknown canton", async () => {
-    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "XX" }));
-    expect(result.regions).toHaveLength(0);
+  it("returns an empty list for a canton with no regions", async () => {
+    const result = JSON.parse(await handleAvalanche("list_avalanche_regions", { canton: "BS" }));
     expect(result.count).toBe(0);
+    expect(result.total).toBe(135);
   });
 
-  it("response is under 50K chars", async () => {
-    const result = await handleAvalanche("list_avalanche_regions", {});
-    expect(result.length).toBeLessThan(50000);
-  });
-
-  it("response is valid JSON", async () => {
-    const result = await handleAvalanche("list_avalanche_regions", {});
-    expect(() => JSON.parse(result)).not.toThrow();
-  });
-});
-
-// ── Error handling ─────────────────────────────────────────────────────────────
-
-describe("error handling", () => {
-  it("throws for unknown tool name", async () => {
-    await expect(handleAvalanche("does_not_exist", {})).rejects.toThrow(
-      "Unknown avalanche tool: does_not_exist"
-    );
+  it("stays compact", async () => {
+    const raw = await handleAvalanche("list_avalanche_regions", {});
+    expect(raw.length).toBeLessThan(12000);
   });
 });

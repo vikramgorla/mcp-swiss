@@ -82,73 +82,116 @@ function quarterToLabel(year: number, q: number): string {
   return `${year}-Q${q}`;
 }
 
-// Embedded SWRPI quarterly data (Q4 2019 = 100)
-// Source: BFS Swiss Residential Property Price Index
-// This data represents the official BFS index values as published.
-// All property types index (houses + apartments combined) baseline Q4 2019 = 100
-const SWRPI_ALL_DATA: Array<{ period: string; year: number; quarter: number; index_all: number; index_houses: number; index_apartments: number }> = [
-  { period: "2009-Q4", year: 2009, quarter: 4, index_all: 69.5, index_houses: 68.2, index_apartments: 70.5 },
-  { period: "2010-Q1", year: 2010, quarter: 1, index_all: 70.5, index_houses: 69.3, index_apartments: 71.3 },
-  { period: "2010-Q2", year: 2010, quarter: 2, index_all: 71.8, index_houses: 70.5, index_apartments: 72.7 },
-  { period: "2010-Q3", year: 2010, quarter: 3, index_all: 73.0, index_houses: 71.7, index_apartments: 73.9 },
-  { period: "2010-Q4", year: 2010, quarter: 4, index_all: 74.5, index_houses: 73.1, index_apartments: 75.5 },
-  { period: "2011-Q1", year: 2011, quarter: 1, index_all: 76.0, index_houses: 74.6, index_apartments: 77.0 },
-  { period: "2011-Q2", year: 2011, quarter: 2, index_all: 77.5, index_houses: 76.1, index_apartments: 78.5 },
-  { period: "2011-Q3", year: 2011, quarter: 3, index_all: 78.9, index_houses: 77.5, index_apartments: 79.9 },
-  { period: "2011-Q4", year: 2011, quarter: 4, index_all: 80.2, index_houses: 78.8, index_apartments: 81.2 },
-  { period: "2012-Q1", year: 2012, quarter: 1, index_all: 81.5, index_houses: 80.1, index_apartments: 82.5 },
-  { period: "2012-Q2", year: 2012, quarter: 2, index_all: 82.8, index_houses: 81.4, index_apartments: 83.8 },
-  { period: "2012-Q3", year: 2012, quarter: 3, index_all: 84.0, index_houses: 82.6, index_apartments: 85.0 },
-  { period: "2012-Q4", year: 2012, quarter: 4, index_all: 85.1, index_houses: 83.7, index_apartments: 86.1 },
-  { period: "2013-Q1", year: 2013, quarter: 1, index_all: 86.1, index_houses: 84.7, index_apartments: 87.1 },
-  { period: "2013-Q2", year: 2013, quarter: 2, index_all: 87.0, index_houses: 85.6, index_apartments: 88.0 },
-  { period: "2013-Q3", year: 2013, quarter: 3, index_all: 87.8, index_houses: 86.4, index_apartments: 88.8 },
-  { period: "2013-Q4", year: 2013, quarter: 4, index_all: 88.5, index_houses: 87.1, index_apartments: 89.5 },
-  { period: "2014-Q1", year: 2014, quarter: 1, index_all: 89.1, index_houses: 87.7, index_apartments: 90.1 },
-  { period: "2014-Q2", year: 2014, quarter: 2, index_all: 89.6, index_houses: 88.2, index_apartments: 90.6 },
-  { period: "2014-Q3", year: 2014, quarter: 3, index_all: 90.0, index_houses: 88.6, index_apartments: 91.0 },
-  { period: "2014-Q4", year: 2014, quarter: 4, index_all: 90.3, index_houses: 88.9, index_apartments: 91.3 },
-  { period: "2015-Q1", year: 2015, quarter: 1, index_all: 90.5, index_houses: 89.1, index_apartments: 91.5 },
-  { period: "2015-Q2", year: 2015, quarter: 2, index_all: 90.7, index_houses: 89.3, index_apartments: 91.7 },
-  { period: "2015-Q3", year: 2015, quarter: 3, index_all: 90.9, index_houses: 89.5, index_apartments: 91.9 },
-  { period: "2015-Q4", year: 2015, quarter: 4, index_all: 91.2, index_houses: 89.8, index_apartments: 92.2 },
-  { period: "2016-Q1", year: 2016, quarter: 1, index_all: 91.5, index_houses: 90.1, index_apartments: 92.5 },
-  { period: "2016-Q2", year: 2016, quarter: 2, index_all: 91.9, index_houses: 90.5, index_apartments: 92.9 },
-  { period: "2016-Q3", year: 2016, quarter: 3, index_all: 92.4, index_houses: 91.0, index_apartments: 93.4 },
-  { period: "2016-Q4", year: 2016, quarter: 4, index_all: 93.0, index_houses: 91.6, index_apartments: 94.0 },
-  { period: "2017-Q1", year: 2017, quarter: 1, index_all: 93.6, index_houses: 92.2, index_apartments: 94.6 },
-  { period: "2017-Q2", year: 2017, quarter: 2, index_all: 94.2, index_houses: 92.8, index_apartments: 95.2 },
-  { period: "2017-Q3", year: 2017, quarter: 3, index_all: 94.8, index_houses: 93.4, index_apartments: 95.8 },
-  { period: "2017-Q4", year: 2017, quarter: 4, index_all: 95.4, index_houses: 94.0, index_apartments: 96.4 },
-  { period: "2018-Q1", year: 2018, quarter: 1, index_all: 96.0, index_houses: 94.6, index_apartments: 97.0 },
-  { period: "2018-Q2", year: 2018, quarter: 2, index_all: 96.6, index_houses: 95.2, index_apartments: 97.6 },
-  { period: "2018-Q3", year: 2018, quarter: 3, index_all: 97.3, index_houses: 95.9, index_apartments: 98.3 },
-  { period: "2018-Q4", year: 2018, quarter: 4, index_all: 98.0, index_houses: 96.6, index_apartments: 99.0 },
-  { period: "2019-Q1", year: 2019, quarter: 1, index_all: 98.8, index_houses: 97.4, index_apartments: 99.8 },
-  { period: "2019-Q2", year: 2019, quarter: 2, index_all: 99.2, index_houses: 97.8, index_apartments: 100.2 },
-  { period: "2019-Q3", year: 2019, quarter: 3, index_all: 99.6, index_houses: 98.2, index_apartments: 100.6 },
-  { period: "2019-Q4", year: 2019, quarter: 4, index_all: 100.0, index_houses: 100.0, index_apartments: 100.0 },
-  { period: "2020-Q1", year: 2020, quarter: 1, index_all: 100.5, index_houses: 100.8, index_apartments: 100.3 },
-  { period: "2020-Q2", year: 2020, quarter: 2, index_all: 101.2, index_houses: 101.8, index_apartments: 100.8 },
-  { period: "2020-Q3", year: 2020, quarter: 3, index_all: 102.3, index_houses: 103.2, index_apartments: 101.7 },
-  { period: "2020-Q4", year: 2020, quarter: 4, index_all: 103.8, index_houses: 105.0, index_apartments: 102.9 },
-  { period: "2021-Q1", year: 2021, quarter: 1, index_all: 105.7, index_houses: 107.2, index_apartments: 104.5 },
-  { period: "2021-Q2", year: 2021, quarter: 2, index_all: 107.8, index_houses: 109.6, index_apartments: 106.4 },
-  { period: "2021-Q3", year: 2021, quarter: 3, index_all: 109.8, index_houses: 111.8, index_apartments: 108.2 },
-  { period: "2021-Q4", year: 2021, quarter: 4, index_all: 111.6, index_houses: 113.8, index_apartments: 109.8 },
-  { period: "2022-Q1", year: 2022, quarter: 1, index_all: 113.2, index_houses: 115.7, index_apartments: 111.2 },
-  { period: "2022-Q2", year: 2022, quarter: 2, index_all: 114.5, index_houses: 117.2, index_apartments: 112.3 },
-  { period: "2022-Q3", year: 2022, quarter: 3, index_all: 115.5, index_houses: 118.4, index_apartments: 113.1 },
-  { period: "2022-Q4", year: 2022, quarter: 4, index_all: 116.2, index_houses: 119.2, index_apartments: 113.7 },
-  { period: "2023-Q1", year: 2023, quarter: 1, index_all: 116.7, index_houses: 119.8, index_apartments: 114.1 },
-  { period: "2023-Q2", year: 2023, quarter: 2, index_all: 117.0, index_houses: 120.2, index_apartments: 114.3 },
-  { period: "2023-Q3", year: 2023, quarter: 3, index_all: 117.2, index_houses: 120.5, index_apartments: 114.5 },
-  { period: "2023-Q4", year: 2023, quarter: 4, index_all: 117.4, index_houses: 120.8, index_apartments: 114.6 },
-  { period: "2024-Q1", year: 2024, quarter: 1, index_all: 117.8, index_houses: 121.3, index_apartments: 114.9 },
-  { period: "2024-Q2", year: 2024, quarter: 2, index_all: 118.3, index_houses: 121.9, index_apartments: 115.3 },
-  { period: "2024-Q3", year: 2024, quarter: 3, index_all: 118.9, index_houses: 122.6, index_apartments: 115.8 },
-  { period: "2024-Q4", year: 2024, quarter: 4, index_all: 119.4, index_houses: 123.2, index_apartments: 116.2 },
-];
+// ── SWRPI/IMPI series (BFS, fetched live) ────────────────────────────────────
+
+// The BFS publishes the IMPI series as the JSON that feeds its own chart. The order
+// number is stable across releases; the asset id behind it changes every quarter.
+const IMPI_ORDER_NR = "ds-x-05.06.03.01.02";
+const IMPI_ASSETS_URL = "https://dam-api.bfs.admin.ch/hub/api/dam/assets";
+const IMPI_PAGE_URL =
+  "https://www.bfs.admin.ch/bfs/en/home/statistics/prices/surveys/impi.html";
+
+interface BfsAssetList {
+  total: number;
+  data: Array<{
+    ids: { damId: number };
+    bfs?: { lifecycle?: { code?: string } };
+    links?: Array<{ rel?: string; href?: string; format?: string }>;
+  }>;
+}
+
+/** Chart payload: one series per object type, one entry per geographic scope. */
+interface ImpiJson {
+  dataStatus: string;
+  data: Record<string, Record<string, Array<{ year: string; value: number }>>>;
+}
+
+interface ImpiPoint {
+  period: string;
+  year: number;
+  quarter: number;
+  index_all: number;
+  index_houses: number;
+  index_apartments: number;
+}
+
+interface ImpiSeries {
+  points: ImpiPoint[];
+  /** "Data as of" date published with the series, e.g. "30.07.2026". */
+  dataStatus: string;
+  assetUrl: string;
+}
+
+let impiCache: ImpiSeries | null = null;
+let impiPending: Promise<ImpiSeries> | null = null;
+
+export function clearRealEstateCache(): void {
+  impiCache = null;
+  impiPending = null;
+}
+
+/** The chart labels quarters by their middle month: 2 → Q1, 5 → Q2, 8 → Q3, 11 → Q4. */
+function monthLabelToQuarter(label: string): { year: number; quarter: number } | null {
+  const m = label.match(/^(\d{1,2})\.(\d{4})$/);
+  if (!m) return null;
+  const quarter = Math.floor((parseInt(m[1], 10) - 1) / 3) + 1;
+  if (quarter < 1 || quarter > 4) return null;
+  return { year: parseInt(m[2], 10), quarter };
+}
+
+async function fetchImpiSeries(): Promise<ImpiSeries> {
+  const list = await fetchJSON<BfsAssetList>(
+    buildUrl(IMPI_ASSETS_URL, { orderNr: IMPI_ORDER_NR }),
+    { timeoutMs: 60_000 }
+  );
+  const asset =
+    list.data?.find((a) => a.bfs?.lifecycle?.code === "CURRENT") ?? list.data?.[0];
+  const href = asset?.links?.find((l) => l.rel === "master")?.href;
+  if (!href) {
+    throw new Error(
+      `BFS published no current IMPI data file for ${IMPI_ORDER_NR}. See ${IMPI_PAGE_URL}`
+    );
+  }
+
+  const raw = await fetchJSON<ImpiJson>(href, { timeoutMs: 60_000 });
+  // geoscope1 is Switzerland as a whole; geoscope2–6 are the five municipality types.
+  const all = raw.data?.total?.geoscope1;
+  const houses = raw.data?.efh?.geoscope1;
+  const apartments = raw.data?.egw?.geoscope1;
+  if (!all?.length || houses?.length !== all.length || apartments?.length !== all.length) {
+    throw new Error(`BFS IMPI data file has an unexpected shape — ${href}`);
+  }
+
+  const points: ImpiPoint[] = [];
+  for (let i = 0; i < all.length; i++) {
+    const q = monthLabelToQuarter(all[i].year);
+    if (!q) continue;
+    points.push({
+      period: quarterToLabel(q.year, q.quarter),
+      year: q.year,
+      quarter: q.quarter,
+      index_all: all[i].value,
+      index_houses: houses[i]?.value,
+      index_apartments: apartments[i]?.value,
+    });
+  }
+  points.sort((a, b) => a.year - b.year || a.quarter - b.quarter);
+
+  return { points, dataStatus: raw.dataStatus, assetUrl: href };
+}
+
+async function loadImpiSeries(): Promise<ImpiSeries> {
+  if (impiCache) return impiCache;
+  impiPending ??= fetchImpiSeries()
+    .then((series) => {
+      impiCache = series;
+      return series;
+    })
+    .finally(() => {
+      impiPending = null;
+    });
+  return impiPending;
+}
 
 // ── Tool: get_property_price_index ───────────────────────────────────────────
 
@@ -164,8 +207,8 @@ async function handleGetPropertyPriceIndex(
     throw new Error(`Invalid type "${rawType}". Must be one of: all, houses, apartments`);
   }
 
-  // Filter by from/to
-  let data = [...SWRPI_ALL_DATA];
+  const impi = await loadImpiSeries();
+  let data = [...impi.points];
 
   if (rawFrom) {
     const parsed = parseQuarter(rawFrom);
@@ -184,7 +227,11 @@ async function handleGetPropertyPriceIndex(
   }
 
   if (data.length === 0) {
-    throw new Error("No data available for the specified period range");
+    const first = impi.points[0];
+    const last = impi.points[impi.points.length - 1];
+    throw new Error(
+      `No IMPI data for the requested range. The published series covers ${first.period}–${last.period}.`
+    );
   }
 
   // Build series based on type
@@ -223,9 +270,6 @@ async function handleGetPropertyPriceIndex(
         }
       : null;
 
-  // Reference: fetch dataset metadata from CKAN for the source URL
-  const datasetUrl = `https://opendata.swiss/en/dataset/${SWRPI_DATASET_ID}`;
-
   return JSON.stringify({
     type: rawType,
     baseline: "Q4 2019 = 100",
@@ -236,10 +280,12 @@ async function handleGetPropertyPriceIndex(
     data_points: series.length,
     series,
     trend,
-    note: "Swiss Residential Property Price Index (SWRPI). Baseline Q4 2019 = 100.",
-    source: "Federal Statistical Office (BFS) — Swiss Residential Property Price Index (SWRPI)",
-    source_url: datasetUrl,
-    dataset_id: SWRPI_DATASET_ID,
+    scope: "Switzerland, all municipality types",
+    data_as_of: impi.dataStatus,
+    source: "Federal Statistical Office (BFS) — Swiss residential property price index (IMPI)",
+    source_url: IMPI_PAGE_URL,
+    data_url: impi.assetUrl,
+    dataset_url: `https://opendata.swiss/en/dataset/${SWRPI_DATASET_ID}`,
   });
 }
 
@@ -259,9 +305,7 @@ async function handleSearchRealEstateData(
     fq: "groups:territoire-et-environnement OR groups:construction-et-logement OR tags:immobilien OR tags:wohnen OR tags:miete OR tags:logement",
   });
 
-  const data = await fetchJSON<CkanSearchResult>(url, {
-    headers: { "User-Agent": "mcp-swiss" },
-  });
+  const data = await fetchJSON<CkanSearchResult>(url);
 
   if (!data.success) throw new Error("opendata.swiss search failed");
 
@@ -271,9 +315,7 @@ async function handleSearchRealEstateData(
 
   if (results.length === 0) {
     const url2 = buildUrl(`${CKAN_BASE}/package_search`, { q: query, rows: limit });
-    const data2 = await fetchJSON<CkanSearchResult>(url2, {
-      headers: { "User-Agent": "mcp-swiss" },
-    });
+    const data2 = await fetchJSON<CkanSearchResult>(url2);
     if (data2.success) {
       results = data2.result.results;
       totalCount = data2.result.count;
@@ -311,43 +353,47 @@ async function handleSearchRealEstateData(
 
 // ── Tool: get_rent_index ─────────────────────────────────────────────────────
 
+/** First and last row of the CPI series, plus the row count, all read from the store. */
+async function fetchCpiExtent(): Promise<{ total: number; first: ZgCpiRow; last: ZgCpiRow }> {
+  const head = await fetchJSON<ZgCpiResponse>(buildUrl(CPI_RENT_URL, { _limit: 1, _offset: 0 }));
+  const first = head.results?.[0];
+  if (!first) throw new Error("CPI series is empty at data.zg.ch");
+
+  const total = head.resultCount ?? 1;
+  if (total <= 1) return { total: 1, first, last: first };
+
+  const tail = await fetchJSON<ZgCpiResponse>(
+    buildUrl(CPI_RENT_URL, { _limit: 1, _offset: total - 1 })
+  );
+  return { total, first, last: tail.results?.[0] ?? first };
+}
+
 async function handleGetRentIndex(args: Record<string, unknown>): Promise<string> {
   const rawYear = typeof args.year === "number" ? args.year : undefined;
   const rawLimit = Math.min(60, Math.max(1, typeof args.limit === "number" ? args.limit : 24));
 
-  // Fetch CPI (LIK) data from Canton Zug open data - monthly index (base Dec 1982 = 100)
-  // This is the Swiss national CPI (Landesindex der Konsumentenpreise) which includes
-  // the residential rent component
-  const totalRecords = 515; // approximate total
+  // Swiss national CPI (Landesindex der Konsumentenpreise), monthly, from the Canton Zug
+  // mirror. The store grows every month, so the row count and the covered period are read
+  // from it rather than assumed.
+  const extent = await fetchCpiExtent();
+  const coverage = `${extent.first.monat} ${extent.first.jahr} – ${extent.last.monat} ${extent.last.jahr}`;
 
-  let url: string;
+  let rows: ZgCpiRow[];
   if (rawYear !== undefined) {
-    // Fetch specific year - estimate offset
-    // Data starts from Dec 1982 (record 0) ~ month 0
-    // Each year has 12 records. 1982 has 1 record (Dec only).
-    const yearsFromStart = rawYear - 1982;
-    const estOffset = Math.max(0, 1 + (yearsFromStart - 1) * 12);
-    url = buildUrl(CPI_RENT_URL, { _limit: 12, _offset: estOffset });
-  } else {
-    // Latest data - fetch last N months
-    const offset = Math.max(0, totalRecords - rawLimit);
-    url = buildUrl(CPI_RENT_URL, { _limit: rawLimit, _offset: offset });
-  }
-
-  const data = await fetchJSON<ZgCpiResponse>(url, {
-    headers: { "User-Agent": "mcp-swiss" },
-  });
-
-  // Filter by year if specified
-  let rows = data.results;
-  if (rawYear !== undefined) {
-    rows = rows.filter((r) => r.jahr === String(rawYear));
-  }
-
-  if (rows.length === 0 && rawYear !== undefined) {
-    throw new Error(
-      `No CPI data found for year ${rawYear}. Available data: 1982–2025.`
+    // The store filters on jahr server-side, so no offset arithmetic is needed.
+    const data = await fetchJSON<ZgCpiResponse>(
+      buildUrl(CPI_RENT_URL, { jahr: rawYear, _limit: 12 })
     );
+    rows = data.results ?? [];
+    if (rows.length === 0) {
+      throw new Error(`No CPI data for year ${rawYear}. The series covers ${coverage}.`);
+    }
+  } else {
+    const offset = Math.max(0, extent.total - rawLimit);
+    const data = await fetchJSON<ZgCpiResponse>(
+      buildUrl(CPI_RENT_URL, { _limit: rawLimit, _offset: offset })
+    );
+    rows = data.results ?? [];
   }
 
   const series = rows.map((r) => ({
@@ -377,7 +423,8 @@ async function handleGetRentIndex(args: Record<string, unknown>): Promise<string
 
   return JSON.stringify({
     index_name: "Swiss Consumer Price Index (LIK / IPC)",
-    baseline: "December 1982 = 100",
+    baseline: `${extent.first.monat} ${extent.first.jahr} = ${extent.first.index}`,
+    coverage,
     note:
       "The Swiss CPI (Landesindex der Konsumentenpreise) tracks the cost of living including residential rents. " +
       "This is the official Swiss national index published by BFS/FSO. " +
@@ -399,29 +446,22 @@ export const realEstateTools = [
   {
     name: "get_property_price_index",
     description:
-      "Get the Swiss Residential Property Price Index (SWRPI) — official BFS data. " +
-      "Baseline Q4 2019 = 100. Returns quarterly index values tracking Swiss property prices " +
-      "since 2009. Covers all properties, single-family houses, and apartments separately.",
+      "BFS residential property price index (IMPI), quarterly since 2017Q1, Q4 2019 = 100",
     inputSchema: {
       type: "object",
       properties: {
         type: {
           type: "string",
-          description:
-            'Property type to filter by: "all" (combined index), "houses" (single-family), ' +
-            '"apartments" (condominiums/flats). Defaults to "all".',
+          enum: ["all", "houses", "apartments"],
+          default: "all",
         },
         from: {
           type: "string",
-          description:
-            'Start period (inclusive). Format: "2020Q1", "2020-Q1", or just "2020". ' +
-            "Defaults to earliest available (2009-Q4).",
+          description: "Inclusive, e.g. 2020Q1 or 2020 (default: earliest)",
         },
         to: {
           type: "string",
-          description:
-            'End period (inclusive). Format: "2024Q4", "2024-Q4", or just "2024". ' +
-            "Defaults to latest available.",
+          description: "Inclusive, e.g. 2024Q4 or 2024 (default: latest)",
         },
       },
     },
@@ -429,22 +469,19 @@ export const realEstateTools = [
   {
     name: "search_real_estate_data",
     description:
-      "Search opendata.swiss for Swiss real estate and housing datasets. " +
-      "Finds datasets about property prices, rents, housing construction, vacancy rates, and more. " +
-      "Returns dataset names, descriptions, and resource download URLs.",
+      "Search opendata.swiss for real-estate/housing datasets (prices, rents, construction, vacancies)",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description:
-            'Search terms in German, French, or English (e.g. "Immobilien", "Miete", ' +
-            '"rent", "logement", "Wohnungspreise", "Leerwohnungen").',
+          description: "DE/FR/EN terms, e.g. Miete, logement, Leerwohnungen",
         },
         limit: {
           type: "number",
-          description: "Max results to return (1–20, default 10).",
+          description: "1–20",
+          default: 10,
         },
       },
     },
@@ -452,21 +489,18 @@ export const realEstateTools = [
   {
     name: "get_rent_index",
     description:
-      "Get the Swiss Consumer Price Index (CPI/LIK), which tracks cost of living including " +
-      "residential rents. Baseline December 1982 = 100. Published monthly by BFS. " +
-      "For property purchase prices, use get_property_price_index instead.",
+      "BFS consumer price index (CPI/LIK, incl. rents), monthly, Dec 1982 = 100. Not a dedicated rent index; for purchase prices use get_property_price_index",
     inputSchema: {
       type: "object",
       properties: {
         year: {
           type: "number",
-          description:
-            "Filter to a specific year (1983–2025). Omit for latest 24 months.",
+          description: "1982 onward (omit for recent months)",
         },
         limit: {
           type: "number",
-          description:
-            "Number of recent monthly data points to return (1–60, default 24). Ignored if year is set.",
+          description: "Recent months, 1–60; ignored if year set",
+          default: 24,
         },
       },
     },

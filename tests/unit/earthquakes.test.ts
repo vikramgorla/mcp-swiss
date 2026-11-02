@@ -161,15 +161,65 @@ describe('get_recent_earthquakes', () => {
     expect(calledUrl).toContain('starttime=');
   });
 
-  it('respects limit param', async () => {
+  it('asks for one row past the limit, to detect that more match', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true, status: 200, statusText: 'OK',
       text: () => Promise.resolve(mockFdsnTextMulti),
     });
     vi.stubGlobal('fetch', fetchMock);
     await handleEarthquakes('get_recent_earthquakes', { limit: 5 });
-    const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('limit=5');
+    expect(fetchMock.mock.calls[0][0] as string).toContain('limit=6');
+  });
+
+  it('caps limit at 100', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      text: () => Promise.resolve(mockFdsnTextMulti),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const result = JSON.parse(await handleEarthquakes('get_recent_earthquakes', { limit: 5000 }));
+    expect(fetchMock.mock.calls[0][0] as string).toContain('limit=101');
+    expect(result.limit).toBe(100);
+  });
+
+  it('restricts the query to the Swiss bounding box', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      text: () => Promise.resolve(mockFdsnTextMulti),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await handleEarthquakes('get_recent_earthquakes', {});
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain('minlatitude=45');
+    expect(url).toContain('maxlatitude=48.5');
+    expect(url).toContain('minlongitude=5.5');
+    expect(url).toContain('maxlongitude=11.5');
+  });
+
+  it('reports truncation when more events match than the limit', async () => {
+    mockFetchText(mockFdsnTextMulti);
+    const result = JSON.parse(await handleEarthquakes('get_recent_earthquakes', { limit: 2 }));
+    expect(result.truncated).toBe(true);
+    expect(result.events).toHaveLength(2);
+    expect(result.note).toContain('Raise limit');
+  });
+
+  it('does not report truncation when everything fits', async () => {
+    mockFetchText(mockFdsnTextMulti);
+    const result = JSON.parse(await handleEarthquakes('get_recent_earthquakes', { limit: 20 }));
+    expect(result.truncated).toBe(false);
+    expect(result.note).toBeUndefined();
+  });
+
+  it('falls back to the default limit for a non-numeric value', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, statusText: 'OK',
+      text: () => Promise.resolve(mockFdsnTextMulti),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const result = JSON.parse(await handleEarthquakes('get_recent_earthquakes', { limit: 'lots' }));
+    expect(result.limit).toBe(20);
+    expect(fetchMock.mock.calls[0][0] as string).toContain('limit=21');
   });
 
   it('returns empty result on 204', async () => {
@@ -265,21 +315,18 @@ describe('get_earthquake_details', () => {
     expect(calledUrl).toContain('eventid=');
   });
 
-  it('returns error object on 204 (event not found)', async () => {
+  it('rejects on 204 (event not found)', async () => {
     mockFetch204();
-    const result = JSON.parse(
-      await handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
-    );
-    expect(result.error).toBeDefined();
-    expect(result.event_id).toBe('smi:unknown');
+    await expect(
+      handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
+    ).rejects.toThrow('No earthquake with event_id "smi:unknown"');
   });
 
-  it('returns error when body parses to 0 events', async () => {
+  it('rejects when body parses to 0 events', async () => {
     mockFetchText(mockFdsnTextEmpty);
-    const result = JSON.parse(
-      await handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
-    );
-    expect(result.error).toBeDefined();
+    await expect(
+      handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
+    ).rejects.toThrow(/no parsable record/);
   });
 
   it('throws when event_id is missing', async () => {
