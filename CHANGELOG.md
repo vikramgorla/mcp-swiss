@@ -15,7 +15,7 @@ Data corrections ported from [netadvanced/mcp-swiss-ng](https://github.com/netad
 
 - ZEFIX `search_companies` filters by real registry-office ids and legal-form ids. `list_legal_forms` returns that live list (`3` = AG, `4` = GmbH) instead of invented `0106`-style codes.
 - `search_companies_by_address` is now `search_companies_by_locality`: ZEFIX has no street search, so the tool resolves a commune or town and rejects a street address.
-- `get_avalanche_bulletin` returns the public SLF CAAMLv6 bulletin (danger, problems, advice). `list_avalanche_regions` lists the 135 EAWS micro-regions.
+- `get_avalanche_bulletin` returns the public SLF CAAMLv6 bulletin (danger, problems, advice). `list_avalanche_regions` lists the 135 EAWS micro-regions, named the way the English bulletin names them.
 - Earthquakes use the SED catalog over HTTPS (`https://eida.ethz.ch`) and `get_recent_earthquakes` stays inside the Swiss box with a capped result count.
 - The NABEL list includes all 16 stations (Jungfraujoch and Beromünster were missing) and merges codes the geo.admin layer adds later.
 - Dam search pages the full layer (the find endpoint stopped at 201 of 225) and canton filters use the real canton polygon instead of a bounding box.
