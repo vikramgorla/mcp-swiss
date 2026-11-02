@@ -180,6 +180,33 @@ describe('get_nearby_stations', () => {
     expect(calledUrl).toContain('y=46.95');
     expect(calledUrl).toContain('type=station');
   });
+
+  // /locations ignores both, so they have to be applied to the result
+  it('applies limit and distance to the returned stations', async () => {
+    const stations = {
+      stations: [
+        { id: '3', name: 'Far', coordinate: { type: 'WGS84', x: 46.9, y: 7.4 }, distance: 900 },
+        { id: '1', name: 'Near', coordinate: { type: 'WGS84', x: 46.9, y: 7.4 }, distance: 80 },
+        { id: '2', name: 'Mid', coordinate: { type: 'WGS84', x: 46.9, y: 7.4 }, distance: 300 },
+      ],
+    };
+
+    mockFetch(stations);
+    const limited = JSON.parse(await handleTransport('get_nearby_stations', {
+      x: 46.9, y: 7.4, limit: 2,
+    }));
+    expect(limited.map((s: { name: string }) => s.name)).toEqual(['Near', 'Mid']);
+
+    mockFetch(stations);
+    const nearby = JSON.parse(await handleTransport('get_nearby_stations', {
+      x: 46.9, y: 7.4, distance: 500,
+    }));
+    expect(nearby.map((s: { name: string }) => s.name)).toEqual(['Near', 'Mid']);
+
+    mockFetch(stations);
+    const all = JSON.parse(await handleTransport('get_nearby_stations', { x: 46.9, y: 7.4 }));
+    expect(all).toHaveLength(3);
+  });
 });
 
 // ── branch coverage: walk sections, isArrivalTime ─────────────────────────────

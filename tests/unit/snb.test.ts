@@ -320,12 +320,9 @@ describe('handleGetExchangeRate', () => {
     await expect(handleGetExchangeRate('')).rejects.toThrow('currency is required');
   });
 
-  it('returns no-data response when CSV has no entries for currency', async () => {
-    // CSV only has EUR1, but we ask for GBP
+  it('throws when CSV has no entries for currency', async () => {
     mockBothFetches(mockDimensionsResponse, mockCsvSingleEntry);
-    const result = JSON.parse(await handleGetExchangeRate('GBP'));
-    expect(result.error).toBeTruthy();
-    expect(result.currency).toBe('GBP');
+    await expect(handleGetExchangeRate('GBP')).rejects.toThrow('no rates for GBP');
   });
 
   it('throws on CSV HTTP error', async () => {
@@ -462,17 +459,16 @@ describe('handleGetExchangeRateHistory', () => {
     await expect(handleGetExchangeRateHistory('')).rejects.toThrow('currency is required');
   });
 
-  it('returns no-data error when CSV has no entries for currency', async () => {
+  it('throws when CSV has no entries for currency', async () => {
     mockBothFetches(mockDimensionsResponse, mockCsvSingleEntry);
-    const result = JSON.parse(await handleGetExchangeRateHistory('GBP'));
-    expect(result.error).toBeTruthy();
+    await expect(handleGetExchangeRateHistory('GBP')).rejects.toThrow('no rates for GBP');
   });
 
-  it('returns range error when date filter excludes all entries', async () => {
+  it('returns an empty history when the date filter excludes every entry', async () => {
     mockBothFetches(mockDimensionsResponse, mockCsvSingleEntry);
-    // Only 2026-01 exists, ask for 2099
     const result = JSON.parse(await handleGetExchangeRateHistory('EUR', '2099-01', '2099-12'));
-    expect(result.error).toBeTruthy();
+    expect(result.count).toBe(0);
+    expect(result.history).toEqual([]);
     expect(result.from).toBe('2099-01');
   });
 

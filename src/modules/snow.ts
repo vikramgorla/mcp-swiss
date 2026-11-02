@@ -76,25 +76,22 @@ export const snowTools = [
   {
     name: "get_snow_conditions",
     description:
-      "Get current snow conditions across Switzerland from SLF (WSL Institute for Snow and Avalanche Research). " +
-      "Returns snow depth and new snow (24h) for IMIS stations, sorted by snow depth. " +
-      "Filter by canton or minimum altitude. Data updated daily.",
+      "Current snow depth and 24h new snow at SLF IMIS stations, deepest first",
     inputSchema: {
       type: "object",
       properties: {
         canton: {
           type: "string",
-          description:
-            "Filter by canton abbreviation (e.g. GR, VS, BE, UR, TI). Optional.",
+          description: "Canton code, e.g. GR",
         },
         min_altitude: {
           type: "number",
-          description:
-            "Minimum station altitude in metres (e.g. 2000). Optional.",
+          description: "Metres",
         },
         limit: {
           type: "number",
-          description: "Maximum number of stations to return (default: 20, max: 100).",
+          description: "max 100",
+          default: 20,
         },
       },
     },
@@ -102,25 +99,23 @@ export const snowTools = [
   {
     name: "list_snow_stations",
     description:
-      "List all SLF snow measurement stations in Switzerland (IMIS automatic stations and manual study plots). " +
-      "Returns station code, name, altitude, canton, and type. Sorted by elevation descending.",
+      "List SLF snow stations (IMIS automatic, manual study plots)",
     inputSchema: {
       type: "object",
       properties: {
         canton: {
           type: "string",
-          description:
-            "Filter by canton abbreviation (e.g. GR, VS, BE). Optional.",
+          description: "Canton code, e.g. GR",
         },
         type: {
           type: "string",
           enum: ["imis", "study-plot"],
-          description:
-            'Station type: "imis" (automatic) or "study-plot" (manual). Optional — returns both by default.',
+          description: "Omit for both",
         },
         limit: {
           type: "number",
-          description: "Maximum number of stations to return (default: 20, max: 200).",
+          description: "max 200",
+          default: 20,
         },
       },
     },
@@ -128,24 +123,19 @@ export const snowTools = [
   {
     name: "get_snow_measurements",
     description:
-      "Get detailed snow and weather measurements for a specific SLF station. " +
-      "IMIS stations return 30-min data (snow depth, temperature, humidity, wind, radiation). " +
-      "Study plots return daily data (snow depth, new snow, water equivalent). " +
-      "Use list_snow_stations to find station codes.",
+      "Measurements for one SLF station: IMIS 30-min snow/weather data, or study-plot daily snow data",
     inputSchema: {
       type: "object",
       required: ["station_code"],
       properties: {
         station_code: {
           type: "string",
-          description:
-            "Station code (e.g. DAV2, WFJ2, 4AO0). Use list_snow_stations to find codes.",
+          description: "e.g. DAV2, WFJ2, 4AO0 (see list_snow_stations)",
         },
         type: {
           type: "string",
           enum: ["imis", "study-plot"],
-          description:
-            'Station type: "imis" (default) or "study-plot". Determines which API endpoint to query.',
+          default: "imis",
         },
       },
     },
@@ -278,9 +268,26 @@ async function handleGetSnowMeasurements(
       : "imis";
 
   if (stationType === "study-plot") {
-    const measurements = await fetchJSON<StudyPlotMeasurement[]>(
-      `${BASE}/study-plot/station/${encodeURIComponent(code)}/measurements`
-    );
+    let measurements: StudyPlotMeasurement[];
+    try {
+      measurements = await fetchJSON<StudyPlotMeasurement[]>(
+        `${BASE}/study-plot/station/${encodeURIComponent(code)}/measurements`
+      );
+    } catch (err) {
+      // SLF answers 404 NO_DATA when a manual study plot has no recent
+      // observations — normal outside the winter season (roughly Nov–May).
+      if (err instanceof Error && err.message.startsWith("HTTP 404")) {
+        return JSON.stringify({
+          station_code: code,
+          type: "study-plot",
+          measurement_count: 0,
+          measurements: [],
+          note: "No recent observations. Study plots are read manually during the snow season (roughly November–May); use type 'imis' for year-round automatic stations.",
+          source: "WSL Institute for Snow and Avalanche Research SLF (CC BY 4.0)",
+        });
+      }
+      throw err;
+    }
 
     const latest = measurements.slice(-10).reverse().map((m) => ({
       time: m.measure_date,

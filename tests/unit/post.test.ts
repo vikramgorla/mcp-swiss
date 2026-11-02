@@ -1,49 +1,74 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { handlePost, postTools } from "../../src/modules/post.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { handlePost, postTools, clearPostCache, readCsvFromZip } from "../../src/modules/post.js";
 import {
   mockPlzFindResponse,
   mockSearchZipcodeResponse,
   mockCantonIdentifyResponse,
   mockSearchByNameResponse,
-  mockCantonFindResponse,
-  mockPlzInCantonResponse,
   mockEmptyResults,
+  mockPlzRegisterZip,
+  mockPlzRegisterCsv,
+  buildRegisterZip,
 } from "../fixtures/post.js";
 
 // ── Mock helpers ─────────────────────────────────────────────────────────────
 
-/**
- * Queues multiple fetch responses. Each call to fetch() consumes the next
- * payload in order, allowing us to mock multi-step tool handlers.
- */
+/** The PLZ register archive, served from data.geo.admin.ch. */
+let registerZip: Buffer | null = null;
+
+function registerResponse() {
+  const zip = registerZip ?? mockPlzRegisterZip();
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    statusText: "OK",
+    arrayBuffer: () => Promise.resolve(zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength)),
+  });
+}
+
+function isRegisterUrl(url: string): boolean {
+  return url.includes("data.geo.admin.ch");
+}
+
 function mockFetchSequence(...payloads: unknown[]) {
   let call = 0;
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockImplementation(() => {
-      const payload = payloads[call] ?? mockEmptyResults;
-      call++;
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        json: () => Promise.resolve(payload),
-      });
-    })
-  );
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (isRegisterUrl(String(url))) return registerResponse();
+    const payload = payloads[call] ?? mockEmptyResults;
+    call++;
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.resolve(payload),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
 
 function mockFetch(payload: unknown, status = 200) {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: status === 200 ? "OK" : "Error",
-    json: () => Promise.resolve(payload),
-  }));
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (isRegisterUrl(String(url))) return registerResponse();
+    return Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status,
+      statusText: status === 200 ? "OK" : "Error",
+      json: () => Promise.resolve(payload),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
+
+beforeEach(() => {
+  registerZip = null;
+  clearPostCache();
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearPostCache();
 });
 
 // ── postTools export ──────────────────────────────────────────────────────────
@@ -127,13 +152,11 @@ describe("lookup_postcode", () => {
     expect(result.source).toContain("swisstopo");
   });
 
-  it("returns found:false for unknown PLZ", async () => {
+  it("rejects for an unknown PLZ", async () => {
     mockFetchSequence(mockEmptyResults);
-    const result = JSON.parse(
-      await handlePost("lookup_postcode", { postcode: "9999" })
-    );
-    expect(result.found).toBe(false);
-    expect(result.postcode).toBe("9999");
+    await expect(
+      handlePost("lookup_postcode", { postcode: "9999" })
+    ).rejects.toThrow("No Swiss postcode 9999");
   });
 
   it("throws for non-4-digit postcode", async () => {
@@ -185,17 +208,55 @@ describe("lookup_postcode", () => {
     expect(searchCall![0]).toContain("origins=zipcode");
   });
 
-  it("handles null canton gracefully when identify returns no results", async () => {
+  it("handles null canton gracefully when the register and identify both miss", async () => {
+    const unknownPlz = {
+      results: [
+        {
+          ...mockPlzFindResponse.results[0],
+          attributes: { ...mockPlzFindResponse.results[0].attributes, plz: 7777, label: 7777 },
+        },
+      ],
+    };
     mockFetchSequence(
-      mockPlzFindResponse,
+      unknownPlz,
       mockSearchZipcodeResponse,
       mockEmptyResults // identify returns nothing
     );
     const result = JSON.parse(
-      await handlePost("lookup_postcode", { postcode: "8001" })
+      await handlePost("lookup_postcode", { postcode: "7777" })
     );
     expect(result.found).toBe(true);
     expect(result.canton).toBeNull();
+  });
+
+  it("reads the canton from the register, not from a point lookup", async () => {
+    const fetchMock = mockFetchSequence(mockPlzFindResponse, mockSearchZipcodeResponse);
+    const result = JSON.parse(await handlePost("lookup_postcode", { postcode: "8001" }));
+    expect(result.canton.code).toBe("ZH");
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes("data.geo.admin.ch"))).toBe(true);
+    expect(urls.some((u) => u.includes("MapServer/identify"))).toBe(false);
+  });
+
+  it("reports the municipality and its BFS number", async () => {
+    mockFetchSequence(mockPlzFindResponse, mockSearchZipcodeResponse);
+    const result = JSON.parse(await handlePost("lookup_postcode", { postcode: "8001" }));
+    expect(result.municipality).toEqual({ name: "Zürich", bfs_number: 261 });
+  });
+
+  it("lists the other cantons a postcode reaches into", async () => {
+    const plz6417 = {
+      results: [
+        {
+          ...mockPlzFindResponse.results[0],
+          attributes: { ...mockPlzFindResponse.results[0].attributes, plz: 6417, langtext: "Sattel", label: 6417 },
+        },
+      ],
+    };
+    mockFetchSequence(plz6417, mockSearchZipcodeResponse);
+    const result = JSON.parse(await handlePost("lookup_postcode", { postcode: "6417" }));
+    expect(result.canton.code).toBe("SZ");
+    expect(result.also_in_cantons).toEqual(["ZG"]);
   });
 });
 
@@ -282,34 +343,91 @@ describe("search_postcode", () => {
     );
     expect(result.source).toContain("swisstopo");
   });
+
+  it("labels each result with the canton from the register", async () => {
+    mockFetch(mockSearchByNameResponse);
+    const result = JSON.parse(
+      await handlePost("search_postcode", { city_name: "Zürich" })
+    );
+    expect(result.results[0]).toMatchObject({ postcode: 8001, canton: "ZH" });
+    expect(result.results[1]).toMatchObject({ postcode: 8002, canton: "ZH" });
+    // 8003 is not in the register slice — no canton is invented for it.
+    expect(result.results[2].canton).toBeNull();
+  });
 });
 
 // ── list_postcodes_in_canton ──────────────────────────────────────────────────
 
 describe("list_postcodes_in_canton", () => {
   it("returns canton info, count and sorted postcodes", async () => {
-    mockFetchSequence(mockCantonFindResponse, mockPlzInCantonResponse);
+    mockFetch(mockEmptyResults);
     const result = JSON.parse(
       await handlePost("list_postcodes_in_canton", { canton: "ZH" })
     );
-    expect(result.canton.code).toBe("ZH");
-    expect(result.canton.name).toBe("Zürich");
-    expect(result.count).toBeGreaterThan(0);
-    expect(Array.isArray(result.postcodes)).toBe(true);
+    expect(result.canton).toEqual({ code: "ZH", name: "Zürich" });
+    expect(result.count).toBe(3);
+    expect(result.postcodes.map((p: { postcode: number }) => p.postcode)).toEqual([8001, 8002, 8400]);
+  });
+
+  it("only returns postcodes the register puts in the canton", async () => {
+    mockFetch(mockEmptyResults);
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZG" })
+    );
+    // 6417 (SZ) and 5642 (AG) overlap ZG but are not ZG postcodes.
+    expect(result.postcodes.map((p: { postcode: number }) => p.postcode)).toEqual([6300]);
+    expect(result.count).toBe(1);
+  });
+
+  it("lists overlapping postcodes separately, with their real canton", async () => {
+    mockFetch(mockEmptyResults);
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZG" })
+    );
+    expect(result.partly_in_canton).toEqual([
+      { postcode: 5642, locality: "Mühlau", main_canton: "AG", share_percent: 0.65 },
+      { postcode: 6417, locality: "Sattel", main_canton: "SZ", share_percent: 1.16 },
+    ]);
+    expect(result.note).toContain("partly_in_canton");
+  });
+
+  it("omits partly_in_canton when nothing overlaps", async () => {
+    mockFetch(mockEmptyResults);
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZH" })
+    );
+    expect(result.partly_in_canton).toBeUndefined();
+    expect(result.note).toBeUndefined();
+  });
+
+  it("uses the main locality name, not an additional-digit entry", async () => {
+    mockFetch(mockEmptyResults);
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZG" })
+    );
+    expect(result.postcodes[0]).toEqual({ postcode: 6300, locality: "Zug" });
+  });
+
+  it("skips register rows with no canton (Liechtenstein)", async () => {
+    mockFetch(mockEmptyResults);
+    for (const canton of ["ZH", "ZG"]) {
+      const result = JSON.parse(await handlePost("list_postcodes_in_canton", { canton }));
+      const all = [...result.postcodes, ...(result.partly_in_canton ?? [])];
+      expect(all.map((p: { postcode: number }) => p.postcode)).not.toContain(9490);
+    }
   });
 
   it("postcodes are sorted ascending", async () => {
-    mockFetchSequence(mockCantonFindResponse, mockPlzInCantonResponse);
+    mockFetch(mockEmptyResults);
     const result = JSON.parse(
       await handlePost("list_postcodes_in_canton", { canton: "ZH" })
     );
     const codes = result.postcodes.map((p: { postcode: number }) => p.postcode);
-    const sorted = [...codes].sort((a, b) => a - b);
-    expect(codes).toEqual(sorted);
+    expect(codes).toEqual([...codes].sort((a, b) => a - b));
   });
 
   it("each postcode entry has postcode and locality", async () => {
-    mockFetchSequence(mockCantonFindResponse, mockPlzInCantonResponse);
+    mockFetch(mockEmptyResults);
     const result = JSON.parse(
       await handlePost("list_postcodes_in_canton", { canton: "ZH" })
     );
@@ -319,23 +437,8 @@ describe("list_postcodes_in_canton", () => {
     }
   });
 
-  it("deduplicates by PLZ", async () => {
-    const dupedPlz = {
-      results: [
-        ...mockPlzInCantonResponse.results,
-        { ...mockPlzInCantonResponse.results[0] }, // duplicate 8001
-      ],
-    };
-    mockFetchSequence(mockCantonFindResponse, dupedPlz);
-    const result = JSON.parse(
-      await handlePost("list_postcodes_in_canton", { canton: "ZH" })
-    );
-    const codes = result.postcodes.map((p: { postcode: number }) => p.postcode);
-    expect(codes.length).toBe(new Set(codes).size);
-  });
-
   it("accepts full canton name (case-insensitive)", async () => {
-    mockFetchSequence(mockCantonFindResponse, mockPlzInCantonResponse);
+    mockFetch(mockEmptyResults);
     const result = JSON.parse(
       await handlePost("list_postcodes_in_canton", { canton: "zürich" })
     );
@@ -343,7 +446,7 @@ describe("list_postcodes_in_canton", () => {
   });
 
   it("accepts lowercase 2-letter code", async () => {
-    mockFetchSequence(mockCantonFindResponse, mockPlzInCantonResponse);
+    mockFetch(mockEmptyResults);
     const result = JSON.parse(
       await handlePost("list_postcodes_in_canton", { canton: "zh" })
     );
@@ -356,26 +459,26 @@ describe("list_postcodes_in_canton", () => {
     ).rejects.toThrow("Unknown canton");
   });
 
-  it("queries canton layer with uppercase code", async () => {
-    const fetchMock = vi.fn().mockImplementation(() =>
-      Promise.resolve({
-        ok: true, status: 200, statusText: "OK",
-        json: () => Promise.resolve(mockCantonFindResponse),
-      })
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    await handlePost("list_postcodes_in_canton", { canton: "zh" }).catch(() => {});
-    const firstUrl = fetchMock.mock.calls[0][0] as string;
-    expect(firstUrl).toContain("searchText=ZH");
-    expect(firstUrl).toContain("searchField=ak");
+  it("rejects a two-letter string that is not a canton", async () => {
+    await expect(
+      handlePost("list_postcodes_in_canton", { canton: "XX" })
+    ).rejects.toThrow("Unknown canton");
   });
 
-  it("includes source attribution", async () => {
-    mockFetchSequence(mockCantonFindResponse, mockPlzInCantonResponse);
+  it("downloads the register once and reuses it", async () => {
+    const fetchMock = mockFetch(mockEmptyResults);
+    await handlePost("list_postcodes_in_canton", { canton: "ZH" });
+    await handlePost("list_postcodes_in_canton", { canton: "ZG" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the register and its download URL", async () => {
+    mockFetch(mockEmptyResults);
     const result = JSON.parse(
       await handlePost("list_postcodes_in_canton", { canton: "ZH" })
     );
-    expect(result.source).toContain("swisstopo");
+    expect(result.source).toContain("Ortschaftenverzeichnis");
+    expect(result.source_url).toContain("ortschaftenverzeichnis_plz");
   });
 
   it("throws for empty canton", async () => {
@@ -384,12 +487,56 @@ describe("list_postcodes_in_canton", () => {
     ).rejects.toThrow("canton must not be empty");
   });
 
-  it("throws 'Canton not found' when canton API returns empty results", async () => {
-    // First fetch (canton find) returns empty results → triggers line 324 throw
-    mockFetchSequence(mockEmptyResults);
+  it("fails loudly when the register cannot be downloaded", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false, status: 503, statusText: "Service Unavailable",
+      json: () => Promise.resolve({}),
+    }));
     await expect(
       handlePost("list_postcodes_in_canton", { canton: "ZH" })
-    ).rejects.toThrow(/Canton not found/);
+    ).rejects.toThrow("HTTP 503");
+  });
+
+  it("rejects an archive without a CSV entry", async () => {
+    registerZip = buildRegisterZip(mockPlzRegisterCsv, "readme.txt");
+    mockFetch(mockEmptyResults);
+    await expect(
+      handlePost("list_postcodes_in_canton", { canton: "ZH" })
+    ).rejects.toThrow("no CSV");
+  });
+
+  it("rejects a CSV without the canton column", async () => {
+    registerZip = buildRegisterZip("Ortschaftsname;PLZ4\nZürich;8001\n");
+    mockFetch(mockEmptyResults);
+    await expect(
+      handlePost("list_postcodes_in_canton", { canton: "ZH" })
+    ).rejects.toThrow("unexpected header");
+  });
+
+  it("refuses an archive that inflates past the size cap", () => {
+    // A real zip bomb would take seconds to build; the guard is the same code
+    // path with a small cap, so drive it directly.
+    const zip = buildRegisterZip("A".repeat(64 * 1024));
+    expect(() => readCsvFromZip(zip, 1024)).toThrow("decompression limit");
+    expect(() => readCsvFromZip(zip)).not.toThrow();
+  });
+
+  it("two concurrent calls download the register once", async () => {
+    const fetchMock = mockFetch(mockEmptyResults);
+    await Promise.all([
+      handlePost("list_postcodes_in_canton", { canton: "ZH" }),
+      handlePost("list_postcodes_in_canton", { canton: "BE" }),
+    ]);
+    const downloads = fetchMock.mock.calls.filter((c) => String(c[0]).includes("data.geo.admin.ch"));
+    expect(downloads).toHaveLength(1);
+  });
+
+  it("a later call reuses the cached register", async () => {
+    const fetchMock = mockFetch(mockEmptyResults);
+    await handlePost("list_postcodes_in_canton", { canton: "ZH" });
+    await handlePost("list_postcodes_in_canton", { canton: "BE" });
+    const downloads = fetchMock.mock.calls.filter((c) => String(c[0]).includes("data.geo.admin.ch"));
+    expect(downloads).toHaveLength(1);
   });
 });
 
@@ -474,7 +621,7 @@ describe("post: args undefined fallback paths (??  '' branches)", () => {
 // ── lookup_postcode: no coordinates branch ────────────────────────────────────
 
 describe("lookup_postcode — no coordinates branch", () => {
-  it("returns null coordinates when SearchServer returns no zipcode-origin entry", async () => {
+  it("still reports the canton when SearchServer returns no zipcode-origin entry", async () => {
     const emptySearchResponse = { results: [] };
     mockFetchSequence(mockPlzFindResponse, emptySearchResponse);
     const result = JSON.parse(
@@ -482,7 +629,7 @@ describe("lookup_postcode — no coordinates branch", () => {
     );
     expect(result.found).toBe(true);
     expect(result.coordinates).toBeNull();
-    expect(result.canton).toBeNull();
+    expect(result.canton.code).toBe("ZH");
   });
 });
 
@@ -513,35 +660,6 @@ describe("search_postcode — zusziff branch", () => {
       await handlePost("search_postcode", { city_name: "Testort" })
     );
     expect(result.results[0].additionalNumber).toBe("01");
-  });
-});
-
-// ── list_postcodes_in_canton: ≥200 results note ───────────────────────────────
-
-describe("list_postcodes_in_canton — capped results note", () => {
-  it("includes note when result count is exactly 200", async () => {
-    const bigPlzResponse = {
-      results: Array.from({ length: 200 }, (_, i) => ({
-        featureId: String(i),
-        id: String(i),
-        layerBodId: "ch.swisstopo-vd.ortschaftenverzeichnis_plz",
-        layerName: "Amtliches Ortschaftenverzeichnis",
-        attributes: {
-          plz: 8000 + i,
-          zusziff: "00",
-          langtext: `Ort ${i}`,
-          status: "REAL",
-          modified: "01.01.2026",
-          label: 8000 + i,
-        },
-      })),
-    };
-    mockFetchSequence(mockCantonFindResponse, bigPlzResponse);
-    const result = JSON.parse(
-      await handlePost("list_postcodes_in_canton", { canton: "ZH" })
-    );
-    expect(result.count).toBe(200);
-    expect(result.note).toContain("capped at 200");
   });
 });
 
