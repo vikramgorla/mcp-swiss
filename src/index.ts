@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import { readFileSync } from "fs";
 import { join } from "path";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+  defaultAllowedHosts,
+  isLoopbackBind,
+  publicBindProblems,
+  startHttpServer,
+} from "./http-server.js";
+import { createServer } from "./server.js";
 
 import { transportTools, handleTransport } from "./modules/transport.js";
 import { weatherTools, handleWeather } from "./modules/weather.js";
@@ -93,9 +95,21 @@ export interface ParsedArgs {
   modules: Set<string> | null;
   listModules: boolean;
   listPresets: boolean;
+  /** Serve Streamable HTTP instead of stdio (--http or MCP_TRANSPORT=http). */
+  http: boolean;
+  port: number;
+  host: string;
 }
 
-export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
+function flagValue(argv: string[], flag: string): string | undefined {
+  const idx = argv.indexOf(flag);
+  return idx !== -1 ? argv[idx + 1] : undefined;
+}
+
+export function parseArgs(
+  argv: string[] = process.argv.slice(2),
+  env: NodeJS.ProcessEnv = process.env
+): ParsedArgs {
   const listModules = argv.includes("--list-modules");
   const listPresets = argv.includes("--list-presets");
 
@@ -132,7 +146,25 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
     }
   }
 
-  return { modules: selectedModules, listModules, listPresets };
+  const http = argv.includes("--http") || env.MCP_TRANSPORT?.toLowerCase() === "http";
+  const port = Number(flagValue(argv, "--port") ?? env.PORT ?? 3000);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    process.stderr.write(`Invalid port: ${flagValue(argv, "--port") ?? env.PORT}\n`);
+    process.exit(1);
+  }
+  const host = flagValue(argv, "--host") ?? env.HOST ?? "127.0.0.1";
+
+  return { modules: selectedModules, listModules, listPresets, http, port, host };
+}
+
+function parsePositiveInt(value: string | undefined, name: string): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    process.stderr.write(`${name} must be a positive integer, got: ${value}\n`);
+    process.exit(1);
+  }
+  return parsed;
 }
 
 // ── List Helpers ─────────────────────────────────────────────────────────────
@@ -192,54 +224,57 @@ if (config.listPresets) {
 
 const activeModules = resolveModules(config.modules);
 const allTools = activeModules.flatMap((m) => m.tools);
+const moduleCount = activeModules.length;
+const toolCount = allTools.length;
+const summary = `${moduleCount} modules, ${toolCount} tools`;
 
-// Build tool → handler lookup
-const toolHandlerMap = new Map<string, ToolHandler>();
-for (const mod of activeModules) {
-  for (const tool of mod.tools) {
-    toolHandlerMap.set(tool.name, mod.handler);
-  }
+function buildMcpServer() {
+  return createServer({ version: VERSION, modules: activeModules });
 }
 
-const server = new Server(
-  { name: "mcp-swiss", version: VERSION },
-  { capabilities: { tools: {} } }
-);
-
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: allTools,
-}));
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  const safeArgs = (args ?? {}) as Record<string, unknown>;
-
-  try {
-    const handler = toolHandlerMap.get(name);
-    if (!handler) {
-      throw new Error(`Unknown tool: ${name}`);
-    }
-    const result = await handler(name, safeArgs);
-    return {
-      content: [{ type: "text", text: result }],
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      content: [{ type: "text", text: `Error: ${message}` }],
-      isError: true,
-    };
-  }
-});
-
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  const moduleCount = activeModules.length;
-  const toolCount = allTools.length;
-  process.stderr.write(
-    `mcp-swiss running on stdio (${moduleCount} modules, ${toolCount} tools)\n`
-  );
+  if (config.http) {
+    const env = process.env;
+    const allowedHosts = env.MCP_ALLOWED_HOSTS
+      ? env.MCP_ALLOWED_HOSTS.split(",").map((h) => h.trim()).filter(Boolean)
+      : defaultAllowedHosts(config.host, config.port);
+    const authToken = env.MCP_AUTH_TOKEN || undefined;
+    const problems = publicBindProblems({ host: config.host, authToken, allowedHosts });
+    if (problems.length) {
+      process.stderr.write(
+        `Refusing to listen on ${config.host}: ${problems.join(" and ")}.\n` +
+          "A server reachable from outside this machine needs a bearer token and a Host allow-list:\n" +
+          "  MCP_AUTH_TOKEN=<secret> MCP_ALLOWED_HOSTS=mcp.example.ch:3000 ...\n" +
+          "Or bind to loopback (--host 127.0.0.1) and put a reverse proxy in front.\n"
+      );
+      process.exit(1);
+    }
+
+    const httpServer = await startHttpServer({
+      port: config.port,
+      host: config.host,
+      authToken,
+      allowedHosts,
+      corsOrigin: env.MCP_CORS_ORIGIN || undefined,
+      maxSessions: parsePositiveInt(env.MCP_MAX_SESSIONS, "MCP_MAX_SESSIONS"),
+      exposeSessionCount: isLoopbackBind(config.host),
+      createMcpServer: buildMcpServer,
+    });
+    const shutdown = () => {
+      httpServer.close(() => process.exit(0));
+      httpServer.closeAllConnections();
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+    process.stderr.write(
+      `mcp-swiss ${VERSION} listening on http://${config.host}:${config.port}/mcp (${summary})\n`
+    );
+    return;
+  }
+
+  const server = buildMcpServer();
+  await server.connect(new StdioServerTransport());
+  process.stderr.write(`mcp-swiss ${VERSION} running on stdio (${summary})\n`);
 }
 
 main().catch((err) => {

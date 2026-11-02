@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Streamable HTTP transport (`--http` or `MCP_TRANSPORT=http`) alongside stdio. `POST`/`GET`/`DELETE /mcp`, `GET /health`, idle and maximum session lifetime, bearer auth, Host allow-list, and a session cap (`MCP_MAX_SESSIONS`, default 64). A public bind is refused unless `MCP_AUTH_TOKEN` and `MCP_ALLOWED_HOSTS` are set. References [#64](https://github.com/vikramgorla/mcp-swiss/issues/64); no hosted deployment in this change. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+
 ---
 
 ## [0.1.0] - 2026-03-07
