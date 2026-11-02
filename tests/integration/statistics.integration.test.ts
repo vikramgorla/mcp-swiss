@@ -1,17 +1,21 @@
 // Integration tests — hit real BFS and opendata.swiss APIs
 // Run with: npx vitest run tests/integration/statistics.integration.test.ts
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { handleStatistics } from "../../src/modules/statistics.js";
 
 // ── get_population: Switzerland ──────────────────────────────────────────────
+
+// BFS PxWeb is slow on a cold cache — allow for it
+vi.setConfig({ testTimeout: 130_000 });
 
 describe("get_population — live (BFS PxWeb)", () => {
   it("returns Switzerland total population for latest year", async () => {
     const raw = await handleStatistics("get_population", {});
     const result = JSON.parse(raw);
     expect(result.location).toBe("Switzerland");
-    expect(result.year).toBe(2024);
+    // the default follows whatever STATPOP vintage BFS has published
+    expect(result.year).toBeGreaterThanOrEqual(2025);
     expect(result.population).toBeGreaterThan(8_000_000);
     expect(result.population).toBeLessThan(12_000_000);
     expect(result.source).toContain("BFS");
@@ -77,6 +81,29 @@ describe("get_population — canton (live)", () => {
     );
     expect(result.canton_code).toBe("BE");
     expect(result.population).toBeGreaterThan(900_000);
+  }, 60000);
+
+  it("resolves accented and non-German canton names", async () => {
+    for (const [name, code] of [
+      ["Zürich", "ZH"],
+      ["Genève", "GE"],
+      ["Neuchâtel", "NE"],
+      ["Grigioni", "GR"],
+    ] as const) {
+      const result = JSON.parse(
+        await handleStatistics("get_population", { canton: name })
+      );
+      expect(result.canton_code).toBe(code);
+      expect(result.population).toBeGreaterThan(100_000);
+    }
+  }, 120000);
+
+  it("accepts the STATPOP 2025 vintage", async () => {
+    const result = JSON.parse(
+      await handleStatistics("get_population", { canton: "ZH", year: 2025 })
+    );
+    expect(result.year).toBe(2025);
+    expect(result.population).toBeGreaterThan(1_000_000);
   }, 60000);
 
   it("smallest canton (AI) has reasonable population", async () => {

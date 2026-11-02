@@ -150,10 +150,10 @@ describe('ElCom Energy API (live)', () => {
       expect(tariff.total_rp_per_kwh as number).toBeGreaterThan(0);
     }, TIMEOUT);
 
-    it('throws for an invalid municipality ID', async () => {
+    it('rejects for an invalid municipality ID', async () => {
       await expect(handleEnergy('get_electricity_tariff', {
         municipality: '999999',
-      })).rejects.toThrow('No tariff data for municipality 999999');
+      })).rejects.toThrow(/No tariff data for municipality 999999/);
     }, TIMEOUT);
 
     it('response is under 50K chars', async () => {

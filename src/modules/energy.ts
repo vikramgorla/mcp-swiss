@@ -5,7 +5,7 @@
 import { fetchBody } from "../utils/http.js";
 
 const GRAPHQL_URL = "https://www.strompreis.elcom.admin.ch/api/graphql";
-const CURRENT_YEAR = "2026";
+const currentYear = (): string => String(new Date().getFullYear());
 
 // ── Category reference ───────────────────────────────────────────────────────
 // H = Household, C = Commercial
@@ -61,7 +61,7 @@ async function gql<T>(query: string, variables: Record<string, unknown>): Promis
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
+        "Accept": "application/json",
       },
       body: JSON.stringify({ query, variables }),
     },
@@ -85,7 +85,7 @@ export const energyTools = [
   {
     name: "get_electricity_tariff",
     description:
-      "Get Swiss electricity tariff (price in Rappen/kWh) for a municipality from ElCom (Swiss Federal Electricity Commission). Returns total price and price breakdown by component (energy, grid, taxes). Valid years: 2011–2026.",
+      "ElCom electricity tariff (Rp./kWh) for a municipality, with component breakdown",
     inputSchema: {
       type: "object",
       required: ["municipality"],
@@ -93,17 +93,17 @@ export const energyTools = [
         municipality: {
           type: "string",
           description:
-            "Municipality BFS number (e.g. '261' for Zürich, '351' for Bern, '6621' for Genève). Use search_municipality_energy to find the ID.",
+            "BFS number, e.g. 261 (Zürich), 351 (Bern); see search_municipality_energy",
         },
         category: {
           type: "string",
-          description:
-            "Electricity category. Household: H1–H8 (H4 is default, ~4500 kWh/year). Commercial: C1–C7. Default: H4.",
+          description: "H1–H8 household (H4 ≈ 4500 kWh/yr), C1–C7 commercial",
+          default: "H4",
           enum: ["H1","H2","H3","H4","H5","H6","H7","H8","C1","C2","C3","C4","C5","C6","C7"],
         },
         year: {
           type: "string",
-          description: "Tariff year (2011–2026). Default: current year (2026).",
+          description: "2011 onward, default: current year",
         },
       },
     },
@@ -111,7 +111,7 @@ export const energyTools = [
   {
     name: "compare_electricity_tariffs",
     description:
-      "Compare Swiss electricity tariffs across multiple municipalities side-by-side. Returns prices sorted from cheapest to most expensive. Useful for relocation decisions or cost analysis.",
+      "Compare electricity tariffs across 2–20 municipalities",
     inputSchema: {
       type: "object",
       required: ["municipalities"],
@@ -120,18 +120,18 @@ export const energyTools = [
           type: "array",
           items: { type: "string" },
           description:
-            "Array of municipality BFS numbers to compare (e.g. ['261', '351', '6621']). Max 20. Use search_municipality_energy to find IDs.",
+            "BFS numbers, e.g. [\"261\", \"351\"]",
           minItems: 2,
           maxItems: 20,
         },
         category: {
           type: "string",
-          description: "Electricity category (H1–H8, C1–C7). Default: H4.",
+          default: "H4",
           enum: ["H1","H2","H3","H4","H5","H6","H7","H8","C1","C2","C3","C4","C5","C6","C7"],
         },
         year: {
           type: "string",
-          description: "Tariff year (2011–2026). Default: 2026.",
+          description: "2011 onward, default: current year",
         },
       },
     },
@@ -139,14 +139,14 @@ export const energyTools = [
   {
     name: "search_municipality_energy",
     description:
-      "Search for Swiss municipality IDs needed for electricity tariff lookup. Returns BFS municipality numbers for use with get_electricity_tariff and compare_electricity_tariffs.",
+      "Find municipality BFS numbers for the electricity tariff tools",
     inputSchema: {
       type: "object",
       required: ["name"],
       properties: {
         name: {
           type: "string",
-          description: "Municipality name to search (e.g. 'Zürich', 'Bern', 'Basel', 'Lausanne', 'Luzern').",
+          description: "e.g. Lausanne",
         },
       },
     },
@@ -202,7 +202,7 @@ export async function handleEnergy(
     case "get_electricity_tariff": {
       const municipality = args.municipality as string;
       const category = (args.category as string | undefined) ?? "H4";
-      const year = (args.year as string | undefined) ?? CURRENT_YEAR;
+      const year = (args.year as string | undefined) ?? currentYear();
 
       if (!municipality?.trim()) {
         throw new Error("municipality is required. Use search_municipality_energy to find the BFS number.");
@@ -250,7 +250,7 @@ export async function handleEnergy(
     case "compare_electricity_tariffs": {
       const municipalities = args.municipalities as string[];
       const category = (args.category as string | undefined) ?? "H4";
-      const year = (args.year as string | undefined) ?? CURRENT_YEAR;
+      const year = (args.year as string | undefined) ?? currentYear();
 
       if (!Array.isArray(municipalities) || municipalities.length < 2) {
         throw new Error("At least 2 municipality IDs are required for comparison.");

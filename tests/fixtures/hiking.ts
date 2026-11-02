@@ -96,6 +96,35 @@ export const mockFindResponseSingle = {
   results: [mockClosureResult],
 };
 
+/** Bern (BERN_LAT/BERN_LON in the tests) in LV95. */
+export const BERN_LV95 = { e: 2600675, n: 1199889 };
+
+/** Closure whose nearest vertex is ~2 km from BERN_LV95. */
+export const mockClosureNear = {
+  ...mockClosureResult,
+  featureId: 2001,
+  id: 2001,
+  geometry: {
+    paths: [[[BERN_LV95.e + 5000, BERN_LV95.n], [BERN_LV95.e + 2000, BERN_LV95.n]]],
+    spatialReference: { wkid: 2056 },
+  },
+};
+
+/** Closure ~20 km away: inside the query box only for a large radius. */
+export const mockClosureFar = {
+  ...mockDetourResult,
+  featureId: 2002,
+  id: 2002,
+  geometry: {
+    paths: [[[BERN_LV95.e + 20000, BERN_LV95.n + 4000]]],
+    spatialReference: { wkid: 2056 },
+  },
+};
+
+export const mockFindResponseWithGeometry = {
+  results: [mockClosureFar, mockClosureNear],
+};
+
 export const mockFindResponseEmpty = {
   results: [],
 };

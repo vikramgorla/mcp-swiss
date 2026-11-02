@@ -30,12 +30,24 @@ describe('Geodata API (live)', () => {
     }
   });
 
-  it('reverse_geocode returns slim results', async () => {
+  it('reverse_geocode resolves a city point to an address', async () => {
     const result = JSON.parse(await handleGeodata('reverse_geocode', {
       lat: 46.9480, lng: 7.4474,
     }));
-    expect(result.count).toBeGreaterThan(0);
-    expect(result.results[0]).toHaveProperty('label');
+    // Used to always return 0 results: SearchServer has no reverse lookup.
+    expect(result.address).toBeTruthy();
+    expect(result.municipality).toBe('Bern');
+    expect(result.canton).toBe('BE');
+    expect(result.postcode).toBeGreaterThan(2999);
+    expect(result.address_distance_m).toBeLessThan(150);
+  });
+
+  it('reverse_geocode still names the municipality without a nearby address', async () => {
+    const result = JSON.parse(await handleGeodata('reverse_geocode', {
+      lat: 46.5581, lng: 7.9625,
+    }));
+    expect(result.municipality).toBeTruthy();
+    expect(result.canton).toBeTruthy();
   });
 
   it('search_places finds Matterhorn', async () => {

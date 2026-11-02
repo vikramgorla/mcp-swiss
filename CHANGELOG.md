@@ -18,6 +18,24 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Fixed
 
 - Failed lookups now throw, so the MCP client receives `isError` instead of a successful payload shaped like `{"error": "..."}` (voting, energy, earthquakes, SNB, dams, post). An empty-but-valid result still returns `count: 0`. From netadvanced.
+- Data corrections ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng):
+  - ZEFIX `search_companies` filters by real registry-office ids and legal-form ids. `list_legal_forms` returns that live list (`3` = AG, `4` = GmbH) instead of invented `0106`-style codes.
+  - `search_companies_by_address` is now `search_companies_by_locality`: ZEFIX has no street search, so the tool resolves a commune or town and rejects a street address.
+  - `get_avalanche_bulletin` returns the public SLF CAAMLv6 bulletin (danger, problems, advice). `list_avalanche_regions` lists the 135 EAWS micro-regions, named the way the English bulletin names them.
+  - Earthquakes use the SED catalog over HTTPS (`https://eida.ethz.ch`) and `get_recent_earthquakes` stays inside the Swiss box with a capped result count.
+  - The NABEL list includes all 16 stations (Jungfraujoch and Beromünster were missing) and merges codes the geo.admin layer adds later.
+  - Dam search pages the full layer (the find endpoint stopped at 201 of 225) and canton filters use the real canton polygon instead of a bounding box.
+  - `get_property_price_index` fetches the published BFS IMPI series. Rent-index windows come from the response instead of a hard-coded row count.
+  - Weather and water history send `startdate`/`enddate` (the old `startdt`/`enddt` were ignored) and down-sample long ranges.
+  - `get_nearby_stations` applies `limit` and `distance` to the station list. Nearby traffic and trail tools filter on real distance instead of a pixel tolerance.
+  - `reverse_geocode` resolves the nearest building-register address plus municipality. swisstopo SearchServer has no reverse lookup.
+  - Parliament responses drop whole entries instead of cutting mid-JSON, and vote tallies read the fields OpenParlData actually returns.
+  - `is_holiday_today` and recycling "today" use the Europe/Zurich calendar date.
+  - Population accepts unaccented and multilingual canton names, and the default year comes from the STATPOP cube.
+  - Pollen names are decoded as ISO-8859-1, and station checks use the published list.
+  - Study-plot snow measurements return an empty result off-season instead of an HTTP 404. Electricity tariffs default to the current year.
+  - Postcodes in a canton come from the official locality register. Reference lists expire and share one in-flight fetch. ODSQL search terms in the voting tools are escaped.
+  - The `outdoor` preset includes pollen.
 
 ---
 
