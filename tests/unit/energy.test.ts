@@ -130,12 +130,11 @@ describe('get_electricity_tariff', () => {
     expect(body.variables.filters.period).toEqual(['2025']);
   });
 
-  it('returns error message when no data found', async () => {
+  it('throws when no data found', async () => {
     mockFetch(mockObservationsEmpty);
-    const result = JSON.parse(await handleEnergy('get_electricity_tariff', { municipality: '99999' }));
-    expect(result.error).toContain('No tariff data found');
-    expect(result.hint).toBeTruthy();
-    expect(result.municipality).toBe('99999');
+    await expect(handleEnergy('get_electricity_tariff', { municipality: '99999' })).rejects.toThrow(
+      'No tariff data for municipality 99999'
+    );
   });
 
   it('throws when municipality is missing', async () => {
@@ -279,12 +278,11 @@ describe('compare_electricity_tariffs', () => {
     expect(result.comparison[0].total_rp_per_kwh).toBe(24.758);
   });
 
-  it('returns error when no data found', async () => {
+  it('throws when no data found', async () => {
     mockFetch(mockObservationsEmpty);
-    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+    await expect(handleEnergy('compare_electricity_tariffs', {
       municipalities: ['99998', '99999'],
-    }));
-    expect(result.error).toContain('No tariff data found');
+    })).rejects.toThrow('No tariff data for any of 99998, 99999');
   });
 
   it('throws when fewer than 2 municipalities provided', async () => {
@@ -533,8 +531,9 @@ describe('energy: undefined field fallback paths', () => {
       ok: true, status: 200,
       json: () => Promise.resolve({ data: {} }), // data exists but no observations key
     }));
-    const result = JSON.parse(await handleEnergy('get_electricity_tariff', { municipality: '261' }));
-    expect(result.error).toContain('No tariff data found');
+    await expect(handleEnergy('get_electricity_tariff', { municipality: '261' })).rejects.toThrow(
+      'No tariff data for municipality 261'
+    );
   });
 
   it('handles missing observations field gracefully (compare_electricity_tariffs)', async () => {
@@ -542,10 +541,9 @@ describe('energy: undefined field fallback paths', () => {
       ok: true, status: 200,
       json: () => Promise.resolve({ data: {} }), // no observations field
     }));
-    const result = JSON.parse(await handleEnergy('compare_electricity_tariffs', {
+    await expect(handleEnergy('compare_electricity_tariffs', {
       municipalities: ['261', '351'],
-    }));
-    expect(result.error).toContain('No tariff data found');
+    })).rejects.toThrow('No tariff data for any of 261, 351');
   });
 
   it('handles missing municipalities field gracefully (search_municipality_energy)', async () => {

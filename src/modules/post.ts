@@ -226,7 +226,7 @@ export async function handlePost(
       const findData = await fetchJSON<PlzFindResponse>(findUrl);
 
       if (!findData.results.length) {
-        return JSON.stringify({ found: false, postcode, message: "Postcode not found." });
+        throw new Error(`No Swiss postcode ${postcode}. Use search_postcode to find one by place name.`);
       }
 
       const record = findData.results[0];

@@ -9,6 +9,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Shared HTTP client (`src/utils/http.ts`) with a versioned `mcp-swiss` User-Agent, a 30s timeout (`MCP_SWISS_TIMEOUT_MS`), and one retry for dropped connections and for 429/502/503/504 (honouring `Retry-After`, capped at 10s). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+- Expiring in-flight cache helper (`src/utils/cache.ts`) and argument validation against each tool's input schema (`src/utils/validate.ts`), including safe coercion of numeric strings and case-insensitive enums. From netadvanced.
+- Tool annotations: every tool is advertised as read-only, idempotent, and open-world. From netadvanced.
+
+### Fixed
+
+- Failed lookups now throw, so the MCP client receives `isError` instead of a successful payload shaped like `{"error": "..."}` (voting, energy, earthquakes, SNB, dams, post). An empty-but-valid result still returns `count: 0`. From netadvanced.
+
 ---
 
 ## [0.1.0] - 2026-03-07

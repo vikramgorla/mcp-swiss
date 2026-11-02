@@ -50,11 +50,10 @@ describe("lookup_postcode (live API)", () => {
     expect(result.canton.code).toBe("TI");
   });
 
-  it("returns found:false for fictional PLZ 9998", async () => {
-    const result = JSON.parse(
-      await handlePost("lookup_postcode", { postcode: "9998" })
+  it("throws for fictional PLZ 9998", async () => {
+    await expect(handlePost("lookup_postcode", { postcode: "9998" })).rejects.toThrow(
+      "No Swiss postcode 9998"
     );
-    expect(result.found).toBe(false);
   });
 
   it("response is under 50K chars", async () => {

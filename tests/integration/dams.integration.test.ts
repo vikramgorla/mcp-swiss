@@ -216,12 +216,10 @@ describe("get_dam_details (live API)", () => {
     expect(result.crest_level_masl).toBeGreaterThan(2000);
   });
 
-  it("returns found:false for nonexistent dam", async () => {
-    const result = JSON.parse(
-      await handleDams("get_dam_details", { name: "Nonexistent Dam 12345" })
-    );
-    expect(result.found).toBe(false);
-    expect(result.message).toContain("No dam found");
+  it("throws for a nonexistent dam", async () => {
+    await expect(
+      handleDams("get_dam_details", { name: "Nonexistent Dam 12345" })
+    ).rejects.toThrow('No dam named "Nonexistent Dam 12345"');
   });
 
   it("response is under 50K chars", async () => {

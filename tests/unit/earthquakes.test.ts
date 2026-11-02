@@ -265,21 +265,18 @@ describe('get_earthquake_details', () => {
     expect(calledUrl).toContain('eventid=');
   });
 
-  it('returns error object on 204 (event not found)', async () => {
+  it('throws on 204 (event not found)', async () => {
     mockFetch204();
-    const result = JSON.parse(
-      await handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
-    );
-    expect(result.error).toBeDefined();
-    expect(result.event_id).toBe('smi:unknown');
+    await expect(
+      handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
+    ).rejects.toThrow('No earthquake with event_id "smi:unknown"');
   });
 
-  it('returns error when body parses to 0 events', async () => {
+  it('throws when body parses to 0 events', async () => {
     mockFetchText(mockFdsnTextEmpty);
-    const result = JSON.parse(
-      await handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
-    );
-    expect(result.error).toBeDefined();
+    await expect(
+      handleEarthquakes('get_earthquake_details', { event_id: 'smi:unknown' })
+    ).rejects.toThrow('no parsable record');
   });
 
   it('throws when event_id is missing', async () => {

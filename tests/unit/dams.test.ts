@@ -371,14 +371,11 @@ describe("get_dam_details", () => {
     expect(result.source).toContain("130676916");
   });
 
-  it("returns found:false when dam not found after both searches", async () => {
-    // damname → empty, facilityname → empty
+  it("throws when dam is not found after both searches", async () => {
     mockFetchSequence(mockDamSearchEmpty, mockDamSearchEmpty);
-    const result = JSON.parse(await handleDams("get_dam_details", { name: "Nonexistent Dam" }));
-    expect(result.found).toBe(false);
-    expect(result.name).toBe("Nonexistent Dam");
-    expect(result.message).toContain("No dam found");
-    expect(result.message).toContain("Nonexistent Dam");
+    await expect(handleDams("get_dam_details", { name: "Nonexistent Dam" })).rejects.toThrow(
+      'No dam named "Nonexistent Dam"'
+    );
   });
 
   it("prefers exact name match when multiple dams returned", async () => {

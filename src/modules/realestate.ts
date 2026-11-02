@@ -259,9 +259,7 @@ async function handleSearchRealEstateData(
     fq: "groups:territoire-et-environnement OR groups:construction-et-logement OR tags:immobilien OR tags:wohnen OR tags:miete OR tags:logement",
   });
 
-  const data = await fetchJSON<CkanSearchResult>(url, {
-    headers: { "User-Agent": "mcp-swiss" },
-  });
+  const data = await fetchJSON<CkanSearchResult>(url);
 
   if (!data.success) throw new Error("opendata.swiss search failed");
 
@@ -271,9 +269,7 @@ async function handleSearchRealEstateData(
 
   if (results.length === 0) {
     const url2 = buildUrl(`${CKAN_BASE}/package_search`, { q: query, rows: limit });
-    const data2 = await fetchJSON<CkanSearchResult>(url2, {
-      headers: { "User-Agent": "mcp-swiss" },
-    });
+    const data2 = await fetchJSON<CkanSearchResult>(url2);
     if (data2.success) {
       results = data2.result.results;
       totalCount = data2.result.count;
@@ -334,9 +330,7 @@ async function handleGetRentIndex(args: Record<string, unknown>): Promise<string
     url = buildUrl(CPI_RENT_URL, { _limit: rawLimit, _offset: offset });
   }
 
-  const data = await fetchJSON<ZgCpiResponse>(url, {
-    headers: { "User-Agent": "mcp-swiss" },
-  });
+  const data = await fetchJSON<ZgCpiResponse>(url);
 
   // Filter by year if specified
   let rows = data.results;

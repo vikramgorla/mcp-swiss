@@ -3,7 +3,6 @@ import { fetchJSON, buildUrl } from "../utils/http.js";
 // ── Base URLs ─────────────────────────────────────────────────────────────────
 
 const BS_BASE = "https://data.bs.ch/api/v2/catalog/datasets/100345/exports/json";
-const USER_AGENT = "mcp-swiss/0.3.1";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,9 +143,7 @@ async function fetchVoteRows(
     order_by: "abst_datum_text desc",
   });
 
-  return fetchJSON<BsVotingRecord[]>(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  return fetchJSON<BsVotingRecord[]>(url);
 }
 
 /**
@@ -221,8 +218,11 @@ export async function handleGetVotingResults(params: {
 
   if (votes.length === 0) {
     return JSON.stringify({
-      error: "No voting results found for the given parameters",
+      count: 0,
+      votes: [],
       hint: "Try without a year filter, or use a different year (available: 2021–2025)",
+      source: "Basel-Stadt open data — national & cantonal votes",
+      data_url: "https://data.bs.ch/explore/dataset/100345/",
     });
   }
 
@@ -247,7 +247,7 @@ export async function handleSearchVotes(params: {
   limit?: number;
 }): Promise<string> {
   if (!params.query?.trim()) {
-    return JSON.stringify({ error: "query parameter is required" });
+    throw new Error("query is required: a keyword from the vote title, in German, French or Italian.");
   }
 
   const limit = Math.min(params.limit ?? 5, 20);
@@ -280,9 +280,7 @@ export async function handleGetVoteDetails(params: {
   date?: string;
 }): Promise<string> {
   if (!params.vote_title && !params.date) {
-    return JSON.stringify({
-      error: "Provide at least vote_title or date",
-    });
+    throw new Error("Provide vote_title or date (YYYY-MM-DD). Use search_votes to find either.");
   }
 
   const conditions: string[] = [
@@ -306,15 +304,12 @@ export async function handleGetVoteDetails(params: {
     order_by: "abst_datum_text desc,abst_id asc",
   });
 
-  const rows = await fetchJSON<BsVotingRecord[]>(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const rows = await fetchJSON<BsVotingRecord[]>(url);
 
   if (!rows || rows.length === 0) {
-    return JSON.stringify({
-      error: "No vote found matching the given parameters",
-      hint: "Try partial title (e.g. 'CO2' instead of 'CO2-Gesetz') or check the date format (YYYY-MM-DD)",
-    });
+    throw new Error(
+      "No vote matches those parameters. Use search_votes to get an exact title, or pass a date as YYYY-MM-DD.",
+    );
   }
 
   // Group by (date, abst_id) — take the first match if multiple votes match
