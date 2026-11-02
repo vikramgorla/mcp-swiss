@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage tests/unit tests/mcp",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
+    "test:integration": "VITEST_ALLOW_NETWORK=1 vitest run tests/integration",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "validate": "npm run lint && npm run build && npm test",

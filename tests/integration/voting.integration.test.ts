@@ -198,11 +198,10 @@ describe("get_vote_details (live API)", () => {
     expect(result.totals.yes_count).toBe(sumYes);
   });
 
-  it("returns error for completely unknown vote", async () => {
-    const result = JSON.parse(
-      await handleGetVoteDetails({ vote_title: "ZuckersteuerNonExistent99" }),
-    );
-    expect(result.error).toBeDefined();
+  it("rejects for a completely unknown vote", async () => {
+    await expect(
+      handleGetVoteDetails({ vote_title: "ZuckersteuerNonExistent99" }),
+    ).rejects.toThrow(/No vote matches/);
   });
 
   it("accepts date parameter", async () => {

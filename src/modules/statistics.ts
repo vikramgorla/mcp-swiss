@@ -26,26 +26,51 @@ const CANTON_NAMES: Record<string, string> = {
   VS: "Valais", NE: "Neuchâtel", GE: "Genève", JU: "Jura",
 };
 
-// Alternative name lookup (common English/German/French names → canton code)
+// German, French, Italian and English names → canton code. Keys are compared
+// after foldAccents(), so plain ASCII spellings here match "Zürich", "Genève"…
 const CANTON_ALIASES: Record<string, string> = {
-  zurich: "ZH", bern: "BE", berne: "BE", lucerne: "LU", luzern: "LU",
-  uri: "UR", schwyz: "SZ", obwalden: "OW", nidwalden: "NW",
-  glarus: "GL", zug: "ZG", fribourg: "FR", freiburg: "FR",
-  solothurn: "SO", "basel-stadt": "BS", "basel-city": "BS",
-  "basel-landschaft": "BL", "basel-country": "BL",
-  schaffhausen: "SH", appenzell: "AR",
-  "st. gallen": "SG", "saint gallen": "SG", "st gallen": "SG",
-  graubunden: "GR", grisons: "GR", aargau: "AG", argovia: "AG",
-  thurgau: "TG", ticino: "TI", tessin: "TI", vaud: "VD",
-  valais: "VS", wallis: "VS", neuchatel: "NE", geneva: "GE",
-  genf: "GE", geneve: "GE", jura: "JU",
+  zurich: "ZH", zurigo: "ZH",
+  bern: "BE", berne: "BE", berna: "BE",
+  luzern: "LU", lucerne: "LU", lucerna: "LU",
+  uri: "UR",
+  schwyz: "SZ", schwytz: "SZ", svitto: "SZ",
+  obwalden: "OW", obwald: "OW", obvaldo: "OW",
+  nidwalden: "NW", nidwald: "NW", nidvaldo: "NW",
+  glarus: "GL", glaris: "GL", glarona: "GL",
+  zug: "ZG", zoug: "ZG", zugo: "ZG",
+  fribourg: "FR", freiburg: "FR", friburgo: "FR",
+  solothurn: "SO", soleure: "SO", soletta: "SO",
+  "basel-stadt": "BS", "basel-city": "BS", "basle-city": "BS", "bale-ville": "BS",
+  "basilea-citta": "BS", basel: "BS", bale: "BS",
+  "basel-landschaft": "BL", "basel-country": "BL", "basel-land": "BL", baselland: "BL",
+  "bale-campagne": "BL", "basilea-campagna": "BL",
+  schaffhausen: "SH", schaffhouse: "SH", sciaffusa: "SH",
+  appenzell: "AR", "appenzell ausserrhoden": "AR", "appenzell outer rhodes": "AR",
+  "appenzell rhodes-exterieures": "AR", "appenzello esterno": "AR",
+  "appenzell innerrhoden": "AI", "appenzell inner rhodes": "AI",
+  "appenzell rhodes-interieures": "AI", "appenzello interno": "AI",
+  "st. gallen": "SG", "st gallen": "SG", "saint gallen": "SG", "sankt gallen": "SG",
+  "saint-gall": "SG", "san gallo": "SG",
+  graubunden: "GR", grisons: "GR", grigioni: "GR",
+  aargau: "AG", argovie: "AG", argovia: "AG",
+  thurgau: "TG", thurgovie: "TG", turgovia: "TG",
+  ticino: "TI", tessin: "TI",
+  vaud: "VD", waadt: "VD",
+  valais: "VS", wallis: "VS", vallese: "VS",
+  neuchatel: "NE", neuenburg: "NE", neuchatelois: "NE",
+  geneva: "GE", geneve: "GE", genf: "GE", ginevra: "GE",
+  jura: "JU", giura: "JU",
 };
 
 const ALL_CANTON_CODES = Object.values(CANTON_CODES);
-const LATEST_YEAR = "2024";
-const AVAILABLE_YEARS = ["2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023","2024"];
+const POPULATION_YEAR_VARIABLE = "Jahr";
 
 // ── API types ────────────────────────────────────────────────────────────────
+
+interface PxWebMetadata {
+  title: string;
+  variables: Array<{ code: string; text: string; values: string[]; valueTexts: string[] }>;
+}
 
 interface PxWebResponse {
   columns: Array<{ code: string; text: string; type: string }>;
@@ -96,15 +121,36 @@ function resolveText(val: string | Record<string, string> | undefined): string {
   return val.en || val.de || val.fr || val.it || Object.values(val)[0] || "";
 }
 
+/**
+ * Lowercase, strip diacritics and flatten separators, so "Genève",
+ * "Bâle-Ville" and "St.Gallen" become "geneve", "bale ville", "st gallen".
+ */
+function foldAccents(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[\s_/.,-]+/g, " ")
+    .trim();
+}
+
+/** Canton codes and official names in all four languages, folded to ASCII. */
+const CANTON_LOOKUP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const [key, code] of Object.entries(CANTON_CODES)) map[key] = code;
+  for (const [code, name] of Object.entries(CANTON_NAMES)) map[foldAccents(name)] = code;
+  for (const [alias, code] of Object.entries(CANTON_ALIASES)) map[foldAccents(alias)] = code;
+  return map;
+})();
+
 function resolveCantonCode(input: string): string | null {
-  const normalized = input.trim().toLowerCase();
-  // Direct 2-letter code (both lowercase and uppercase input handled by normalizing)
-  if (CANTON_CODES[normalized]) return CANTON_CODES[normalized];
-  // Alias lookup
-  if (CANTON_ALIASES[normalized]) return CANTON_ALIASES[normalized];
-  // Partial match
-  for (const [alias, code] of Object.entries(CANTON_ALIASES)) {
-    if (alias.includes(normalized) || normalized.includes(alias)) return code;
+  const normalized = foldAccents(input);
+  if (CANTON_LOOKUP[normalized]) return CANTON_LOOKUP[normalized];
+  // "canton de Genève", "Kanton Zürich" and the like
+  if (normalized.length >= 4) {
+    for (const [name, code] of Object.entries(CANTON_LOOKUP)) {
+      if (name.length >= 4 && (name.includes(normalized) || normalized.includes(name))) return code;
+    }
   }
   return null;
 }
@@ -114,27 +160,55 @@ function truncate(str: string, maxLen: number): string {
   return str.slice(0, maxLen - 3) + "...";
 }
 
+const POPULATION_URL = `${PXWEB_BASE}/${POPULATION_TABLE}/${POPULATION_TABLE}.px`;
+const YEARS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+let _yearsCache: string[] | null = null;
+let _yearsCachedAt = 0;
+
+/** Clear the cached STATPOP year list (for testing) */
+export function clearStatisticsCache(): void {
+  _yearsCache = null;
+  _yearsCachedAt = 0;
+}
+
+/**
+ * Years the STATPOP cube actually carries, read from its own metadata so the
+ * module does not go stale when BFS publishes a new vintage.
+ */
+async function populationYears(): Promise<string[]> {
+  if (_yearsCache && Date.now() - _yearsCachedAt < YEARS_CACHE_TTL_MS) return _yearsCache;
+
+  const meta = await fetchJSON<PxWebMetadata>(POPULATION_URL, { timeoutMs: 120_000 });
+  const years = meta.variables
+    ?.find((v) => v.code === POPULATION_YEAR_VARIABLE)
+    ?.values.slice()
+    .sort();
+  if (!years?.length) throw new Error("BFS returned no year list for the STATPOP table");
+
+  _yearsCache = years;
+  _yearsCachedAt = Date.now();
+  return years;
+}
+
 // ── Tool definitions ─────────────────────────────────────────────────────────
 
 export const statisticsTools = [
   {
     name: "get_population",
     description:
-      "Get Swiss population data from the Federal Statistical Office (FSO/BFS). " +
-      "Returns population figures for Switzerland, a canton, or all cantons. " +
-      "Data source: BFS STATPOP (permanent resident population).",
+      "Permanent resident population (BFS STATPOP) for Switzerland, a canton or all cantons",
     inputSchema: {
       type: "object",
       properties: {
         canton: {
           type: "string",
           description:
-            "Canton name or 2-letter code (e.g. 'ZH', 'Zürich', 'Geneva', 'BE'). " +
-            "Omit to get Switzerland total. Use 'all' to list all cantons.",
+            "Canton code or name (e.g. ZH, Geneva); 'all' for every canton; omit for national total",
         },
         year: {
           type: "number",
-          description: `Year of data (${AVAILABLE_YEARS[0]}–${LATEST_YEAR}). Defaults to latest (${LATEST_YEAR}).`,
+          description: "STATPOP year, from 2010; default is the latest published",
         },
       },
     },
@@ -142,19 +216,19 @@ export const statisticsTools = [
   {
     name: "search_statistics",
     description:
-      "Search Swiss Federal Statistical Office (BFS/OFS/UST) datasets on opendata.swiss. " +
-      "Returns matching dataset titles, IDs, and descriptions.",
+      "Search BFS datasets on opendata.swiss",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description: "Search query (e.g. 'unemployment', 'GDP', 'housing prices', 'birth rate')",
+          description: "e.g. unemployment, GDP",
         },
         limit: {
           type: "number",
-          description: "Max results to return (1–20, default 10)",
+          description: "1–20",
+          default: 10,
         },
       },
     },
@@ -162,15 +236,14 @@ export const statisticsTools = [
   {
     name: "get_statistic",
     description:
-      "Fetch details and resource links for a specific BFS/OFS dataset by its opendata.swiss identifier. " +
-      "Use search_statistics first to find dataset IDs.",
+      "Details and resource links for a BFS dataset by opendata.swiss ID (from search_statistics)",
     inputSchema: {
       type: "object",
       required: ["dataset_id"],
       properties: {
         dataset_id: {
           type: "string",
-          description: "Dataset identifier from opendata.swiss (e.g. 'bevolkerungsstatistik-einwohner')",
+          description: "e.g. bevolkerungsstatistik-einwohner",
         },
       },
     },
@@ -181,14 +254,6 @@ export const statisticsTools = [
 
 async function handleGetPopulation(args: Record<string, unknown>): Promise<string> {
   const rawCanton = typeof args.canton === "string" ? args.canton.trim() : "";
-  const rawYear = args.year;
-  const year = rawYear !== undefined ? String(rawYear) : LATEST_YEAR;
-
-  if (!AVAILABLE_YEARS.includes(year)) {
-    throw new Error(`Year must be between ${AVAILABLE_YEARS[0]} and ${LATEST_YEAR}. Got: ${year}`);
-  }
-
-  const url = `${PXWEB_BASE}/${POPULATION_TABLE}/${POPULATION_TABLE}.px`;
 
   // Determine which locations to query
   let locationCodes: string[];
@@ -212,6 +277,16 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
     mode = "canton";
   }
 
+  const availableYears = await populationYears();
+  const latestYear = availableYears[availableYears.length - 1];
+  const year = args.year !== undefined ? String(args.year) : latestYear;
+
+  if (!availableYears.includes(year)) {
+    throw new Error(`Year must be between ${availableYears[0]} and ${latestYear}. Got: ${year}`);
+  }
+
+  const url = POPULATION_URL;
+
   const body = {
     query: [
       { code: "Jahr", selection: { filter: "item", values: [year] } },
@@ -227,7 +302,9 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
     response: { format: "json" },
   };
 
+  // BFS PxWeb can take >60 s on a cold cache (then answers in ~0.1 s)
   const data = await fetchJSON<PxWebResponse>(url, {
+    timeoutMs: 120_000,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

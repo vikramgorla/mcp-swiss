@@ -52,7 +52,7 @@
 🚗 Traffic      — ASTRA counting stations, daily volumes
 🌍 Earthquakes  — Swiss Seismological Service (SED/ETH Zürich), FDSN API
 ❄️ Snow         — SLF snow depth, stations, and measurements
-🌿 Pollen       — MeteoSwiss pollen concentrations at 16 stations
+🌿 Pollen       — MeteoSwiss pollen concentrations at the published stations
 ```
 
 ---
@@ -314,7 +314,7 @@ By default, mcp-swiss loads all 22 modules (79 tools). For better token efficien
 | Preset | Modules | Tools | Token Savings |
 |--------|---------|-------|---------------|
 | `commuter` | transport, weather, holidays | 14 | 81% |
-| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow | 19 | 75% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow, pollen | 22 | 72% |
 | `business` | companies, geodata, post, energy, statistics, snb | 24 | 67% |
 | `citizen` | parliament, voting, holidays, news | 17 | 77% |
 | `minimal` | transport | 5 | 93% |
@@ -392,7 +392,7 @@ Once connected, try asking your AI:
 |------|-------------|
 | `search_companies` | Search by name, canton, legal form |
 | `get_company` | Full company details by ZEFIX `ehraid` |
-| `search_companies_by_address` | Companies registered at an address |
+| `search_companies_by_locality` | Companies seated in a commune or town (ZEFIX has no street search) |
 | `list_cantons` | All 26 Swiss cantons |
 | `list_legal_forms` | AG, GmbH, and all Swiss legal forms |
 
@@ -422,14 +422,14 @@ Once connected, try asking your AI:
 
 | Tool | Description |
 |------|-------------|
-| `get_avalanche_bulletin` | Current avalanche bulletin with danger levels and PDF links |
-| `list_avalanche_regions` | All 22 Swiss avalanche warning regions |
+| `get_avalanche_bulletin` | Live SLF bulletin: danger level, problems, advice for a region or coordinate |
+| `list_avalanche_regions` | The 135 SLF/EAWS warning regions |
 
 ### 💨 Air Quality (2 tools)
 
 | Tool | Description |
 |------|-------------|
-| `list_air_quality_stations` | All 14 NABEL monitoring stations |
+| `list_air_quality_stations` | All 16 NABEL monitoring stations, plus any code the live layer adds |
 | `get_air_quality` | Station info, Swiss legal limits (LRV), and BAFU data links |
 
 ### 📮 Swiss Post (4 tools)
@@ -539,9 +539,9 @@ Once connected, try asking your AI:
 
 | Tool | Description |
 |------|-------------|
-| `get_pollen_current` | Current hourly pollen concentrations at any of 16 MeteoSwiss stations (7 types: Alder, Birch, Hazel, Beech, Ash, Oak, Grasses) |
-| `get_pollen_daily` | Daily pollen averages for trend analysis over configurable time range |
-| `list_pollen_stations` | All 16 MeteoSwiss automatic pollen monitoring stations with location details |
+| `get_pollen_current` | Current hourly pollen concentrations at a published MeteoSwiss station |
+| `get_pollen_daily` | Daily pollen averages over a configurable range |
+| `list_pollen_stations` | Published MeteoSwiss pollen stations (the list is no longer a frozen 16) |
 
 ---
 

@@ -80,7 +80,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
 
 export const presets: Record<string, string[]> = {
   commuter:  ["transport", "weather", "holidays"],
-  outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams", "snow"],
+  outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams", "snow", "pollen"],
   business:  ["companies", "geodata", "post", "energy", "statistics", "snb"],
   citizen:   ["parliament", "voting", "holidays", "news"],
   minimal:   ["transport"],
