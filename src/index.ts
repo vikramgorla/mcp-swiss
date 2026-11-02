@@ -30,6 +30,7 @@ import { trafficTools, handleTraffic } from "./modules/traffic.js";
 import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
 import { snowTools, handleSnow } from "./modules/snow.js";
 import { pollenTools, handlePollen } from "./modules/pollen.js";
+import { maplayerTools, handleMaplayers } from "./modules/maplayers.js";
 
 // Single source of truth: version from package.json (dist/index.js -> ../package.json)
 function readVersion(): string {
@@ -74,6 +75,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
   earthquakes: { tools: earthquakeTools,  handler: handleEarthquakes as ToolHandler },
   snow:        { tools: snowTools,        handler: handleSnow },
   pollen:      { tools: pollenTools,     handler: handlePollen },
+  maplayers:   { tools: maplayerTools,   handler: handleMaplayers },
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────

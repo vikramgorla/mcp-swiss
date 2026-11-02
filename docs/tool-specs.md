@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 79 MCP tools.
+> Complete human + machine-readable specification for all 82 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 79 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 82 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -31,6 +31,7 @@
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
 - [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
 - [Pollen / MeteoSwiss Module (3 tools)](#pollen)
+- [Map Layers / geo.admin (3 tools)](#map-layers)
 
 ---
 
@@ -2551,6 +2552,59 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | canton | string | ❌ | Filter by canton abbreviation (e.g. ZH, BE, GE, TI) |
+
+---
+
+## Map Layers
+
+**Base API:** `https://api3.geo.admin.ch/rest/services/ech/MapServer`  
+**Docs:** https://api3.geo.admin.ch/api/doc.html  
+**Auth:** None required
+
+These tools are generic across the ech MapServer catalogue. The existing geodata module still covers geocoding, solar potential, and a fixed identify helper.
+
+### `search_map_layers`
+
+Search or list federal map layers. Returns layer ids for the identify and find tools.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ❌ | Words matched against the layer id, name, owner, and abstract |
+| owner | string | ❌ | Data-owner filter such as swisstopo or BAFU |
+| limit | number | ❌ | Maximum layers (default 15, max 40) |
+
+### `identify_map_layer`
+
+Features at a WGS84 point on one layer. Time-series layers return the current feature unless `include_historical` is true.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| layer | string | ✅ | Layer id, e.g. `ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill` |
+| lat | number | ✅ | Latitude, WGS84 |
+| lng | number | ✅ | Longitude, WGS84 |
+| tolerance | number | ❌ | Pixel tolerance (default 5, max 50). `0` stays inside polygons |
+| lang | string | ❌ | `en` (default), `de`, `fr`, `it`, or `rm` |
+| include_historical | boolean | ❌ | Keep historical versions (default false) |
+| limit | number | ❌ | Maximum features (default 10, max 25) |
+
+### `find_map_features`
+
+Find features by an attribute value. Example: `search_field=gemname`, `search_text=Bern`.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| layer | string | ✅ | Layer id from `search_map_layers` |
+| search_field | string | ✅ | Attribute name |
+| search_text | string | ✅ | Value to search for |
+| contains | boolean | ❌ | Substring match (default true). `false` matches the whole value |
+| include_historical | boolean | ❌ | Keep historical versions (default false) |
+| limit | number | ❌ | Maximum features (default 10, max 25) |
 
 ---
 
