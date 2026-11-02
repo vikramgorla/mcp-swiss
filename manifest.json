@@ -3,8 +3,8 @@
   "name": "mcp-swiss",
   "display_name": "Switzerland MCP \ud83c\udde8\ud83c\udded",
   "version": "0.8.0",
-  "description": "Swiss open data MCP server \u2014 91 tools, 26 modules, zero API keys",
-  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 91 tools across 26 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), the federal building register (GWR), and the opendata.swiss catalogue, and MeteoSwiss OGD measurements, and geo.admin map layers. All APIs are free and require zero authentication.",
+  "description": "Swiss open data MCP server \u2014 94 tools, 27 modules, zero API keys",
+  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 94 tools across 27 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), the federal building register (GWR), the opendata.swiss catalogue, MeteoSwiss OGD measurements, geo.admin map layers, and SBB station passengers, punctuality, and step-free access. All APIs are free and require zero authentication.",
   "author": {
     "name": "Vikram Gorla",
     "url": "https://github.com/vikramgorla"
@@ -391,6 +391,18 @@
     {
       "name": "find_map_features",
       "description": "Find geo.admin features on one ech MapServer layer by an attribute value. Identify a point first if you need the attribute names. Example: layer ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill, search_field gemname, search_text Bern."
+    },
+    {
+      "name": "get_station_passengers",
+      "description": "Passenger counts for an SBB station from the data.sbb.ch frequency dataset. Returns average daily, weekday, and weekend boardings and alightings (Ein- und Aussteigende). Newest year first."
+    },
+    {
+      "name": "get_station_punctuality",
+      "description": "Punctuality for an SBB stop on the previous operating day (ist-daten-sbb target vs actual times). Returns stop counts, arrival and departure delay counts, cancellations, and a short sample of delayed arrivals. A stop is delayed when SBB flags it, which is generally a delay of about three minutes or more."
+    },
+    {
+      "name": "get_station_accessibility",
+      "description": "Platform accessibility for an SBB station: platform number, length, type, and whether access is rail-free (step-free). Source: data.sbb.ch platform dataset."
     }
   ],
   "keywords": [

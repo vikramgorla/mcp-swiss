@@ -37,6 +37,7 @@ const modules = [
   ["opendata", "opendataTools"],
   ["meteoswiss", "meteoswissTools"],
   ["maplayers", "maplayerTools"],
+  ["sbbdata", "sbbDataTools"],
 ];
 
 const tools = [];

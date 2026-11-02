@@ -2006,6 +2006,86 @@
           }
         }
       }
+    },
+    {
+      "name": "get_station_passengers",
+      "description": "Passenger counts for an SBB station from the data.sbb.ch frequency dataset. Returns average daily, weekday, and weekend boardings and alightings (Ein- und Aussteigende). Newest year first.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "station"
+        ],
+        "properties": {
+          "station": {
+            "type": "string",
+            "description": "Station name as published by SBB (e.g. Bern, Zürich HB, Genève)."
+          },
+          "year": {
+            "type": "number",
+            "description": "Optional year (e.g. 2024). Omit to return the newest years."
+          },
+          "contains": {
+            "type": "boolean",
+            "description": "When true, match station names that contain the text. Default false matches the whole name."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum rows (default 10, max 30)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_station_punctuality",
+      "description": "Punctuality for an SBB stop on the previous operating day (ist-daten-sbb target vs actual times). Returns stop counts, arrival and departure delay counts, cancellations, and a short sample of delayed arrivals. A stop is delayed when SBB flags it, which is generally a delay of about three minutes or more.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "station"
+        ],
+        "properties": {
+          "station": {
+            "type": "string",
+            "description": "Station name as published by SBB (e.g. Bern, Zürich HB, Genève)."
+          },
+          "line": {
+            "type": "string",
+            "description": "Optional line filter (e.g. IC1, IR15, S7)."
+          },
+          "contains": {
+            "type": "boolean",
+            "description": "When true, match station names that contain the text. Default false matches the whole name."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Delayed-arrival samples to include (default 5, max 15)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_station_accessibility",
+      "description": "Platform accessibility for an SBB station: platform number, length, type, and whether access is rail-free (step-free). Source: data.sbb.ch platform dataset.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "station"
+        ],
+        "properties": {
+          "station": {
+            "type": "string",
+            "description": "Station name as published by SBB (e.g. Bern, Zürich HB, Genève)."
+          },
+          "contains": {
+            "type": "boolean",
+            "description": "When true, match station names that contain the text. Default false matches the whole name."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum platforms (default 30, max 80)."
+          }
+        }
+      }
     }
   ]
 }

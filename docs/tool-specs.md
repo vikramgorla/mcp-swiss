@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 91 MCP tools.
+> Complete human + machine-readable specification for all 94 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 91 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 94 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -34,6 +34,7 @@
 - [Map Layers / geo.admin (3 tools)](#map-layers)
 - [MeteoSwiss OGD (3 tools)](#meteoswiss-ogd)
 - [Open Data Catalogue (3 tools)](#open-data-catalogue)
+- [SBB Open Data (3 tools)](#sbb-open-data)
 
 ---
 
@@ -2679,5 +2680,53 @@ Buildings around a WGS84 point, closest first. Radius is capped at 250 metres.
 
 ---
 
+## SBB Open Data
+
+**Base API:** `https://data.sbb.ch/api/explore/v2.1/`  
+**Docs:** https://data.sbb.ch/  
+**Auth:** None required
+
+Journey planning stays in the transport module (`transport.opendata.ch`). This module reads the SBB Open Data portal.
+
+### `get_station_passengers`
+
+Average boardings and alightings from the `passagierfrequenz` dataset. Newest year first.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Station name, e.g. Bern or Zürich HB |
+| year | number | ❌ | Keep one year, e.g. 2024 |
+| contains | boolean | ❌ | Match names that contain the text (default false) |
+| limit | number | ❌ | Maximum rows (default 10, max 30) |
+
+### `get_station_punctuality`
+
+Previous operating day from `ist-daten-sbb`: stop counts, delay flags, cancellations, and a sample of delayed arrivals.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Stop name, e.g. Bern |
+| line | string | ❌ | Line filter such as IC1 or IR15 |
+| contains | boolean | ❌ | Match stop names that contain the text (default false) |
+| limit | number | ❌ | Delayed-arrival samples (default 5, max 15) |
+
+### `get_station_accessibility`
+
+Platforms from the `perron` dataset, including length and rail-free access.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Station name, e.g. Bern |
+| contains | boolean | ❌ | Match names that contain the text (default false) |
+| limit | number | ❌ | Maximum platforms (default 30, max 80) |
+
+---
+
 *Specification generated from mcp-swiss source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen), api3.geo.admin.ch (GWR / RegBL)*
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen), api3.geo.admin.ch (GWR / RegBL), data.sbb.ch*

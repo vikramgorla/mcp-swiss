@@ -24,6 +24,7 @@ import { gwrTools, handleGwr } from "./modules/gwr.js";
 import { opendataTools, handleOpendata } from "./modules/opendata.js";
 import { meteoswissTools, handleMeteoswiss } from "./modules/meteoswiss.js";
 import { maplayerTools, handleMaplayers } from "./modules/maplayers.js";
+import { sbbDataTools, handleSbbData } from "./modules/sbbdata.js";
 
 export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
 
@@ -67,6 +68,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
   opendata:    { description: "opendata.swiss catalogue: datasets, metadata, and downloads", tools: opendataTools, handler: handleOpendata },
   meteoswiss:  { description: "MeteoSwiss OGD measurements from SwissMetNet stations", tools: meteoswissTools, handler: handleMeteoswiss },
   maplayers:   { description: "geo.admin map layers: search, identify, and attribute find", tools: maplayerTools, handler: handleMaplayers },
+  sbbdata:     { description: "SBB open data: station passengers, punctuality, and step-free access", tools: sbbDataTools, handler: handleSbbData },
 };
 
 export const presets: Record<string, string[]> = {

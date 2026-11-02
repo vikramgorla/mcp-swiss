@@ -27,7 +27,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**91 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**94 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -57,6 +57,7 @@
 📂 Catalogue    — opendata.swiss dataset search, metadata, and downloads
 🌡️ Meteo OGD    — SwissMetNet stations and measurements (STAC CSV)
 🧭 Map layers   — geo.admin layer search, identify, and attribute find
+🚉 SBB Data     — station passengers, punctuality, and step-free access
 ```
 
 ---
@@ -303,11 +304,11 @@ A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to star
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 26 modules (91 tools). The full `tools/list` schema is about 7,200 tokens (28,854 characters), down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
+By default, mcp-swiss loads all 27 modules (94 tools). The full `tools/list` schema is about 9,300 tokens (37,011 characters). For a smaller startup list, load only the modules you need.
 
 ### Discovery mode
 
-Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 7,200):
+Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 9,300):
 
 ```json
 {
@@ -353,7 +354,7 @@ Search, then execute. The server lists three meta-tools instead of every schema 
 | `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 68% |
 | `citizen` | parliament, voting, holidays, news | 17 | 80% |
 | `minimal` | transport | 5 | 94% |
-| `full` | all 26 modules (default) | 91 | — |
+| `full` | all 27 modules (default) | 94 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -387,7 +388,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 91 tools across 26 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 94 tools across 27 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -610,6 +611,14 @@ Once connected, try asking your AI:
 | `identify_map_layer` | Features at a WGS84 point on one layer, keeping the current version of time-series layers |
 | `find_map_features` | Find features on one layer by attribute value |
 
+### 🚉 SBB Open Data (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_station_passengers` | Average daily, weekday, and weekend boardings and alightings at an SBB station |
+| `get_station_punctuality` | Previous-day arrival and departure punctuality, delays, and cancellations |
+| `get_station_accessibility` | Platform length and rail-free (step-free) access |
+
 ---
 
 ## Data Sources
@@ -643,6 +652,7 @@ All official Swiss open data — no API keys required:
 | [api3.geo.admin.ch](https://api3.geo.admin.ch/rest/services/ech/MapServer) | Federal map layers: search, identify, and attribute find | [geo.admin API](https://api3.geo.admin.ch/api/doc.html) |
 | [data.geo.admin.ch STAC](https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-smn) | MeteoSwiss OGD station measurements (CSV assets, CC BY) | [MeteoSwiss open data](https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html) |
 | [ckan.opendata.swiss](https://ckan.opendata.swiss/api/3/action/) | National open data catalogue (datasets and resources) | [opendata.swiss](https://opendata.swiss) |
+| [data.sbb.ch](https://data.sbb.ch/api/explore/v2.1/) | SBB station passengers, punctuality, and platform accessibility | [SBB Open Data](https://data.sbb.ch/) |
 
 ---
 
