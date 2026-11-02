@@ -11,7 +11,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
-- Shared HTTP client (`src/utils/http.ts`) with a versioned `mcp-swiss` User-Agent, a 30s timeout (`MCP_SWISS_TIMEOUT_MS`), and one retry for dropped connections and for 429/502/503/504 (honouring `Retry-After`, capped at 10s). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+- Shared HTTP client (`src/utils/http.ts`) with a versioned `mcp-swiss` User-Agent, a 30s timeout (`MCP_SWISS_TIMEOUT_MS`; 120s for BFS PxWeb), and one retry for dropped connections and for 429/502/503/504 (honouring `Retry-After`, capped at 10s). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
 - Expiring in-flight cache helper (`src/utils/cache.ts`) and argument validation against each tool's input schema (`src/utils/validate.ts`), including safe coercion of numeric strings and case-insensitive enums. From netadvanced.
 - Tool annotations: every tool is advertised as read-only, idempotent, and open-world. From netadvanced.
 
