@@ -286,7 +286,7 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 23 modules (82 tools). The full `tools/list` schema is about 6,500 tokens, down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need:
+By default, mcp-swiss loads all 23 modules (82 tools). The full `tools/list` schema is about 6,800 tokens (27,175 characters), down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need:
 
 ### Select specific modules
 ```json
