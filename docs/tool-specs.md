@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 79 MCP tools.
+> Complete human + machine-readable specification for all 82 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 79 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 82 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -31,6 +31,7 @@
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
 - [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
 - [Pollen / MeteoSwiss Module (3 tools)](#pollen)
+- [Open Data Catalogue (3 tools)](#open-data-catalogue)
 
 ---
 
@@ -2551,6 +2552,50 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | canton | string | ❌ | Filter by canton abbreviation (e.g. ZH, BE, GE, TI) |
+
+---
+
+## Open Data Catalogue
+
+**Base API:** `https://ckan.opendata.swiss/api/3/action`  
+**Docs:** https://opendata.swiss/en  
+**Auth:** None required
+
+The public `opendata.swiss/api` host returns 403 to scripted clients. These tools call `ckan.opendata.swiss` instead.
+
+### `search_opendata`
+
+Search the Swiss open data catalogue for datasets. Returns titles, publishers, and dataset ids.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | ✅ | Full-text search (e.g. weather, population) |
+| organization | string | ❌ | Publisher slug, e.g. `bundesamt-fur-statistik-bfs` |
+| limit | number | ❌ | Maximum datasets to return (default 10, max 20) |
+
+### `get_opendata_dataset`
+
+Get metadata for one opendata.swiss dataset by catalogue name or UUID.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dataset_id | string | ✅ | Dataset name or id (e.g. `weather-station-klosters`) |
+
+### `list_opendata_resources`
+
+List downloadable resources for a dataset, with an optional format filter.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dataset_id | string | ✅ | Dataset name or id from `search_opendata` |
+| format | string | ❌ | Format filter such as CSV, JSON, XML, WMS, or ZIP |
+| limit | number | ❌ | Maximum resources to return (default 20, max 50) |
 
 ---
 
