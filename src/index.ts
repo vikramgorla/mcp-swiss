@@ -8,28 +8,21 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { transportTools, handleTransport } from "./modules/transport.js";
-import { weatherTools, handleWeather } from "./modules/weather.js";
-import { geodataTools, handleGeodata } from "./modules/geodata.js";
-import { companiesTools, handleCompanies } from "./modules/companies.js";
-import { holidaysTools, handleHolidays } from "./modules/holidays.js";
-import { parliamentTools, handleParliament } from "./modules/parliament.js";
-import { avalancheTools, handleAvalanche } from "./modules/avalanche.js";
-import { airqualityTools, handleAirQuality } from "./modules/airquality.js";
-import { postTools, handlePost } from "./modules/post.js";
-import { energyTools, handleEnergy } from "./modules/energy.js";
-import { statisticsTools, handleStatistics } from "./modules/statistics.js";
-import { snbTools, handleSnb } from "./modules/snb.js";
-import { recyclingTools, handleRecycling } from "./modules/recycling.js";
-import { newsTools, handleNews } from "./modules/news.js";
-import { votingTools, handleVoting } from "./modules/voting.js";
-import { damsTools, handleDams } from "./modules/dams.js";
-import { hikingTools, handleHiking } from "./modules/hiking.js";
-import { realEstateTools, handleRealEstate } from "./modules/realestate.js";
-import { trafficTools, handleTraffic } from "./modules/traffic.js";
-import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
-import { snowTools, handleSnow } from "./modules/snow.js";
-import { pollenTools, handlePollen } from "./modules/pollen.js";
+import {
+  annotationsFor,
+  callTool,
+  DISCOVERY_TOOLS,
+  discoveryEnabled,
+  listModules,
+  searchTools,
+  SEARCH_TOOLS_TOOL,
+  CALL_TOOL,
+  LIST_MODULES_TOOL,
+} from "./discovery.js";
+import { moduleRegistry, presets, resolveModules, type ToolHandler } from "./registry.js";
+
+export { moduleRegistry, presets, resolveModules };
+export type { ModuleEntry, ToolHandler } from "./registry.js";
 
 // Single source of truth: version from package.json (dist/index.js -> ../package.json)
 function readVersion(): string {
@@ -42,60 +35,19 @@ function readVersion(): string {
 }
 const VERSION = readVersion();
 
-// ── Module Registry ──────────────────────────────────────────────────────────
-
-type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
-
-interface ModuleEntry {
-  tools: Array<{ name: string; description: string; inputSchema: object }>;
-  handler: ToolHandler;
-}
-
-export const moduleRegistry: Record<string, ModuleEntry> = {
-  transport:   { tools: transportTools,   handler: handleTransport },
-  weather:     { tools: weatherTools,     handler: handleWeather },
-  geodata:     { tools: geodataTools,     handler: handleGeodata },
-  companies:   { tools: companiesTools,   handler: handleCompanies },
-  holidays:    { tools: holidaysTools,    handler: handleHolidays },
-  parliament:  { tools: parliamentTools,  handler: handleParliament },
-  avalanche:   { tools: avalancheTools,   handler: handleAvalanche as ToolHandler },
-  airquality:  { tools: airqualityTools,  handler: handleAirQuality },
-  post:        { tools: postTools,        handler: handlePost },
-  energy:      { tools: energyTools,      handler: handleEnergy },
-  statistics:  { tools: statisticsTools,  handler: handleStatistics },
-  snb:         { tools: snbTools,         handler: handleSnb },
-  recycling:   { tools: recyclingTools,   handler: handleRecycling },
-  news:        { tools: newsTools,        handler: handleNews },
-  voting:      { tools: votingTools,      handler: handleVoting },
-  dams:        { tools: damsTools,        handler: handleDams },
-  hiking:      { tools: hikingTools,      handler: handleHiking },
-  realestate:  { tools: realEstateTools,  handler: handleRealEstate },
-  traffic:     { tools: trafficTools,     handler: handleTraffic },
-  earthquakes: { tools: earthquakeTools,  handler: handleEarthquakes as ToolHandler },
-  snow:        { tools: snowTools,        handler: handleSnow },
-  pollen:      { tools: pollenTools,     handler: handlePollen },
-};
-
-// ── Presets ───────────────────────────────────────────────────────────────────
-
-export const presets: Record<string, string[]> = {
-  commuter:  ["transport", "weather", "holidays"],
-  outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams", "snow"],
-  business:  ["companies", "geodata", "post", "energy", "statistics", "snb"],
-  citizen:   ["parliament", "voting", "holidays", "news"],
-  minimal:   ["transport"],
-  full:      Object.keys(moduleRegistry),
-};
-
 // ── CLI Argument Parsing ─────────────────────────────────────────────────────
 
 export interface ParsedArgs {
   modules: Set<string> | null;
   listModules: boolean;
   listPresets: boolean;
+  discovery: boolean;
 }
 
-export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
+export function parseArgs(
+  argv: string[] = process.argv.slice(2),
+  env: NodeJS.ProcessEnv = process.env
+): ParsedArgs {
   const listModules = argv.includes("--list-modules");
   const listPresets = argv.includes("--list-presets");
 
@@ -132,7 +84,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): ParsedArgs {
     }
   }
 
-  return { modules: selectedModules, listModules, listPresets };
+  return { modules: selectedModules, listModules, listPresets, discovery: discoveryEnabled(argv, env) };
 }
 
 // ── List Helpers ─────────────────────────────────────────────────────────────
@@ -141,7 +93,7 @@ function printModules(): void {
   process.stdout.write("\nAvailable modules:\n\n");
   for (const [name, mod] of Object.entries(moduleRegistry)) {
     process.stdout.write(
-      `  ${name.padEnd(14)} ${mod.tools.length} tools\n`
+      `  ${name.padEnd(14)} ${String(mod.tools.length).padStart(2)} tools  ${mod.description}\n`
     );
   }
   process.stdout.write(
@@ -167,15 +119,6 @@ function printPresets(): void {
 }
 
 // ── Resolve Active Modules ───────────────────────────────────────────────────
-
-export function resolveModules(
-  selected: Set<string> | null
-): Array<{ name: string } & ModuleEntry> {
-  const names = selected ? [...selected] : Object.keys(moduleRegistry);
-  return names
-    .filter((n) => moduleRegistry[n])
-    .map((n) => ({ name: n, ...moduleRegistry[n] }));
-}
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
@@ -206,8 +149,12 @@ const server = new Server(
   { capabilities: { tools: {} } }
 );
 
+const listedTools = config.discovery
+  ? DISCOVERY_TOOLS.map((tool) => ({ ...tool, annotations: annotationsFor(tool) }))
+  : allTools;
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: allTools,
+  tools: listedTools,
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -215,14 +162,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const safeArgs = (args ?? {}) as Record<string, unknown>;
 
   try {
-    const handler = toolHandlerMap.get(name);
-    if (!handler) {
-      throw new Error(`Unknown tool: ${name}`);
+    let result: string;
+    if (config.discovery && name === SEARCH_TOOLS_TOOL.name) {
+      result = searchTools(activeModules, safeArgs);
+    } else if (config.discovery && name === LIST_MODULES_TOOL.name) {
+      result = listModules(activeModules);
+    } else if (config.discovery && name === CALL_TOOL.name) {
+      result = await callTool(activeModules, safeArgs);
+    } else if (config.discovery) {
+      throw new Error(
+        `Tool ${name} is not listed in discovery mode. Use swiss_search_tools, then swiss_call_tool.`
+      );
+    } else {
+      const handler = toolHandlerMap.get(name);
+      if (!handler) throw new Error(`Unknown tool: ${name}`);
+      result = await handler(name, safeArgs);
     }
-    const result = await handler(name, safeArgs);
-    return {
-      content: [{ type: "text", text: result }],
-    };
+    return { content: [{ type: "text", text: result }] };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
@@ -236,9 +192,10 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const moduleCount = activeModules.length;
-  const toolCount = allTools.length;
+  const toolCount = config.discovery ? DISCOVERY_TOOLS.length : allTools.length;
+  const mode = config.discovery ? ", discovery" : "";
   process.stderr.write(
-    `mcp-swiss running on stdio (${moduleCount} modules, ${toolCount} tools)\n`
+    `mcp-swiss running on stdio (${moduleCount} modules, ${toolCount} tools${mode})\n`
   );
 }
 

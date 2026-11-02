@@ -285,7 +285,24 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 22 modules (79 tools). For better token efficiency, load only the modules you need:
+By default, mcp-swiss loads all 22 modules (79 tools, about 9,200 tokens of schema). For a smaller startup list, load only the modules you need.
+
+### Discovery mode
+
+Search, then execute. The server lists three meta-tools instead of every schema (~330 tokens versus ~9,200):
+
+```json
+{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss", "--discovery"]
+    }
+  }
+}
+```
+
+`MCP_SWISS_MODE=discovery` and `--mode discovery` do the same thing. `swiss_search_tools` finds tools by keyword or module and returns their input schemas. `swiss_call_tool` checks those arguments, then runs the tool. `swiss_list_modules` is the catalog. The default, with no flag, is still the full tool list.
 
 ### Select specific modules
 ```json

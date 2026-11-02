@@ -19,7 +19,8 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "validate": "npm run lint && npm run build && npm test",
-    "test:qa": "bash scripts/qa-smoke-test.sh"
+    "test:qa": "bash scripts/qa-smoke-test.sh",
+    "docs:tokens": "npm run build && node scripts/measure-schema-tokens.mjs"
   },
   "keywords": [
     "mcp",

@@ -9,6 +9,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Discovery mode (`--discovery`, `--mode discovery`, or `MCP_SWISS_MODE=discovery`). Closes [#106](https://github.com/vikramgorla/mcp-swiss/issues/106). The default is still the full tool list. Ported in spirit from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng), using a search-then-execute pair instead of dynamic registration:
+  - `swiss_search_tools` — keyword or module search; returns matching names, descriptions, and input schemas
+  - `swiss_call_tool` — runs one tool after checking the arguments against that tool's schema
+  - `swiss_list_modules` — module catalog
+- On this branch the full `tools/list` schema is 36,800 characters (~9,200 tokens). Discovery mode lists 1,312 characters (~330 tokens). Measured with `scripts/measure-schema-tokens.mjs` (characters / 4, annotations included for the meta-tools).
+
 ---
 
 ## [0.1.0] - 2026-03-07
