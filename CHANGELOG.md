@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-02
+
+Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) (netadvanced). The federal building register was requested by khashashin.
+
 ### Added
 
 - Shared HTTP client (`src/utils/http.ts`) with a versioned `mcp-swiss` User-Agent, a 30s timeout (`MCP_SWISS_TIMEOUT_MS`; 120s for BFS PxWeb), and one retry for dropped connections and for 429/502/503/504 (honouring `Retry-After`, capped at 10s). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
@@ -135,5 +139,6 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Geodata identify: corrected path to `/all/MapServer/identify` with WGS84 coordinates directly
 - ESLint config: renamed to `.mjs` extension (ESM import requires explicit module type)
 
-[Unreleased]: https://github.com/vikramgorla/mcp-swiss/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/vikramgorla/mcp-swiss/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/vikramgorla/mcp-swiss/compare/v0.8.2...v0.9.0
 [0.1.0]: https://github.com/vikramgorla/mcp-swiss/releases/tag/v0.1.0
