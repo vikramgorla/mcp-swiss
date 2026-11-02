@@ -301,11 +301,11 @@ A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to star
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 24 modules (85 tools). The full `tools/list` schema is about 6,800 tokens, down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
+By default, mcp-swiss loads all 24 modules (85 tools). The full `tools/list` schema is about 7,200 tokens (28,854 characters), down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
 
 ### Discovery mode
 
-Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 6,800):
+Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 7,200):
 
 ```json
 {
