@@ -9,6 +9,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+**GWR module** (3 tools) — Federal Register of Buildings and Dwellings (BFS), via [api3.geo.admin.ch](https://api3.geo.admin.ch) layer `ch.bfs.gebaeude_wohnungs_register`. Closes [#142](https://github.com/vikramgorla/mcp-swiss/issues/142), requested by khashashin. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+
+- `search_buildings` — find buildings by address and return EGIDs
+- `get_building` — decoded record by EGID, including heating, parcel, entrances, and dwellings
+- `buildings_near` — buildings around a WGS84 point, closest first
+- Added to the `business` preset
+
 ---
 
 ## [0.1.0] - 2026-03-07

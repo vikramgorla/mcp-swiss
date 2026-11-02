@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 79 MCP tools.
+> Complete human + machine-readable specification for all 82 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 79 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 82 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -2554,5 +2554,42 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 
 ---
 
+## Buildings Module (GWR)
+
+**Base API:** `https://api3.geo.admin.ch` layer `ch.bfs.gebaeude_wohnungs_register`  
+**Data source:** Federal Register of Buildings and Dwellings (BFS), no API key  
+**Requested in:** [#142](https://github.com/vikramgorla/mcp-swiss/issues/142) by khashashin
+
+## `search_buildings`
+
+Find buildings by address text. Returns EGID, address, coordinates, category, and construction year for `get_building`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| address | string | ✅ | Street, number, locality |
+| limit | number | ⬜ | Max results (default 5, max 20) |
+
+## `get_building`
+
+Full decoded record for one EGID: category, class, status, year, floors, areas, heating and hot water, parcel/EGRID, entrances, and dwellings.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| egid | number | ✅ | Federal building id |
+| max_dwellings | number | ⬜ | Dwellings to include (default 50, max 500; 0 = summary only) |
+
+## `buildings_near`
+
+Buildings around a WGS84 point, closest first. Radius is capped at 250 metres.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| lat | number | ✅ | Latitude |
+| lon | number | ✅ | Longitude |
+| radius | number | ⬜ | Metres (default 50, max 250) |
+| limit | number | ⬜ | Max results (default 10, max 50) |
+
+---
+
 *Specification generated from mcp-swiss source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen)*
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen), api3.geo.admin.ch (GWR / RegBL)*

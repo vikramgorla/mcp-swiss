@@ -3,8 +3,8 @@
   "name": "mcp-swiss",
   "display_name": "Switzerland MCP \ud83c\udde8\ud83c\udded",
   "version": "0.8.0",
-  "description": "Swiss open data MCP server \u2014 79 tools, 22 modules, zero API keys",
-  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 79 tools across 22 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, and snow conditions (SLF). All APIs are free and require zero authentication.",
+  "description": "Swiss open data MCP server \u2014 82 tools, 23 modules, zero API keys",
+  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 82 tools across 23 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), and the federal building register (GWR). All APIs are free and require zero authentication.",
   "author": {
     "name": "Vikram Gorla",
     "url": "https://github.com/vikramgorla"
@@ -343,6 +343,18 @@
     {
       "name": "list_pollen_stations",
       "description": "All 16 MeteoSwiss automatic pollen monitoring stations"
+    },
+    {
+      "name": "search_buildings",
+      "description": "Find buildings in the federal buildings register (GWR/RegBL) by address; gives EGIDs for get_building"
+    },
+    {
+      "name": "get_building",
+      "description": "Full GWR record of one building by EGID: construction, floors, areas, heating/hot-water system and energy source, parcel (EGRID), entrances, dwellings"
+    },
+    {
+      "name": "buildings_near",
+      "description": "GWR buildings nearest a WGS84 point (small radius), with EGIDs"
     }
   ],
   "keywords": [

@@ -30,6 +30,7 @@ import { trafficTools, handleTraffic } from "./modules/traffic.js";
 import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
 import { snowTools, handleSnow } from "./modules/snow.js";
 import { pollenTools, handlePollen } from "./modules/pollen.js";
+import { gwrTools, handleGwr } from "./modules/gwr.js";
 
 // Single source of truth: version from package.json (dist/index.js -> ../package.json)
 function readVersion(): string {
@@ -74,6 +75,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
   earthquakes: { tools: earthquakeTools,  handler: handleEarthquakes as ToolHandler },
   snow:        { tools: snowTools,        handler: handleSnow },
   pollen:      { tools: pollenTools,     handler: handlePollen },
+  gwr:         { tools: gwrTools,         handler: handleGwr },
 };
 
 // ── Presets ───────────────────────────────────────────────────────────────────
@@ -81,7 +83,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
 export const presets: Record<string, string[]> = {
   commuter:  ["transport", "weather", "holidays"],
   outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams", "snow"],
-  business:  ["companies", "geodata", "post", "energy", "statistics", "snb"],
+  business:  ["companies", "geodata", "post", "energy", "statistics", "snb", "gwr"],
   citizen:   ["parliament", "voting", "holidays", "news"],
   minimal:   ["transport"],
   full:      Object.keys(moduleRegistry),

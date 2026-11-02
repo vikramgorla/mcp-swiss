@@ -1560,6 +1560,79 @@
           }
         }
       }
+    },
+    {
+      "name": "search_buildings",
+      "description": "Find buildings in the federal buildings register (GWR/RegBL) by address; gives EGIDs for get_building",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Street, number, locality, e.g. Bundesplatz 3 3011 Bern"
+          },
+          "limit": {
+            "type": "number",
+            "description": "max 20",
+            "default": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "get_building",
+      "description": "Full GWR record of one building by EGID: construction, floors, areas, heating/hot-water system and energy source, parcel (EGRID), entrances, dwellings",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "egid"
+        ],
+        "properties": {
+          "egid": {
+            "type": "number",
+            "description": "EGID, e.g. 2119257"
+          },
+          "max_dwellings": {
+            "type": "number",
+            "description": "max 500; 0 = summary only",
+            "default": 50
+          }
+        }
+      }
+    },
+    {
+      "name": "buildings_near",
+      "description": "GWR buildings nearest a WGS84 point (small radius), with EGIDs",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "lat",
+          "lon"
+        ],
+        "properties": {
+          "lat": {
+            "type": "number",
+            "description": "Latitude (WGS84)"
+          },
+          "lon": {
+            "type": "number",
+            "description": "Longitude (WGS84)"
+          },
+          "radius": {
+            "type": "number",
+            "description": "Metres, max 250",
+            "default": 50
+          },
+          "limit": {
+            "type": "number",
+            "description": "max 50",
+            "default": 10
+          }
+        }
+      }
     }
   ]
 }
