@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 79 MCP tools.
+> Complete human + machine-readable specification for all 82 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 79 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 82 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -31,6 +31,7 @@
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
 - [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
 - [Pollen / MeteoSwiss Module (3 tools)](#pollen)
+- [SBB Open Data (3 tools)](#sbb-open-data)
 
 ---
 
@@ -2551,6 +2552,54 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | canton | string | ❌ | Filter by canton abbreviation (e.g. ZH, BE, GE, TI) |
+
+---
+
+## SBB Open Data
+
+**Base API:** `https://data.sbb.ch/api/explore/v2.1/`  
+**Docs:** https://data.sbb.ch/  
+**Auth:** None required
+
+Journey planning stays in the transport module (`transport.opendata.ch`). This module reads the SBB Open Data portal.
+
+### `get_station_passengers`
+
+Average boardings and alightings from the `passagierfrequenz` dataset. Newest year first.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Station name, e.g. Bern or Zürich HB |
+| year | number | ❌ | Keep one year, e.g. 2024 |
+| contains | boolean | ❌ | Match names that contain the text (default false) |
+| limit | number | ❌ | Maximum rows (default 10, max 30) |
+
+### `get_station_punctuality`
+
+Previous operating day from `ist-daten-sbb`: stop counts, delay flags, cancellations, and a sample of delayed arrivals.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Stop name, e.g. Bern |
+| line | string | ❌ | Line filter such as IC1 or IR15 |
+| contains | boolean | ❌ | Match stop names that contain the text (default false) |
+| limit | number | ❌ | Delayed-arrival samples (default 5, max 15) |
+
+### `get_station_accessibility`
+
+Platforms from the `perron` dataset, including length and rail-free access.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| station | string | ✅ | Station name, e.g. Bern |
+| contains | boolean | ❌ | Match names that contain the text (default false) |
+| limit | number | ❌ | Maximum platforms (default 30, max 80) |
 
 ---
 
