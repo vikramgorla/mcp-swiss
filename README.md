@@ -236,7 +236,7 @@ Open VS Code `settings.json` and add:
 
 ### Any MCP Client
 
-`mcp-swiss` uses **stdio transport** and requires no environment variables. The universal config:
+`mcp-swiss` uses **stdio transport** and requires no environment variables. Upstream calls time out after 30 seconds (`MCP_SWISS_TIMEOUT_MS` overrides that) and retry once on a dropped connection or a rate limit. The universal config:
 
 ```json
 {
@@ -631,6 +631,7 @@ We welcome contributions! mcp-swiss follows a strict PR-based workflow to keep t
 
 - Node.js 20+
 - No API keys or accounts needed
+- Optional: `MCP_SWISS_TIMEOUT_MS` — per-request upstream timeout in milliseconds (default 30000)
 
 ## License
 

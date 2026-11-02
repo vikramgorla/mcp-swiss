@@ -15,6 +15,12 @@ interface Tool {
   name: string;
   description: string;
   inputSchema: unknown;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
 }
 
 /**
@@ -129,6 +135,36 @@ describe('MCP protocol: tools/list', () => {
 
     const result = response.result as { tools: Tool[] };
     expect(result.tools).toHaveLength(79);
+  });
+
+  it('marks every tool read-only and idempotent', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 41,
+      method: 'tools/list',
+    });
+
+    const result = response.result as { tools: Tool[] };
+    expect(result.tools.length).toBeGreaterThan(0);
+    for (const tool of result.tools) {
+      expect(tool.annotations?.readOnlyHint, tool.name).toBe(true);
+      expect(tool.annotations?.idempotentHint, tool.name).toBe(true);
+      expect(tool.annotations?.destructiveHint, tool.name).toBe(false);
+      expect(tool.annotations?.openWorldHint, tool.name).toBe(true);
+    }
+  });
+
+  it('rejects a call that is missing a required argument', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 42,
+      method: 'tools/call',
+      params: { name: 'get_connections', arguments: {} },
+    });
+
+    const result = response.result as { isError?: boolean; content: Array<{ text: string }> };
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('from is required');
   });
 
   it('each tool has name, description, inputSchema', async () => {

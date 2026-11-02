@@ -1,4 +1,4 @@
-import { fetchJSON } from "../utils/http.js";
+import { fetchJSON, httpFetch } from "../utils/http.js";
 
 const BASE = "https://www.zefix.admin.ch/ZefixREST/api/v1";
 
@@ -69,7 +69,7 @@ export async function handleCompanies(name: string, args: Record<string, unknown
       if (args.canton) body.cantonAbbreviation = [args.canton as string];
       if (args.legal_form) body.legalFormCode = args.legal_form as string;
 
-      const response = await fetch(`${BASE}/firm/search.json`, {
+      const response = await httpFetch(`${BASE}/firm/search.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(body),
@@ -97,7 +97,7 @@ export async function handleCompanies(name: string, args: Record<string, unknown
         maxEntries: (args.limit as number) ?? 20,
         languageKey: "en",
       };
-      const response = await fetch(`${BASE}/firm/search.json`, {
+      const response = await httpFetch(`${BASE}/firm/search.json`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(body),

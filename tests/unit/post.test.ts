@@ -127,13 +127,11 @@ describe("lookup_postcode", () => {
     expect(result.source).toContain("swisstopo");
   });
 
-  it("returns found:false for unknown PLZ", async () => {
+  it("throws for an unknown PLZ", async () => {
     mockFetchSequence(mockEmptyResults);
-    const result = JSON.parse(
-      await handlePost("lookup_postcode", { postcode: "9999" })
+    await expect(handlePost("lookup_postcode", { postcode: "9999" })).rejects.toThrow(
+      "No Swiss postcode 9999"
     );
-    expect(result.found).toBe(false);
-    expect(result.postcode).toBe("9999");
   });
 
   it("throws for non-4-digit postcode", async () => {

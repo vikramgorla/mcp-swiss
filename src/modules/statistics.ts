@@ -231,6 +231,8 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    // BFS PxWeb regularly takes longer than the 30s default.
+    timeoutMs: 120_000,
   });
 
   if (mode === "switzerland") {

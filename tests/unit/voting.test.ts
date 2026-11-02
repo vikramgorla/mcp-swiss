@@ -6,6 +6,7 @@ import {
   votingTools,
   registerVotingTools,
 } from "../../src/modules/voting.js";
+import { USER_AGENT } from "../../src/utils/http.js";
 import {
   mockVotingRows,
   mockVotingRowsSingle,
@@ -252,10 +253,11 @@ describe("get_voting_results", () => {
     expect(result.data_url).toContain("data.bs.ch");
   });
 
-  it("returns error message when no votes found", async () => {
+  it("returns an empty list when no votes found", async () => {
     mockFetch(mockEmptyRows);
     const result = JSON.parse(await handleGetVotingResults({}));
-    expect(result.error).toBeDefined();
+    expect(result.count).toBe(0);
+    expect(result.votes).toEqual([]);
   });
 
   it("sends User-Agent header", async () => {
@@ -270,7 +272,7 @@ describe("get_voting_results", () => {
     const callArgs = fetchMock.mock.calls[0];
     const options = callArgs[1] as RequestInit;
     const headers = options.headers as Record<string, string>;
-    expect(headers["User-Agent"]).toBe("mcp-swiss/0.3.1");
+    expect(headers["User-Agent"]).toBe(USER_AGENT);
   });
 
   it("handles HTTP error gracefully", async () => {
@@ -443,9 +445,8 @@ describe("search_votes", () => {
     expect(Array.isArray(result.votes)).toBe(true);
   });
 
-  it("returns error for empty query", async () => {
-    const result = JSON.parse(await handleSearchVotes({ query: "" }));
-    expect(result.error).toBeDefined();
+  it("throws for an empty query", async () => {
+    await expect(handleSearchVotes({ query: "" })).rejects.toThrow("query is required");
   });
 
   it("returns count 0 and empty votes when no match", async () => {
@@ -507,7 +508,7 @@ describe("search_votes", () => {
     await handleSearchVotes({ query: "AHV" });
     const options = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = options.headers as Record<string, string>;
-    expect(headers["User-Agent"]).toBe("mcp-swiss/0.3.1");
+    expect(headers["User-Agent"]).toBe(USER_AGENT);
   });
 
   it("handles HTTP error", async () => {
@@ -534,9 +535,8 @@ describe("search_votes", () => {
 // ── get_vote_details ──────────────────────────────────────────────────────────
 
 describe("get_vote_details", () => {
-  it("returns error when neither vote_title nor date provided", async () => {
-    const result = JSON.parse(await handleGetVoteDetails({}));
-    expect(result.error).toBeDefined();
+  it("throws when neither vote_title nor date is provided", async () => {
+    await expect(handleGetVoteDetails({})).rejects.toThrow("Provide vote_title or date");
   });
 
   it("returns vote title", async () => {
@@ -655,13 +655,11 @@ describe("get_vote_details", () => {
     expect(result.source).toContain("data.bs.ch");
   });
 
-  it("returns error for empty result", async () => {
+  it("throws when no vote matches", async () => {
     mockFetch(mockEmptyRows);
-    const result = JSON.parse(
-      await handleGetVoteDetails({ vote_title: "NonExistent Vote XYZ" }),
-    );
-    expect(result.error).toBeDefined();
-    expect(result.hint).toBeDefined();
+    await expect(
+      handleGetVoteDetails({ vote_title: "NonExistent Vote XYZ" }),
+    ).rejects.toThrow("No vote matches");
   });
 
   it("sends User-Agent header", async () => {
@@ -675,7 +673,7 @@ describe("get_vote_details", () => {
     await handleGetVoteDetails({ vote_title: "Nationalstrassen" });
     const options = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = options.headers as Record<string, string>;
-    expect(headers["User-Agent"]).toBe("mcp-swiss/0.3.1");
+    expect(headers["User-Agent"]).toBe(USER_AGENT);
   });
 
   it("handles HTTP error", async () => {

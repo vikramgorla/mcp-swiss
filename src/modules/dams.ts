@@ -404,12 +404,7 @@ export async function handleDams(
       }
 
       if (!dam) {
-        return JSON.stringify({
-          found: false,
-          name: damName,
-          message: `No dam found with name "${damName}". Use search_dams to find the exact name.`,
-          source: `${BASE}/find?layer=${DAMS_LAYER}`,
-        }, null, 2);
+        throw new Error(`No dam named "${damName}". Use search_dams to get the exact name.`);
       }
 
       // Resolve canton from coordinates

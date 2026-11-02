@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
-import { join } from "path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -30,17 +28,17 @@ import { trafficTools, handleTraffic } from "./modules/traffic.js";
 import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
 import { snowTools, handleSnow } from "./modules/snow.js";
 import { pollenTools, handlePollen } from "./modules/pollen.js";
+import { errorMessage } from "./utils/errors.js";
+import { VERSION } from "./utils/http.js";
+import { validateArgs, type ValidatableTool } from "./utils/validate.js";
 
-// Single source of truth: version from package.json (dist/index.js -> ../package.json)
-function readVersion(): string {
-  try {
-    const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { version?: string };
-    return pkg.version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
-}
-const VERSION = readVersion();
+// Every tool is a read-only lookup against a public Swiss open-data API.
+const TOOL_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
 
 // ── Module Registry ──────────────────────────────────────────────────────────
 
@@ -207,7 +205,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: allTools,
+  tools: allTools.map((tool) => ({ ...tool, annotations: TOOL_ANNOTATIONS })),
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -219,14 +217,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (!handler) {
       throw new Error(`Unknown tool: ${name}`);
     }
-    const result = await handler(name, safeArgs);
+    const definition = allTools.find((tool) => tool.name === name) as ValidatableTool | undefined;
+    const validated = definition ? validateArgs(definition, safeArgs) : safeArgs;
+    const result = await handler(name, validated);
     return {
       content: [{ type: "text", text: result }],
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     return {
-      content: [{ type: "text", text: `Error: ${message}` }],
+      content: [{ type: "text", text: `Error: ${errorMessage(error)}` }],
       isError: true,
     };
   }

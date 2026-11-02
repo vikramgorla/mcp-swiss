@@ -12,7 +12,7 @@
  *   - search_earthquakes_by_location: earthquakes near given coordinates
  */
 
-import { buildUrl } from "../utils/http.js";
+import { buildUrl, fetchBody } from "../utils/http.js";
 
 const BASE = "http://arclink.ethz.ch/fdsnws/event/1/query";
 
@@ -143,23 +143,18 @@ function startTimeISO(days: number): string {
  * Returns the raw text body.
  */
 async function fetchFdsnText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "mcp-swiss/1.0.0",
-      "Accept": "text/plain",
-    },
-  });
-
-  // 204 No Content = no events found — not an error
-  if (response.status === 204) {
-    return "";
-  }
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} — ${url}`);
-  }
-
-  return response.text();
+  return fetchBody(
+    url,
+    { headers: { Accept: "text/plain" }, rawStatus: true },
+    async (response) => {
+      // 204 No Content = no events found — not an error
+      if (response.status === 204) return "";
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText} — ${url}`);
+      }
+      return response.text();
+    }
+  );
 }
 
 /**
@@ -285,21 +280,17 @@ async function handleGetEarthquakeDetails(
   const raw = await fetchFdsnText(url);
 
   if (!raw) {
-    return JSON.stringify({
-      error: "Event not found",
-      event_id: eventId,
-      source: "Swiss Seismological Service (SED), ETH Zürich",
-    });
+    throw new Error(
+      `No earthquake with event_id "${eventId}". Get an id from get_recent_earthquakes or search_earthquakes_by_location.`
+    );
   }
 
   const events = parseFdsnText(raw);
 
   if (events.length === 0) {
-    return JSON.stringify({
-      error: "Event not found or could not be parsed",
-      event_id: eventId,
-      source: "Swiss Seismological Service (SED), ETH Zürich",
-    });
+    throw new Error(
+      `Event "${eventId}" returned no parsable record from the SED service. Check the id with get_recent_earthquakes.`
+    );
   }
 
   return JSON.stringify({
