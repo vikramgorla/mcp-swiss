@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
-import { join } from "path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -20,20 +18,20 @@ import {
   LIST_MODULES_TOOL,
 } from "./discovery.js";
 import { moduleRegistry, presets, resolveModules, type ToolHandler } from "./registry.js";
+import { errorMessage } from "./utils/errors.js";
+import { VERSION } from "./utils/http.js";
+import { validateArgs, type ValidatableTool } from "./utils/validate.js";
 
 export { moduleRegistry, presets, resolveModules };
 export type { ModuleEntry, ToolHandler } from "./registry.js";
 
-// Single source of truth: version from package.json (dist/index.js -> ../package.json)
-function readVersion(): string {
-  try {
-    const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { version?: string };
-    return pkg.version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
-}
-const VERSION = readVersion();
+// Every tool is a read-only lookup against a public Swiss open-data API.
+const TOOL_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
 
 // ── CLI Argument Parsing ─────────────────────────────────────────────────────
 
@@ -151,7 +149,7 @@ const server = new Server(
 
 const listedTools = config.discovery
   ? DISCOVERY_TOOLS.map((tool) => ({ ...tool, annotations: annotationsFor(tool) }))
-  : allTools;
+  : allTools.map((tool) => ({ ...tool, annotations: TOOL_ANNOTATIONS }));
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: listedTools,
@@ -176,13 +174,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     } else {
       const handler = toolHandlerMap.get(name);
       if (!handler) throw new Error(`Unknown tool: ${name}`);
-      result = await handler(name, safeArgs);
+      const definition = allTools.find((tool) => tool.name === name) as ValidatableTool | undefined;
+      const validated = definition ? validateArgs(definition, safeArgs) : safeArgs;
+      result = await handler(name, validated);
     }
     return { content: [{ type: "text", text: result }] };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     return {
-      content: [{ type: "text", text: `Error: ${message}` }],
+      content: [{ type: "text", text: `Error: ${errorMessage(error)}` }],
       isError: true,
     };
   }

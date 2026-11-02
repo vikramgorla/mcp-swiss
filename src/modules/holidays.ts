@@ -1,4 +1,5 @@
 import { fetchJSON, buildUrl } from "../utils/http.js";
+import { swissToday } from "../utils/date.js";
 
 const BASE = "https://openholidaysapi.org";
 
@@ -32,16 +33,16 @@ export const holidaysTools = [
   {
     name: "get_public_holidays",
     description:
-      "Get Swiss public holidays for a given year, optionally filtered by canton (e.g. ZH, BE, GE). Returns national and canton-specific holidays.",
+      "Public holidays for a year, national and cantonal",
     inputSchema: {
       type: "object",
       required: ["year"],
       properties: {
-        year: { type: "number", description: "Year (e.g. 2026)" },
+        year: { type: "number", description: "e.g. 2026" },
         canton: {
           type: "string",
           description:
-            "Two-letter canton code (e.g. ZH, BE, GE, BS, TI). If omitted, returns all Swiss holidays.",
+            "Canton code, e.g. ZH (omit for all)",
         },
       },
     },
@@ -49,16 +50,16 @@ export const holidaysTools = [
   {
     name: "get_school_holidays",
     description:
-      "Get Swiss school holidays for a given year, optionally filtered by canton. Returns holiday periods (start/end dates) by canton.",
+      "School holiday periods for a year, by canton",
     inputSchema: {
       type: "object",
       required: ["year"],
       properties: {
-        year: { type: "number", description: "Year (e.g. 2026)" },
+        year: { type: "number", description: "e.g. 2026" },
         canton: {
           type: "string",
           description:
-            "Two-letter canton code (e.g. ZH, BE, GE, BS, TI). If omitted, returns school holidays for all cantons.",
+            "Canton code, e.g. ZH (omit for all)",
         },
       },
     },
@@ -66,14 +67,14 @@ export const holidaysTools = [
   {
     name: "is_holiday_today",
     description:
-      "Check whether today is a Swiss public holiday, optionally for a specific canton. Returns the holiday name if it is one.",
+      "Whether today is a public holiday",
     inputSchema: {
       type: "object",
       properties: {
         canton: {
           type: "string",
           description:
-            "Two-letter canton code (e.g. ZH, BE, GE). If omitted, checks nationwide holidays only.",
+            "Canton code, e.g. ZH (omit for nationwide only)",
         },
       },
     },
@@ -174,7 +175,7 @@ export async function handleHolidays(
 
     case "is_holiday_today": {
       const canton = args.canton as string | undefined;
-      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const today = swissToday();
 
       const params: Record<string, string> = {
         countryIsoCode: "CH",

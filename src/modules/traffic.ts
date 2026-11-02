@@ -31,6 +31,8 @@ interface TrafficFeature {
   featureId: number;
   id: number;
   attributes: TrafficAttributes;
+  /** LV95 point, present when the request asks for geometry. */
+  geometry?: { x: number; y: number };
 }
 
 interface FindResponse {
@@ -87,14 +89,14 @@ export const trafficTools = [
   {
     name: "get_traffic_count",
     description:
-      "Get traffic volume at an ASTRA counting station in Switzerland by location name (e.g. 'Gotthard', 'Zürich', 'Genf'). Returns daily and weekday traffic counts, heavy vehicle percentage, and measurement year.",
+      "ASTRA traffic counting station volumes by location name",
     inputSchema: {
       type: "object",
       required: ["location"],
       properties: {
         location: {
           type: "string",
-          description: "Station or location name to search (e.g. 'Gotthard', 'Zürich', 'Basel')",
+          description: "e.g. Gotthard",
         },
       },
     },
@@ -102,14 +104,14 @@ export const trafficTools = [
   {
     name: "get_traffic_by_canton",
     description:
-      "List ASTRA traffic counting stations in a Swiss canton. Returns up to 20 stations with traffic data.",
+      "ASTRA traffic counting stations in a canton (max 20)",
     inputSchema: {
       type: "object",
       required: ["canton"],
       properties: {
         canton: {
           type: "string",
-          description: "2-letter canton code (e.g. 'ZH', 'BE', 'GE', 'VS')",
+          description: "Canton code, e.g. ZH",
         },
       },
     },
@@ -117,22 +119,23 @@ export const trafficTools = [
   {
     name: "get_traffic_nearby",
     description:
-      "Find ASTRA traffic counting stations near a geographic coordinate in Switzerland. Returns nearby stations with traffic volume data.",
+      "ASTRA traffic counting stations near a WGS84 point",
     inputSchema: {
       type: "object",
       required: ["lat", "lon"],
       properties: {
         lat: {
           type: "number",
-          description: "Latitude in WGS84 (e.g. 47.3769 for Zürich)",
+          description: "Latitude (WGS84)",
         },
         lon: {
           type: "number",
-          description: "Longitude in WGS84 (e.g. 8.5417 for Zürich)",
+          description: "Longitude (WGS84)",
         },
         radius: {
           type: "number",
-          description: "Search radius in meters (default: 5000)",
+          description: "Metres",
+          default: 5000,
         },
       },
     },
@@ -183,25 +186,33 @@ export async function handleTraffic(name: string, args: Record<string, unknown>)
     case "get_traffic_nearby": {
       const lat = args.lat as number;
       const lon = args.lon as number;
-      const radius = (args.radius as number | undefined) ?? 5000;
+      const radius = Math.min(50000, Math.max(1, Number(args.radius) || 5000));
 
       const [e, n] = wgs84ToLv95(lat, lon);
 
-      // Build a map extent around the point using the radius
-      const extentPadding = radius * 3;
-      const mapExtent = `${e - extentPadding},${n - extentPadding},${e + extentPadding},${n + extentPadding}`;
+      // An LV95 box around the point, then filter by true distance. Passing the
+      // radius as `tolerance` made this a nationwide search: tolerance counts
+      // screen pixels, and the 1x1 px display made every pixel the whole extent.
+      const bbox = `${e - radius},${n - radius},${e + radius},${n + radius}`;
 
       const url = buildUrl(`${GEO_ADMIN}/identify`, {
-        geometry: `${e},${n}`,
-        geometryType: "esriGeometryPoint",
-        tolerance: radius,
-        mapExtent,
-        imageDisplay: "1,1,96",
+        geometry: bbox,
+        geometryType: "esriGeometryEnvelope",
+        sr: 2056,
+        tolerance: 0,
         layers: `all:${TRAFFIC_LAYER}`,
-        returnGeometry: false,
+        returnGeometry: true,
       });
       const data = await fetchJSON<IdentifyResponse>(url);
-      const stations = data.results.map(slimTrafficStation);
+      const stations = data.results
+        .map((f) => {
+          const g = f.geometry;
+          const dist = g ? Math.hypot(g.x - e, g.y - n) : Number.POSITIVE_INFINITY;
+          return { ...slimTrafficStation(f), distance_m: Math.round(dist) };
+        })
+        .filter((s) => s.distance_m <= radius)
+        .sort((a, b) => a.distance_m - b.distance_m);
+
       return JSON.stringify({
         count: stations.length,
         lat,

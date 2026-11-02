@@ -3,8 +3,8 @@
   "name": "mcp-swiss",
   "display_name": "Switzerland MCP \ud83c\udde8\ud83c\udded",
   "version": "0.8.0",
-  "description": "Swiss open data MCP server \u2014 79 tools, 22 modules, zero API keys",
-  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 79 tools across 22 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, and snow conditions (SLF). All APIs are free and require zero authentication.",
+  "description": "Swiss open data MCP server \u2014 82 tools, 23 modules, zero API keys",
+  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 82 tools across 23 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), and the federal building register (GWR). All APIs are free and require zero authentication.",
   "author": {
     "name": "Vikram Gorla",
     "url": "https://github.com/vikramgorla"
@@ -30,319 +30,331 @@
   "tools": [
     {
       "name": "search_stations",
-      "description": "Search for Swiss public transport stations/stops by name or coordinates"
+      "description": "Search public transport stations/stops by name or coordinates"
     },
     {
       "name": "get_connections",
-      "description": "Get train/bus connections between two Swiss locations"
+      "description": "Train/bus connections between two locations"
     },
     {
       "name": "get_departures",
-      "description": "Get live departures from a Swiss transport station"
+      "description": "Live departures from a station"
     },
     {
       "name": "get_arrivals",
-      "description": "Get live arrivals at a Swiss transport station"
+      "description": "Live arrivals at a station"
     },
     {
       "name": "get_nearby_stations",
-      "description": "Find Swiss public transport stations near given coordinates"
+      "description": "Stations near coordinates"
     },
     {
       "name": "get_weather",
-      "description": "Get current weather conditions at a Swiss MeteoSwiss station"
+      "description": "Current weather at a MeteoSwiss station. For past dates use get_weather_history"
     },
     {
       "name": "list_weather_stations",
-      "description": "List all available MeteoSwiss weather stations in Switzerland"
+      "description": "List MeteoSwiss weather station codes"
     },
     {
       "name": "get_weather_history",
-      "description": "Get historical weather data for a Swiss station"
+      "description": "Historical weather readings for a MeteoSwiss station. Only the last 32 days are available"
     },
     {
       "name": "get_water_level",
-      "description": "Get current river or lake water level and temperature at a Swiss hydrological station"
+      "description": "Current river/lake level and temperature at a BAFU hydro station"
     },
     {
       "name": "list_hydro_stations",
-      "description": "List all available BAFU hydrological monitoring stations"
+      "description": "List BAFU hydro station IDs (rivers, lakes)"
     },
     {
       "name": "get_water_history",
-      "description": "Get historical river/lake water level data for a Swiss hydrological station"
+      "description": "Historical river/lake levels for a BAFU hydro station. Only the last 32 days are available"
     },
     {
       "name": "geocode",
-      "description": "Convert a Swiss address or place name to coordinates (swisstopo)"
+      "description": "Address or place name to WGS84 coordinates (swisstopo)"
     },
     {
       "name": "reverse_geocode",
-      "description": "Convert coordinates to a Swiss address (swisstopo)"
+      "description": "WGS84 coordinates to address (swisstopo)"
     },
     {
       "name": "search_places",
-      "description": "Search Swiss place names, localities, mountains, and geographic features"
+      "description": "Search place names, localities, mountains, geographic features"
     },
     {
       "name": "get_solar_potential",
-      "description": "Get rooftop solar energy potential for a location in Switzerland"
+      "description": "Rooftop solar potential at a location"
     },
     {
       "name": "identify_location",
-      "description": "Identify geographic features and data layers at a specific Swiss location"
+      "description": "Geographic features and swisstopo data layers at a location"
     },
     {
       "name": "get_municipality",
-      "description": "Get information about a Swiss municipality by name"
+      "description": "Municipality info by name"
     },
     {
       "name": "search_companies",
-      "description": "Search Swiss company registry (ZEFIX) by name, canton, or legal form"
+      "description": "Search the ZEFIX commercial register by company name, optionally filtered by canton/legal form"
     },
     {
       "name": "get_company",
-      "description": "Get full details of a Swiss company by its ZEFIX internal ID"
+      "description": "Full company details by ZEFIX ehraid (from search_companies)"
     },
     {
-      "name": "search_companies_by_address",
-      "description": "Search Swiss companies registered at a specific address or locality"
+      "name": "search_companies_by_locality",
+      "description": "Companies whose registered seat is in a commune/town. ZEFIX has no street-address search"
     },
     {
       "name": "list_cantons",
-      "description": "List all Swiss cantons with their codes"
+      "description": "List cantons with codes"
     },
     {
       "name": "list_legal_forms",
-      "description": "List all Swiss company legal forms (AG, GmbH, etc.)"
+      "description": "List company legal forms (AG, GmbH, ...) with the ids used by search_companies"
     },
     {
       "name": "get_public_holidays",
-      "description": "Get public holidays for a Swiss canton and year"
+      "description": "Public holidays for a year, national and cantonal"
     },
     {
       "name": "get_school_holidays",
-      "description": "Get school holidays for a Swiss canton"
+      "description": "School holiday periods for a year, by canton"
     },
     {
       "name": "is_holiday_today",
-      "description": "Check if today is a public holiday in a Swiss canton"
-    },
-    {
-      "name": "get_latest_votes",
-      "description": "Get the latest parliament votes"
-    },
-    {
-      "name": "search_councillors",
-      "description": "Search current National/States Council members"
-    },
-    {
-      "name": "get_sessions",
-      "description": "Get parliament session schedule"
+      "description": "Whether today is a public holiday"
     },
     {
       "name": "search_parliament_business",
-      "description": "Search parliamentary affairs and bills"
+      "description": "Full-text search of federal parliament affairs (bills, motions, interpellations, postulates, questions, initiatives). For cantonal parliaments use search_cantonal_affairs"
     },
     {
-      "name": "get_avalanche_bulletin",
-      "description": "Get SLF avalanche danger bulletin"
+      "name": "get_parliament_members",
+      "description": "Federal parliament members (National Council, Council of States), filterable by canton/party"
     },
     {
-      "name": "list_avalanche_regions",
-      "description": "List avalanche warning regions"
+      "name": "get_parliament_votes",
+      "description": "Recorded votes on a parliamentary affair (Geschäft)"
     },
     {
-      "name": "get_air_quality",
-      "description": "Get NABEL air quality measurements"
-    },
-    {
-      "name": "list_air_quality_stations",
-      "description": "List NABEL air quality monitoring stations"
-    },
-    {
-      "name": "lookup_postcode",
-      "description": "Look up a Swiss postcode"
-    },
-    {
-      "name": "search_postcode",
-      "description": "Search Swiss postcodes by locality name"
-    },
-    {
-      "name": "list_postcodes_in_canton",
-      "description": "List all postcodes in a Swiss canton"
-    },
-    {
-      "name": "track_parcel",
-      "description": "Track a Swiss Post parcel"
-    },
-    {
-      "name": "get_electricity_tariff",
-      "description": "Get electricity tariff for a Swiss municipality"
-    },
-    {
-      "name": "compare_electricity_tariffs",
-      "description": "Compare electricity prices across municipalities"
-    },
-    {
-      "name": "search_municipality_energy",
-      "description": "Search municipalities for energy data"
-    },
-    {
-      "name": "get_population",
-      "description": "Get population data by canton or municipality"
-    },
-    {
-      "name": "search_statistics",
-      "description": "Search BFS statistical datasets"
-    },
-    {
-      "name": "get_statistic",
-      "description": "Get a specific BFS statistic"
-    },
-    {
-      "name": "get_exchange_rate",
-      "description": "Get current CHF exchange rate from SNB"
-    },
-    {
-      "name": "get_exchange_rate_history",
-      "description": "Get historical exchange rates"
-    },
-    {
-      "name": "list_currencies",
-      "description": "List available currency pairs"
-    },
-    {
-      "name": "get_waste_collection",
-      "description": "Get waste collection schedule"
-    },
-    {
-      "name": "list_waste_types",
-      "description": "List available waste types"
-    },
-    {
-      "name": "get_waste_calendar",
-      "description": "Get waste collection calendar"
-    },
-    {
-      "name": "get_swiss_news",
-      "description": "Get SRF news headlines"
-    },
-    {
-      "name": "search_swiss_news",
-      "description": "Search Swiss news by keyword"
-    },
-    {
-      "name": "get_voting_results",
-      "description": "Get popular vote results"
-    },
-    {
-      "name": "get_vote_details",
-      "description": "Get detailed vote breakdown"
-    },
-    {
-      "name": "search_votes",
-      "description": "Search available vote dates and topics"
-    },
-    {
-      "name": "search_dams",
-      "description": "Search Swiss federal dam registry"
-    },
-    {
-      "name": "get_dams_by_canton",
-      "description": "Get dams by canton"
-    },
-    {
-      "name": "get_dam_details",
-      "description": "Get details of a specific dam"
-    },
-    {
-      "name": "get_trail_closures",
-      "description": "Get hiking trail closures and alerts"
-    },
-    {
-      "name": "get_trail_closures_nearby",
-      "description": "Get trail closures near coordinates"
-    },
-    {
-      "name": "get_property_price_index",
-      "description": "Get Swiss property price index"
-    },
-    {
-      "name": "get_rent_index",
-      "description": "Get rental price index"
-    },
-    {
-      "name": "search_real_estate_data",
-      "description": "Search real estate market data"
-    },
-    {
-      "name": "get_traffic_count",
-      "description": "Get traffic count data from ASTRA stations"
-    },
-    {
-      "name": "get_traffic_by_canton",
-      "description": "Get traffic data by canton"
-    },
-    {
-      "name": "get_traffic_nearby",
-      "description": "Get traffic data near coordinates"
-    },
-    {
-      "name": "get_recent_earthquakes",
-      "description": "Get recent earthquakes in Switzerland"
-    },
-    {
-      "name": "get_earthquake_details",
-      "description": "Get details of a specific earthquake"
-    },
-    {
-      "name": "search_earthquakes_by_location",
-      "description": "Search earthquakes near a location"
-    },
-    {
-      "name": "get_snow_conditions",
-      "description": "Get current snow conditions across Switzerland from SLF"
-    },
-    {
-      "name": "list_snow_stations",
-      "description": "List all SLF snow measurement stations"
-    },
-    {
-      "name": "get_snow_measurements",
-      "description": "Get detailed measurements for a specific SLF station"
+      "name": "get_session_schedule",
+      "description": "Upcoming and recent federal parliament sessions"
     },
     {
       "name": "search_parliament_speeches",
-      "description": "Search speeches given in Swiss parliament"
+      "description": "Debate speeches on a parliamentary affair"
     },
     {
       "name": "get_politician_interests",
-      "description": "Get interests and affiliations of a Swiss parliamentarian"
+      "description": "Declared interests and mandates (boards, consulting roles) of a federal parliament member"
     },
     {
       "name": "search_cantonal_affairs",
-      "description": "Search cantonal government affairs submitted to the federal parliament"
+      "description": "Search affairs in a cantonal parliament (Kantonsrat), all 26 cantons"
     },
     {
       "name": "get_parliamentary_documents",
-      "description": "Get official documents for a Swiss parliamentary affair"
+      "description": "Official documents (reports, committee opinions, Federal Council statements) for a parliamentary affair"
     },
     {
       "name": "get_committee_meetings",
-      "description": "Get Swiss parliamentary committee meetings and agendas"
+      "description": "Federal parliament committee meeting schedule"
+    },
+    {
+      "name": "get_avalanche_bulletin",
+      "description": "Live SLF avalanche bulletin: danger level (1-5), avalanche problems with aspect and elevation, validity and advice text, for one warning region, a coordinate, or all of Switzerland. Outside the winter season it reports that no bulletin is in force"
+    },
+    {
+      "name": "list_avalanche_regions",
+      "description": "The 135 SLF/EAWS avalanche warning regions (id, name, canton) for get_avalanche_bulletin"
+    },
+    {
+      "name": "list_air_quality_stations",
+      "description": "List NABEL air-quality monitoring stations (BAFU/Empa)"
+    },
+    {
+      "name": "get_air_quality",
+      "description": "NABEL station info: location, environment type, legal limits (LRV) and a link to BAFU live data (no measurements returned)"
+    },
+    {
+      "name": "lookup_postcode",
+      "description": "Locality, canton and coordinates for a postcode (PLZ)"
+    },
+    {
+      "name": "search_postcode",
+      "description": "Postcodes (PLZ) for a city/locality name"
+    },
+    {
+      "name": "list_postcodes_in_canton",
+      "description": "List postcodes (PLZ) in a canton"
+    },
+    {
+      "name": "track_parcel",
+      "description": "Swiss Post tracking page URL for a tracking number (no live status: there is no public tracking API)"
+    },
+    {
+      "name": "get_electricity_tariff",
+      "description": "ElCom electricity tariff (Rp./kWh) for a municipality, with component breakdown"
+    },
+    {
+      "name": "compare_electricity_tariffs",
+      "description": "Compare electricity tariffs across 2–20 municipalities"
+    },
+    {
+      "name": "search_municipality_energy",
+      "description": "Find municipality BFS numbers for the electricity tariff tools"
+    },
+    {
+      "name": "get_population",
+      "description": "Permanent resident population (BFS STATPOP) for Switzerland, a canton or all cantons"
+    },
+    {
+      "name": "search_statistics",
+      "description": "Search BFS datasets on opendata.swiss"
+    },
+    {
+      "name": "get_statistic",
+      "description": "Details and resource links for a BFS dataset by opendata.swiss ID (from search_statistics)"
+    },
+    {
+      "name": "list_currencies",
+      "description": "List currencies with SNB CHF exchange rates"
+    },
+    {
+      "name": "get_exchange_rate",
+      "description": "Latest SNB monthly-average CHF exchange rate for a currency"
+    },
+    {
+      "name": "get_exchange_rate_history",
+      "description": "Historical SNB monthly-average CHF exchange rates (default: last 90 months)"
+    },
+    {
+      "name": "get_waste_collection",
+      "description": "Upcoming waste collection dates for a ZIP code. Zurich city only (8001–8099, OpenERZ)"
+    },
+    {
+      "name": "list_waste_types",
+      "description": "List waste collection types. Zurich city only (OpenERZ)"
+    },
+    {
+      "name": "get_waste_calendar",
+      "description": "Monthly waste collection calendar for a ZIP code. Zurich city only (8001–8099, OpenERZ)"
+    },
+    {
+      "name": "get_swiss_news",
+      "description": "Latest SRF news headlines"
+    },
+    {
+      "name": "search_swiss_news",
+      "description": "Keyword search in current SRF headlines (all categories)"
+    },
+    {
+      "name": "get_voting_results",
+      "description": "Popular vote (Volksabstimmung) results as counted in Basel-Stadt: national and cantonal votes since 2021"
+    },
+    {
+      "name": "search_votes",
+      "description": "Search popular votes by title keyword (Basel-Stadt results)"
+    },
+    {
+      "name": "get_vote_details",
+      "description": "Per-district Basel-Stadt results (Basel, Riehen, Bettingen, abroad) for one vote. Give vote_title and/or date"
+    },
+    {
+      "name": "search_dams",
+      "description": "Search federally supervised dams by dam or reservoir name (SFOE)"
+    },
+    {
+      "name": "get_dams_by_canton",
+      "description": "Federally supervised dams in a canton"
+    },
+    {
+      "name": "get_dam_details",
+      "description": "Full technical details of one dam by name"
+    },
+    {
+      "name": "get_trail_closures",
+      "description": "Current hiking trail closures and detours (ASTRA/Schweizer Wanderwege)"
+    },
+    {
+      "name": "get_trail_closures_nearby",
+      "description": "Hiking trail closures and detours near a WGS84 point"
+    },
+    {
+      "name": "get_property_price_index",
+      "description": "BFS residential property price index (IMPI), quarterly since 2017Q1, Q4 2019 = 100"
+    },
+    {
+      "name": "search_real_estate_data",
+      "description": "Search opendata.swiss for real-estate/housing datasets (prices, rents, construction, vacancies)"
+    },
+    {
+      "name": "get_rent_index",
+      "description": "BFS consumer price index (CPI/LIK, incl. rents), monthly, Dec 1982 = 100. Not a dedicated rent index; for purchase prices use get_property_price_index"
+    },
+    {
+      "name": "get_traffic_count",
+      "description": "ASTRA traffic counting station volumes by location name"
+    },
+    {
+      "name": "get_traffic_by_canton",
+      "description": "ASTRA traffic counting stations in a canton (max 20)"
+    },
+    {
+      "name": "get_traffic_nearby",
+      "description": "ASTRA traffic counting stations near a WGS84 point"
+    },
+    {
+      "name": "get_recent_earthquakes",
+      "description": "Recent earthquakes in and around Switzerland (SED, ETH Zürich)"
+    },
+    {
+      "name": "get_earthquake_details",
+      "description": "Full details of one seismic event by SED event ID"
+    },
+    {
+      "name": "search_earthquakes_by_location",
+      "description": "Earthquakes within a radius of a WGS84 point (SED)"
+    },
+    {
+      "name": "get_snow_conditions",
+      "description": "Current snow depth and 24h new snow at SLF IMIS stations, deepest first"
+    },
+    {
+      "name": "list_snow_stations",
+      "description": "List SLF snow stations (IMIS automatic, manual study plots)"
+    },
+    {
+      "name": "get_snow_measurements",
+      "description": "Measurements for one SLF station: IMIS 30-min snow/weather data, or study-plot daily snow data"
     },
     {
       "name": "get_pollen_current",
-      "description": "Current hourly pollen concentrations at a MeteoSwiss station (7 types: Alder, Birch, Hazel, Beech, Ash, Oak, Grasses)"
+      "description": "Latest hourly pollen concentrations (alder, birch, hazel, beech, ash, oak, grasses) at a MeteoSwiss station"
     },
     {
       "name": "get_pollen_daily",
-      "description": "Daily pollen averages for trend analysis over configurable time range"
+      "description": "Daily average pollen concentrations at a MeteoSwiss station"
     },
     {
       "name": "list_pollen_stations",
-      "description": "All 16 MeteoSwiss automatic pollen monitoring stations"
+      "description": "List MeteoSwiss pollen stations"
+    },
+    {
+      "name": "search_buildings",
+      "description": "Find buildings in the federal buildings register (GWR/RegBL) by address; gives EGIDs for get_building"
+    },
+    {
+      "name": "get_building",
+      "description": "Full GWR record of one building by EGID: construction, floors, areas, heating/hot-water system and energy source, parcel (EGRID), entrances, dwellings"
+    },
+    {
+      "name": "buildings_near",
+      "description": "GWR buildings nearest a WGS84 point (small radius), with EGIDs"
     }
   ],
   "keywords": [

@@ -11,11 +11,48 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Added
 
+- Shared HTTP client (`src/utils/http.ts`) with a versioned `mcp-swiss` User-Agent, a 30s timeout (`MCP_SWISS_TIMEOUT_MS`; 120s for BFS PxWeb), and one retry for dropped connections and for 429/502/503/504 (honouring `Retry-After`, capped at 10s). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+- Expiring in-flight cache helper (`src/utils/cache.ts`) and argument validation against each tool's input schema (`src/utils/validate.ts`), including safe coercion of numeric strings and case-insensitive enums. From netadvanced.
+- Tool annotations: every tool is advertised as read-only, idempotent, and open-world. From netadvanced.
+
+### Fixed
+
+- Failed lookups now throw, so the MCP client receives `isError` instead of a successful payload shaped like `{"error": "..."}` (voting, energy, earthquakes, SNB, dams, post). An empty-but-valid result still returns `count: 0`. From netadvanced.
+- Data corrections ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng):
+  - ZEFIX `search_companies` filters by real registry-office ids and legal-form ids. `list_legal_forms` returns that live list (`3` = AG, `4` = GmbH) instead of invented `0106`-style codes.
+  - `search_companies_by_address` is now `search_companies_by_locality`: ZEFIX has no street search, so the tool resolves a commune or town and rejects a street address.
+  - `get_avalanche_bulletin` returns the public SLF CAAMLv6 bulletin (danger, problems, advice). `list_avalanche_regions` lists the 135 EAWS micro-regions, named the way the English bulletin names them.
+  - Earthquakes use the SED catalog over HTTPS (`https://eida.ethz.ch`) and `get_recent_earthquakes` stays inside the Swiss box with a capped result count.
+  - The NABEL list includes all 16 stations (Jungfraujoch and Beromünster were missing) and merges codes the geo.admin layer adds later.
+  - Dam search pages the full layer (the find endpoint stopped at 201 of 225) and canton filters use the real canton polygon instead of a bounding box.
+  - `get_property_price_index` fetches the published BFS IMPI series. Rent-index windows come from the response instead of a hard-coded row count.
+  - Weather and water history send `startdate`/`enddate` (the old `startdt`/`enddt` were ignored) and down-sample long ranges.
+  - `get_nearby_stations` applies `limit` and `distance` to the station list. Nearby traffic and trail tools filter on real distance instead of a pixel tolerance.
+  - `reverse_geocode` resolves the nearest building-register address plus municipality. swisstopo SearchServer has no reverse lookup.
+  - Parliament responses drop whole entries instead of cutting mid-JSON, and vote tallies read the fields OpenParlData actually returns.
+  - `is_holiday_today` and recycling "today" use the Europe/Zurich calendar date.
+  - Population accepts unaccented and multilingual canton names, and the default year comes from the STATPOP cube.
+  - Pollen names are decoded as ISO-8859-1, and station checks use the published list.
+  - Study-plot snow measurements return an empty result off-season instead of an HTTP 404. Electricity tariffs default to the current year.
+  - Postcodes in a canton come from the official locality register. Reference lists expire and share one in-flight fetch. ODSQL search terms in the voting tools are escaped.
+  - The `outdoor` preset includes pollen.
+
+### Changed
+
+- Tool schemas are shorter. Closes [#107](https://github.com/vikramgorla/mcp-swiss/issues/107). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+- `scripts/measure-schema-tokens.mjs` (`npm run docs:tokens`) and `scripts/generate-tool-docs.mjs` (`npm run docs:tools`, `--check` in CI) keep `docs/tools.schema.json` and the manifest tool list aligned with the source.
+- Transport `x`/`y` descriptions now match the API: `x` is latitude and `y` is longitude.
+
+**GWR module** (3 tools) — Federal Register of Buildings and Dwellings (BFS), via [api3.geo.admin.ch](https://api3.geo.admin.ch) layer `ch.bfs.gebaeude_wohnungs_register`. Closes [#142](https://github.com/vikramgorla/mcp-swiss/issues/142), requested by khashashin. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+
+- `search_buildings` — find buildings by address and return EGIDs
+- `get_building` — decoded record by EGID, including heating, parcel, entrances, and dwellings
+- `buildings_near` — buildings around a WGS84 point, closest first
+- Added to the `business` preset
 - Discovery mode (`--discovery`, `--mode discovery`, or `MCP_SWISS_MODE=discovery`). Closes [#106](https://github.com/vikramgorla/mcp-swiss/issues/106). The default is still the full tool list. Ported in spirit from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng), using a search-then-execute pair instead of dynamic registration:
   - `swiss_search_tools` — keyword or module search; returns matching names, descriptions, and input schemas
   - `swiss_call_tool` — runs one tool after checking the arguments against that tool's schema
   - `swiss_list_modules` — module catalog
-- On this branch the full `tools/list` schema is 36,800 characters (~9,200 tokens). Discovery mode lists 1,312 characters (~328 tokens). Measured with `scripts/measure-schema-tokens.mjs` (characters / 4; annotations included for the meta-tools).
 
 ---
 

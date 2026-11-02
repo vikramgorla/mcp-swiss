@@ -27,7 +27,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**79 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**82 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -52,7 +52,8 @@
 🚗 Traffic      — ASTRA counting stations, daily volumes
 🌍 Earthquakes  — Swiss Seismological Service (SED/ETH Zürich), FDSN API
 ❄️ Snow         — SLF snow depth, stations, and measurements
-🌿 Pollen       — MeteoSwiss pollen concentrations at 16 stations
+🌿 Pollen       — MeteoSwiss pollen concentrations at the published stations
+🏠 Buildings    — Federal register of buildings and dwellings (GWR)
 ```
 
 ---
@@ -236,7 +237,7 @@ Open VS Code `settings.json` and add:
 
 ### Any MCP Client
 
-`mcp-swiss` uses **stdio transport** and requires no environment variables. The universal config:
+`mcp-swiss` uses **stdio transport** and requires no environment variables. Upstream calls time out after 30 seconds (`MCP_SWISS_TIMEOUT_MS` overrides that) and retry once on a dropped connection or a rate limit. The universal config:
 
 ```json
 {
@@ -285,11 +286,11 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 22 modules (79 tools, about 9,200 tokens of schema). For a smaller startup list, load only the modules you need.
+By default, mcp-swiss loads all 23 modules (82 tools). The full `tools/list` schema is about 6,800 tokens, down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
 
 ### Discovery mode
 
-Search, then execute. The server lists three meta-tools instead of every schema (~330 tokens versus ~9,200):
+Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 6,800):
 
 ```json
 {
@@ -330,12 +331,12 @@ Search, then execute. The server lists three meta-tools instead of every schema 
 
 | Preset | Modules | Tools | Token Savings |
 |--------|---------|-------|---------------|
-| `commuter` | transport, weather, holidays | 14 | 81% |
-| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow | 19 | 75% |
-| `business` | companies, geodata, post, energy, statistics, snb | 24 | 67% |
-| `citizen` | parliament, voting, holidays, news | 17 | 77% |
-| `minimal` | transport | 5 | 93% |
-| `full` | all 22 modules (default) | 79 | — |
+| `commuter` | transport, weather, holidays | 14 | 83% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow, pollen | 22 | 73% |
+| `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 67% |
+| `citizen` | parliament, voting, holidays, news | 17 | 79% |
+| `minimal` | transport | 5 | 94% |
+| `full` | all 23 modules (default) | 82 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -369,7 +370,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 79 tools across 22 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 82 tools across 23 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -409,7 +410,7 @@ Once connected, try asking your AI:
 |------|-------------|
 | `search_companies` | Search by name, canton, legal form |
 | `get_company` | Full company details by ZEFIX `ehraid` |
-| `search_companies_by_address` | Companies registered at an address |
+| `search_companies_by_locality` | Companies seated in a commune or town (ZEFIX has no street search) |
 | `list_cantons` | All 26 Swiss cantons |
 | `list_legal_forms` | AG, GmbH, and all Swiss legal forms |
 
@@ -439,14 +440,14 @@ Once connected, try asking your AI:
 
 | Tool | Description |
 |------|-------------|
-| `get_avalanche_bulletin` | Current avalanche bulletin with danger levels and PDF links |
-| `list_avalanche_regions` | All 22 Swiss avalanche warning regions |
+| `get_avalanche_bulletin` | Live SLF bulletin: danger level, problems, advice for a region or coordinate |
+| `list_avalanche_regions` | The 135 SLF/EAWS warning regions |
 
 ### 💨 Air Quality (2 tools)
 
 | Tool | Description |
 |------|-------------|
-| `list_air_quality_stations` | All 14 NABEL monitoring stations |
+| `list_air_quality_stations` | All 16 NABEL monitoring stations, plus any code the live layer adds |
 | `get_air_quality` | Station info, Swiss legal limits (LRV), and BAFU data links |
 
 ### 📮 Swiss Post (4 tools)
@@ -520,6 +521,14 @@ Once connected, try asking your AI:
 | `get_trail_closures` | Swiss trail closures and hiking alerts from swisstopo |
 | `get_trail_closures_nearby` | Trail closures near given coordinates |
 
+### 🏠 Buildings / GWR (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_buildings` | Find buildings in the federal register (GWR) by address and return EGIDs |
+| `get_building` | Full building record by EGID: year, floors, heating, parcel, entrances, dwellings |
+| `buildings_near` | Buildings nearest a WGS84 point, closest first |
+
 ### 🏠 Real Estate (3 tools)
 
 | Tool | Description |
@@ -556,9 +565,9 @@ Once connected, try asking your AI:
 
 | Tool | Description |
 |------|-------------|
-| `get_pollen_current` | Current hourly pollen concentrations at any of 16 MeteoSwiss stations (7 types: Alder, Birch, Hazel, Beech, Ash, Oak, Grasses) |
-| `get_pollen_daily` | Daily pollen averages for trend analysis over configurable time range |
-| `list_pollen_stations` | All 16 MeteoSwiss automatic pollen monitoring stations with location details |
+| `get_pollen_current` | Current hourly pollen concentrations at a published MeteoSwiss station |
+| `get_pollen_daily` | Daily pollen averages over a configurable range |
+| `list_pollen_stations` | Published MeteoSwiss pollen stations (the list is no longer a frozen 16) |
 
 ---
 
@@ -648,6 +657,7 @@ We welcome contributions! mcp-swiss follows a strict PR-based workflow to keep t
 
 - Node.js 20+
 - No API keys or accounts needed
+- Optional: `MCP_SWISS_TIMEOUT_MS` — per-request upstream timeout in milliseconds (default 30000)
 
 ## License
 

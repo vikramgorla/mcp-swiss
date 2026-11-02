@@ -15,7 +15,12 @@ interface Tool {
   name: string;
   description: string;
   inputSchema: unknown;
-  annotations?: { readOnlyHint?: boolean; idempotentHint?: boolean };
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
 }
 
 /**
@@ -131,7 +136,37 @@ describe('MCP protocol: tools/list', () => {
     });
 
     const result = response.result as { tools: Tool[] };
-    expect(result.tools).toHaveLength(79);
+    expect(result.tools).toHaveLength(82);
+  });
+
+  it('marks every tool read-only and idempotent', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 41,
+      method: 'tools/list',
+    });
+
+    const result = response.result as { tools: Tool[] };
+    expect(result.tools.length).toBeGreaterThan(0);
+    for (const tool of result.tools) {
+      expect(tool.annotations?.readOnlyHint, tool.name).toBe(true);
+      expect(tool.annotations?.idempotentHint, tool.name).toBe(true);
+      expect(tool.annotations?.destructiveHint, tool.name).toBe(false);
+      expect(tool.annotations?.openWorldHint, tool.name).toBe(true);
+    }
+  });
+
+  it('rejects a call that is missing a required argument', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 42,
+      method: 'tools/call',
+      params: { name: 'get_connections', arguments: {} },
+    });
+
+    const result = response.result as { isError?: boolean; content: Array<{ text: string }> };
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('from is required');
   });
 
   it('each tool has name, description, inputSchema', async () => {
@@ -212,9 +247,12 @@ describe('MCP protocol: tools/list', () => {
     const names = result.tools.map((t) => t.name);
     expect(names).toContain('search_companies');
     expect(names).toContain('get_company');
-    expect(names).toContain('search_companies_by_address');
+    expect(names).toContain('search_companies_by_locality');
     expect(names).toContain('list_cantons');
     expect(names).toContain('list_legal_forms');
+    expect(names).toContain('search_buildings');
+    expect(names).toContain('get_building');
+    expect(names).toContain('buildings_near');
   });
 });
 
@@ -256,22 +294,17 @@ describe('MCP protocol: tools/call', () => {
     expect(cantons).toHaveLength(26);
   });
 
-  it('list_legal_forms returns AG and GmbH', async () => {
+  it('search_companies no longer documents the invented 0106 legal-form code', async () => {
     const response = await sendMcpRequest({
       jsonrpc: '2.0',
       id: 12,
-      method: 'tools/call',
-      params: {
-        name: 'list_legal_forms',
-        arguments: {},
-      },
+      method: 'tools/list',
     });
 
-    const result = response.result as { content: Array<{ type: string; text: string }> };
-    const forms = JSON.parse(result.content[0].text);
-    const names = forms.map((f: { name: string }) => f.name).join(' ');
-    expect(names).toContain('AG');
-    expect(names).toContain('GmbH');
+    const result = response.result as { tools: Tool[] };
+    const tool = result.tools.find((t) => t.name === 'search_companies');
+    expect(tool).toBeDefined();
+    expect(JSON.stringify(tool?.inputSchema)).not.toContain('0106');
   });
 
   it('unknown tool returns isError:true response', async () => {
