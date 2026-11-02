@@ -30,11 +30,13 @@ interface Tool {
  */
 function sendMcpRequest(
   request: Record<string, unknown>,
-  timeoutMs = 8000
+  timeoutMs = 8000,
+  env: NodeJS.ProcessEnv = {}
 ): Promise<JsonRpcResponse> {
   return new Promise((resolve, reject) => {
     const proc = spawn('node', [SERVER_PATH], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...env },
     });
 
     let stdout = '';
@@ -321,5 +323,24 @@ describe('MCP protocol: tools/call', () => {
     const result = response.result as { isError?: boolean; content: Array<{ type: string; text: string }> };
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('Error');
+  });
+
+  it('discovery mode lists only the search, call, and module tools', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 30,
+      method: 'tools/list',
+    }, 8000, { MCP_SWISS_MODE: 'discovery' });
+
+    const result = response.result as { tools: Tool[] };
+    expect(result.tools.map((t) => t.name)).toEqual([
+      'swiss_search_tools',
+      'swiss_call_tool',
+      'swiss_list_modules',
+    ]);
+    const call = result.tools.find((t) => t.name === 'swiss_call_tool');
+    expect(call?.annotations?.readOnlyHint).toBe(false);
+    const search = result.tools.find((t) => t.name === 'swiss_search_tools');
+    expect(search?.annotations?.readOnlyHint).toBe(true);
   });
 });

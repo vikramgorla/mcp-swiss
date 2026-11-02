@@ -59,16 +59,22 @@ const totalChars = JSON.stringify(allTools).length;
 const total = { module: "TOTAL", tools: allTools.length, chars: totalChars, tokens: approxTokens(totalChars) };
 
 let discovery = null;
-try {
-  const serverUrl = pathToFileURL(join(process.cwd(), "dist", "server.js")).href;
-  const server = await import(serverUrl);
-  const meta = [server.SEARCH_TOOLS_TOOL, server.CALL_TOOL, server.LIST_MODULES_TOOL].filter(Boolean);
-  if (meta.length) {
-    const chars = JSON.stringify(meta).length;
-    discovery = { tools: meta.length, chars, tokens: approxTokens(chars) };
+for (const file of ["discovery.js", "server.js"]) {
+  try {
+    const serverUrl = pathToFileURL(join(process.cwd(), "dist", file)).href;
+    const server = await import(serverUrl);
+    const meta = [server.SEARCH_TOOLS_TOOL, server.CALL_TOOL, server.LIST_MODULES_TOOL].filter(Boolean);
+    if (meta.length) {
+      const listed = server.annotationsFor
+        ? meta.map((tool) => ({ ...tool, annotations: server.annotationsFor(tool) }))
+        : meta;
+      const chars = JSON.stringify(listed).length;
+      discovery = { tools: meta.length, chars, tokens: approxTokens(chars) };
+      break;
+    }
+  } catch {
+    // This build does not export the discovery meta-tools from that file.
   }
-} catch {
-  // Discovery mode is not in this build.
 }
 
 if (process.argv.includes("--json")) {
