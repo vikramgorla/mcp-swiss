@@ -23,6 +23,7 @@ import { pollenTools, handlePollen } from "./modules/pollen.js";
 import { gwrTools, handleGwr } from "./modules/gwr.js";
 import { opendataTools, handleOpendata } from "./modules/opendata.js";
 import { meteoswissTools, handleMeteoswiss } from "./modules/meteoswiss.js";
+import { maplayerTools, handleMaplayers } from "./modules/maplayers.js";
 
 export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
 
@@ -65,6 +66,7 @@ export const moduleRegistry: Record<string, ModuleEntry> = {
   gwr:         { description: "Federal building register (GWR): buildings and dwellings by address or EGID", tools: gwrTools, handler: handleGwr },
   opendata:    { description: "opendata.swiss catalogue: datasets, metadata, and downloads", tools: opendataTools, handler: handleOpendata },
   meteoswiss:  { description: "MeteoSwiss OGD measurements from SwissMetNet stations", tools: meteoswissTools, handler: handleMeteoswiss },
+  maplayers:   { description: "geo.admin map layers: search, identify, and attribute find", tools: maplayerTools, handler: handleMaplayers },
 };
 
 export const presets: Record<string, string[]> = {

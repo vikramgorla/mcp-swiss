@@ -3,8 +3,8 @@
   "name": "mcp-swiss",
   "display_name": "Switzerland MCP \ud83c\udde8\ud83c\udded",
   "version": "0.8.0",
-  "description": "Swiss open data MCP server \u2014 88 tools, 25 modules, zero API keys",
-  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 88 tools across 25 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), the federal building register (GWR), and the opendata.swiss catalogue, and MeteoSwiss OGD measurements. All APIs are free and require zero authentication.",
+  "description": "Swiss open data MCP server \u2014 91 tools, 26 modules, zero API keys",
+  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 91 tools across 26 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), the federal building register (GWR), and the opendata.swiss catalogue, and MeteoSwiss OGD measurements, and geo.admin map layers. All APIs are free and require zero authentication.",
   "author": {
     "name": "Vikram Gorla",
     "url": "https://github.com/vikramgorla"
@@ -379,6 +379,18 @@
     {
       "name": "get_ogd_history",
       "description": "Get historical MeteoSwiss OGD measurements for one station and date range by parsing the STAC CSV assets. Daily data defaults to the smaller recent/historical files. Hourly history is limited to 14 days because decade files are large. Times are Swiss local time (no offset)."
+    },
+    {
+      "name": "search_map_layers",
+      "description": "Search or list layers in the geo.admin ech MapServer catalogue (all federal geospatial layers). Returns layer ids that identify_map_layer and find_map_features accept. Without a query, returns the first page of layers alphabetically."
+    },
+    {
+      "name": "identify_map_layer",
+      "description": "Identify geo.admin features at a WGS84 point on one ech MapServer layer. Use search_map_layers to find the layer id. Historical time-series layers keep only the current feature unless include_historical is true."
+    },
+    {
+      "name": "find_map_features",
+      "description": "Find geo.admin features on one ech MapServer layer by an attribute value. Identify a point first if you need the attribute names. Example: layer ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill, search_field gemname, search_text Bern."
     }
   ],
   "keywords": [

@@ -37,6 +37,7 @@ const modules = [
   ["gwr", "gwrTools"],
   ["opendata", "opendataTools"],
   ["meteoswiss", "meteoswissTools"],
+  ["maplayers", "maplayerTools"],
 ];
 
 const rows = [];

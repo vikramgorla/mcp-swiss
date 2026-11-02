@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 88 MCP tools.
+> Complete human + machine-readable specification for all 91 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 88 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 91 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -31,6 +31,7 @@
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
 - [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
 - [Pollen / MeteoSwiss Module (3 tools)](#pollen)
+- [Map Layers / geo.admin (3 tools)](#map-layers)
 - [MeteoSwiss OGD (3 tools)](#meteoswiss-ogd)
 - [Open Data Catalogue (3 tools)](#open-data-catalogue)
 
@@ -2528,6 +2529,17 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 
 ---
 
+## Map Layers
+
+**Base API:** `https://api3.geo.admin.ch/rest/services/ech/MapServer`  
+**Docs:** https://api3.geo.admin.ch/api/doc.html  
+**Auth:** None required
+
+These tools are generic across the ech MapServer catalogue. The existing geodata module still covers geocoding, solar potential, and a fixed identify helper.
+
+### `search_map_layers`
+
+Search or list federal map layers. Returns layer ids for the identify and find tools.
 ## MeteoSwiss OGD
 
 **Base API:** `https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-smn`  
@@ -2556,6 +2568,13 @@ Search the Swiss open data catalogue for datasets. Returns titles, publishers, a
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| query | string | ❌ | Words matched against the layer id, name, owner, and abstract |
+| owner | string | ❌ | Data-owner filter such as swisstopo or BAFU |
+| limit | number | ❌ | Maximum layers (default 15, max 40) |
+
+### `identify_map_layer`
+
+Features at a WGS84 point on one layer. Time-series layers return the current feature unless `include_historical` is true.
 | collection | string | ❌ | Collection alias or full STAC id (default `smn`) |
 | canton | string | ❌ | Canton abbreviation such as BE or ZH |
 | query | string | ❌ | Case-insensitive station code or name |
@@ -2576,6 +2595,17 @@ Get metadata for one opendata.swiss dataset by catalogue name or UUID.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| layer | string | ✅ | Layer id, e.g. `ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill` |
+| lat | number | ✅ | Latitude, WGS84 |
+| lng | number | ✅ | Longitude, WGS84 |
+| tolerance | number | ❌ | Pixel tolerance (default 5, max 50). `0` stays inside polygons |
+| lang | string | ❌ | `en` (default), `de`, `fr`, `it`, or `rm` |
+| include_historical | boolean | ❌ | Keep historical versions (default false) |
+| limit | number | ❌ | Maximum features (default 10, max 25) |
+
+### `find_map_features`
+
+Find features by an attribute value. Example: `search_field=gemname`, `search_text=Bern`.
 | station | string | ✅ | Station code such as BER, SMA, or LUG |
 | collection | string | ❌ | Collection alias (default `smn`) |
 | granularity | string | ❌ | `t` 10-minute, `h` hourly (default), `d` daily, `m` monthly, `y` yearly |
@@ -2595,6 +2625,12 @@ List downloadable resources for a dataset, with an optional format filter.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| layer | string | ✅ | Layer id from `search_map_layers` |
+| search_field | string | ✅ | Attribute name |
+| search_text | string | ✅ | Value to search for |
+| contains | boolean | ❌ | Substring match (default true). `false` matches the whole value |
+| include_historical | boolean | ❌ | Keep historical versions (default false) |
+| limit | number | ❌ | Maximum features (default 10, max 25) |
 | station | string | ✅ | Station code such as BER |
 | start_date | string | ✅ | First day `YYYY-MM-DD` |
 | end_date | string | ✅ | Last day `YYYY-MM-DD` |

@@ -1905,6 +1905,107 @@
           }
         }
       }
+    },
+    {
+      "name": "search_map_layers",
+      "description": "Search or list layers in the geo.admin ech MapServer catalogue (all federal geospatial layers). Returns layer ids that identify_map_layer and find_map_features accept. Without a query, returns the first page of layers alphabetically.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Words matched against the layer id, name, owner, and abstract (e.g. 'municipality', 'gemeinde', 'avalanche')."
+          },
+          "owner": {
+            "type": "string",
+            "description": "Optional data-owner filter (e.g. swisstopo, BAFU, BFS)."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum layers to return (default 15, max 40)."
+          }
+        }
+      }
+    },
+    {
+      "name": "identify_map_layer",
+      "description": "Identify geo.admin features at a WGS84 point on one ech MapServer layer. Use search_map_layers to find the layer id. Historical time-series layers keep only the current feature unless include_historical is true.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "layer",
+          "lat",
+          "lng"
+        ],
+        "properties": {
+          "layer": {
+            "type": "string",
+            "description": "Layer id (e.g. ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill)."
+          },
+          "lat": {
+            "type": "number",
+            "description": "Latitude in WGS84."
+          },
+          "lng": {
+            "type": "number",
+            "description": "Longitude in WGS84."
+          },
+          "tolerance": {
+            "type": "number",
+            "description": "Search tolerance in pixels (default 5, max 50). Use a higher value for lines and points."
+          },
+          "lang": {
+            "type": "string",
+            "description": "Label language: en (default), de, fr, it, or rm."
+          },
+          "include_historical": {
+            "type": "boolean",
+            "description": "Keep historical versions when a layer has an is_current_jahr attribute (default false)."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum features (default 10, max 25)."
+          }
+        }
+      }
+    },
+    {
+      "name": "find_map_features",
+      "description": "Find geo.admin features on one ech MapServer layer by an attribute value. Identify a point first if you need the attribute names. Example: layer ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill, search_field gemname, search_text Bern.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "layer",
+          "search_field",
+          "search_text"
+        ],
+        "properties": {
+          "layer": {
+            "type": "string",
+            "description": "Layer id from search_map_layers."
+          },
+          "search_field": {
+            "type": "string",
+            "description": "Attribute name to search (e.g. gemname, name, label)."
+          },
+          "search_text": {
+            "type": "string",
+            "description": "Value to search for."
+          },
+          "contains": {
+            "type": "boolean",
+            "description": "When true (default), match values that contain the text. When false, match the whole value."
+          },
+          "include_historical": {
+            "type": "boolean",
+            "description": "Keep historical versions when a layer has an is_current_jahr attribute (default false)."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum features (default 10, max 25)."
+          }
+        }
+      }
     }
   ]
 }
