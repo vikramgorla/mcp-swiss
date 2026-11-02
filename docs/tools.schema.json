@@ -1742,6 +1742,70 @@
           }
         }
       }
+    },
+    {
+      "name": "search_opendata",
+      "description": "Search the Swiss open data catalogue (opendata.swiss) for datasets. Returns titles, publishers, and dataset ids. Optional organization slug narrows results to one publisher (e.g. bundesamt-fur-statistik-bfs). Source: opendata.swiss CKAN API.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Full-text search (e.g. 'weather', 'population', 'öV Fahrplan')."
+          },
+          "organization": {
+            "type": "string",
+            "description": "Optional publisher slug (e.g. bundesamt-fur-statistik-bfs, bundesamt-fuer-meteorologie-und-klimatologie-meteoschweiz)."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum datasets to return (default 10, max 20)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_opendata_dataset",
+      "description": "Get metadata for one opendata.swiss dataset by its catalogue name or UUID. Includes the publisher, description, keywords, and a short resource summary. Use list_opendata_resources for the full download list.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "dataset_id"
+        ],
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "description": "Dataset name or id (e.g. weather-station-klosters)."
+          }
+        }
+      }
+    },
+    {
+      "name": "list_opendata_resources",
+      "description": "List downloadable resources (files and services) for an opendata.swiss dataset. Optional format filter such as CSV, JSON, or WMS.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "dataset_id"
+        ],
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "description": "Dataset name or id from search_opendata."
+          },
+          "format": {
+            "type": "string",
+            "description": "Optional format filter (e.g. CSV, JSON, XML, WMS, ZIP)."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum resources to return (default 20, max 50)."
+          }
+        }
+      }
     }
   ]
 }

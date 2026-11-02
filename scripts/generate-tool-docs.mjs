@@ -34,6 +34,7 @@ const modules = [
   ["snow", "snowTools"],
   ["pollen", "pollenTools"],
   ["gwr", "gwrTools"],
+  ["opendata", "opendataTools"],
 ];
 
 const tools = [];

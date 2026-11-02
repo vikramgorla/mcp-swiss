@@ -27,7 +27,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**82 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**85 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -54,6 +54,7 @@
 ❄️ Snow         — SLF snow depth, stations, and measurements
 🌿 Pollen       — MeteoSwiss pollen concentrations at the published stations
 🏠 Buildings    — Federal register of buildings and dwellings (GWR)
+📂 Catalogue    — opendata.swiss dataset search, metadata, and downloads
 ```
 
 ---
@@ -300,11 +301,11 @@ A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to star
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 23 modules (82 tools). The full `tools/list` schema is about 6,800 tokens, down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
+By default, mcp-swiss loads all 24 modules (85 tools). The full `tools/list` schema is about 7,200 tokens (28,854 characters), down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
 
 ### Discovery mode
 
-Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 6,800):
+Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 7,200):
 
 ```json
 {
@@ -346,11 +347,11 @@ Search, then execute. The server lists three meta-tools instead of every schema 
 | Preset | Modules | Tools | Token Savings |
 |--------|---------|-------|---------------|
 | `commuter` | transport, weather, holidays | 14 | 83% |
-| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow, pollen | 22 | 73% |
-| `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 67% |
-| `citizen` | parliament, voting, holidays, news | 17 | 79% |
+| `outdoor` | weather, avalanche, hiking, earthquakes, dams, snow, pollen | 22 | 74% |
+| `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 68% |
+| `citizen` | parliament, voting, holidays, news | 17 | 80% |
 | `minimal` | transport | 5 | 94% |
-| `full` | all 23 modules (default) | 82 | — |
+| `full` | all 24 modules (default) | 85 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -384,7 +385,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 82 tools across 23 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 85 tools across 24 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -583,6 +584,14 @@ Once connected, try asking your AI:
 | `get_pollen_daily` | Daily pollen averages over a configurable range |
 | `list_pollen_stations` | Published MeteoSwiss pollen stations (the list is no longer a frozen 16) |
 
+### 📂 Open Data Catalogue (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `search_opendata` | Search the opendata.swiss catalogue (CKAN) by keyword, optionally limited to one publisher |
+| `get_opendata_dataset` | Metadata for one dataset: publisher, description, keywords, and a short resource summary |
+| `list_opendata_resources` | Download links and services for a dataset, with an optional format filter |
+
 ---
 
 ## Data Sources
@@ -613,6 +622,7 @@ All official Swiss open data — no API keys required:
 | [arclink.ethz.ch](http://arclink.ethz.ch) | Swiss Seismological Service earthquakes (SED/ETH) | [SED](http://www.seismo.ethz.ch) |
 | [measurement-api.slf.ch](https://measurement-api.slf.ch/public/api) | SLF snow depth + measurements (IMIS + study plots, CC BY 4.0) | [SLF](https://www.slf.ch) |
 | [data.geo.admin.ch](https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/) | MeteoSwiss pollen concentrations (16 automatic stations, CC BY) | [MeteoSwiss](https://www.meteoswiss.admin.ch) |
+| [ckan.opendata.swiss](https://ckan.opendata.swiss/api/3/action/) | National open data catalogue (datasets and resources) | [opendata.swiss](https://opendata.swiss) |
 
 ---
 
