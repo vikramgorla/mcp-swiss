@@ -2,32 +2,37 @@
   "tools": [
     {
       "name": "search_stations",
-      "description": "Search for Swiss public transport stations/stops by name or coordinates",
+      "description": "Search public transport stations/stops by name or coordinates",
       "inputSchema": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
-            "description": "Station name to search for"
+            "description": "Station name"
           },
           "x": {
             "type": "number",
-            "description": "Longitude (WGS84)"
+            "description": "Latitude (WGS84)"
           },
           "y": {
             "type": "number",
-            "description": "Latitude (WGS84)"
+            "description": "Longitude (WGS84)"
           },
           "type": {
             "type": "string",
-            "description": "Filter: all, station, poi, address"
+            "enum": [
+              "all",
+              "station",
+              "poi",
+              "address"
+            ]
           }
         }
       }
     },
     {
       "name": "get_connections",
-      "description": "Get train/bus connections between two Swiss locations",
+      "description": "Train/bus connections between two locations",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -37,34 +42,34 @@
         "properties": {
           "from": {
             "type": "string",
-            "description": "Departure station/address"
+            "description": "Station or address"
           },
           "to": {
             "type": "string",
-            "description": "Arrival station/address"
+            "description": "Station or address"
           },
           "date": {
             "type": "string",
-            "description": "Date YYYY-MM-DD (default: today)"
+            "description": "YYYY-MM-DD, default: today"
           },
           "time": {
             "type": "string",
-            "description": "Time HH:MM (default: now)"
+            "description": "HH:MM, default: now"
           },
           "limit": {
             "type": "number",
-            "description": "Number of connections (1-16, default: 4)"
+            "description": "1-16, default: 4"
           },
           "isArrivalTime": {
             "type": "boolean",
-            "description": "True if time is arrival time"
+            "description": "Treat time as arrival time"
           }
         }
       }
     },
     {
       "name": "get_departures",
-      "description": "Get live departures from a Swiss transport station",
+      "description": "Live departures from a station",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -77,18 +82,18 @@
           },
           "limit": {
             "type": "number",
-            "description": "Number of departures (default: 10)"
+            "description": "default: 10"
           },
           "datetime": {
             "type": "string",
-            "description": "DateTime YYYY-MM-DDTHH:MM (default: now)"
+            "description": "YYYY-MM-DDTHH:MM, default: now"
           }
         }
       }
     },
     {
       "name": "get_arrivals",
-      "description": "Get live arrivals at a Swiss transport station",
+      "description": "Live arrivals at a station",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -101,18 +106,18 @@
           },
           "limit": {
             "type": "number",
-            "description": "Number of arrivals (default: 10)"
+            "description": "default: 10"
           },
           "datetime": {
             "type": "string",
-            "description": "DateTime YYYY-MM-DDTHH:MM (default: now)"
+            "description": "YYYY-MM-DDTHH:MM, default: now"
           }
         }
       }
     },
     {
       "name": "get_nearby_stations",
-      "description": "Find Swiss public transport stations near given coordinates",
+      "description": "Stations near coordinates",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -122,26 +127,26 @@
         "properties": {
           "x": {
             "type": "number",
-            "description": "Longitude (WGS84)"
+            "description": "Latitude (WGS84)"
           },
           "y": {
             "type": "number",
-            "description": "Latitude (WGS84)"
+            "description": "Longitude (WGS84)"
           },
           "limit": {
             "type": "number",
-            "description": "Number of results (default: 10)"
+            "description": "Max results"
           },
           "distance": {
             "type": "number",
-            "description": "Max distance in meters"
+            "description": "Max distance (m)"
           }
         }
       }
     },
     {
       "name": "get_weather",
-      "description": "Get current weather conditions at a Swiss MeteoSwiss station (e.g. BER=Bern, ZUE=Zürich, LUG=Lugano)",
+      "description": "Current weather at a MeteoSwiss station. For past dates use get_weather_history",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -150,14 +155,14 @@
         "properties": {
           "station": {
             "type": "string",
-            "description": "Station code (e.g. BER, ZUE, LUG, GVE, SMA)"
+            "description": "Station code, e.g. BER, ZUE, LUG, GVE, SMA"
           }
         }
       }
     },
     {
       "name": "list_weather_stations",
-      "description": "List all available MeteoSwiss weather stations in Switzerland",
+      "description": "List MeteoSwiss weather station codes",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -165,7 +170,7 @@
     },
     {
       "name": "get_weather_history",
-      "description": "Get historical weather data for a Swiss station",
+      "description": "Historical weather readings for a MeteoSwiss station. Only the last 32 days are available",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -176,22 +181,33 @@
         "properties": {
           "station": {
             "type": "string",
-            "description": "Station code (e.g. BER)"
+            "description": "Station code, e.g. BER"
           },
           "start_date": {
             "type": "string",
-            "description": "Start date YYYY-MM-DD"
+            "description": "YYYY-MM-DD, within the last 32 days"
           },
           "end_date": {
             "type": "string",
-            "description": "End date YYYY-MM-DD"
+            "description": "YYYY-MM-DD"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "raw",
+              "hourly",
+              "daily"
+            ],
+            "description": "auto summarises long ranges to min/max/mean per period",
+            "default": "auto"
           }
         }
       }
     },
     {
       "name": "get_water_level",
-      "description": "Get current river or lake water level and temperature at a Swiss hydrological station",
+      "description": "Current river/lake level and temperature at a BAFU hydro station",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -200,14 +216,14 @@
         "properties": {
           "station": {
             "type": "string",
-            "description": "Hydro station ID (e.g. 2135 for Aare/Bern, 2243 for Rhine/Basel)"
+            "description": "Hydro station ID, e.g. 2135 (Aare/Bern), 2243 (Rhine/Basel)"
           }
         }
       }
     },
     {
       "name": "list_hydro_stations",
-      "description": "List all available BAFU hydrological monitoring stations (rivers and lakes) in Switzerland",
+      "description": "List BAFU hydro station IDs (rivers, lakes)",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -215,7 +231,7 @@
     },
     {
       "name": "get_water_history",
-      "description": "Get historical river/lake water level data for a Swiss hydrological station",
+      "description": "Historical river/lake levels for a BAFU hydro station. Only the last 32 days are available",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -230,18 +246,29 @@
           },
           "start_date": {
             "type": "string",
-            "description": "Start date YYYY-MM-DD"
+            "description": "YYYY-MM-DD, within the last 32 days"
           },
           "end_date": {
             "type": "string",
-            "description": "End date YYYY-MM-DD"
+            "description": "YYYY-MM-DD"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "raw",
+              "hourly",
+              "daily"
+            ],
+            "description": "auto summarises long ranges to min/max/mean per period",
+            "default": "auto"
           }
         }
       }
     },
     {
       "name": "geocode",
-      "description": "Convert a Swiss address or place name to coordinates (swisstopo)",
+      "description": "Address or place name to WGS84 coordinates (swisstopo)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -249,15 +276,14 @@
         ],
         "properties": {
           "address": {
-            "type": "string",
-            "description": "Swiss address or place name"
+            "type": "string"
           }
         }
       }
     },
     {
       "name": "reverse_geocode",
-      "description": "Convert coordinates to a Swiss address (swisstopo)",
+      "description": "WGS84 coordinates to address (swisstopo)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -278,7 +304,7 @@
     },
     {
       "name": "search_places",
-      "description": "Search Swiss place names, localities, mountains, and geographic features",
+      "description": "Search place names, localities, mountains, geographic features",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -286,19 +312,14 @@
         ],
         "properties": {
           "query": {
-            "type": "string",
-            "description": "Place name to search"
-          },
-          "type": {
-            "type": "string",
-            "description": "Type filter: locations, featuresearch"
+            "type": "string"
           }
         }
       }
     },
     {
       "name": "get_solar_potential",
-      "description": "Get rooftop solar energy potential for a location in Switzerland",
+      "description": "Rooftop solar potential at a location",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -319,7 +340,7 @@
     },
     {
       "name": "identify_location",
-      "description": "Identify geographic features and data layers at a specific Swiss location",
+      "description": "Geographic features and swisstopo data layers at a location",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -337,14 +358,14 @@
           },
           "layers": {
             "type": "string",
-            "description": "Comma-separated layer ids (default: all visible)"
+            "description": "Comma-separated layer IDs (default: all)"
           }
         }
       }
     },
     {
       "name": "get_municipality",
-      "description": "Get information about a Swiss municipality by name",
+      "description": "Municipality info by name",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -352,15 +373,14 @@
         ],
         "properties": {
           "name": {
-            "type": "string",
-            "description": "Municipality name"
+            "type": "string"
           }
         }
       }
     },
     {
       "name": "search_companies",
-      "description": "Search Swiss company registry (ZEFIX) by name, canton, or legal form",
+      "description": "Search the ZEFIX commercial register by company name, optionally filtered by canton/legal form",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -369,26 +389,55 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "Company name or partial name to search"
+            "description": "Full or partial name, min 3 chars; * is a wildcard"
           },
           "canton": {
             "type": "string",
-            "description": "Canton abbreviation (e.g. ZH, BE, GE, ZG)"
+            "enum": [
+              "AG",
+              "AI",
+              "AR",
+              "BE",
+              "BL",
+              "BS",
+              "FR",
+              "GE",
+              "GL",
+              "GR",
+              "JU",
+              "LU",
+              "NE",
+              "NW",
+              "OW",
+              "SG",
+              "SH",
+              "SO",
+              "SZ",
+              "TG",
+              "TI",
+              "UR",
+              "VD",
+              "VS",
+              "ZG",
+              "ZH"
+            ],
+            "description": "Canton of the registered seat"
           },
           "legal_form": {
-            "type": "string",
-            "description": "Legal form code (e.g. 0106=GmbH, 0101=AG)"
+            "type": "number",
+            "description": "Legal form id, e.g. 3=AG, 4=GmbH (see list_legal_forms)"
           },
           "limit": {
             "type": "number",
-            "description": "Max results (default: 20)"
+            "default": 20,
+            "maximum": 100
           }
         }
       }
     },
     {
       "name": "get_company",
-      "description": "Get full details of a Swiss company by its ZEFIX internal ID (ehraid). Use search_companies first to find the ehraid — it is returned in company search results.",
+      "description": "Full company details by ZEFIX ehraid (from search_companies)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -397,34 +446,39 @@
         "properties": {
           "ehraid": {
             "type": "number",
-            "description": "Company internal ZEFIX ID (ehraid integer, e.g. 119283). Returned by search_companies."
+            "description": "e.g. 119283"
           }
         }
       }
     },
     {
-      "name": "search_companies_by_address",
-      "description": "Search Swiss companies registered at a specific address or locality",
+      "name": "search_companies_by_locality",
+      "description": "Companies whose registered seat is in a commune/town. ZEFIX has no street-address search",
       "inputSchema": {
         "type": "object",
         "required": [
-          "address"
+          "locality"
         ],
         "properties": {
-          "address": {
+          "locality": {
             "type": "string",
-            "description": "Address or locality name"
+            "description": "Commune or town, e.g. Zug, Lausanne"
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional name filter, min 3 chars"
           },
           "limit": {
             "type": "number",
-            "description": "Max results (default: 20)"
+            "default": 20,
+            "maximum": 100
           }
         }
       }
     },
     {
       "name": "list_cantons",
-      "description": "List all Swiss cantons with their codes",
+      "description": "List cantons with codes",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -432,7 +486,7 @@
     },
     {
       "name": "list_legal_forms",
-      "description": "List all Swiss company legal forms (AG, GmbH, etc.)",
+      "description": "List company legal forms (AG, GmbH, ...) with the ids used by search_companies",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -440,7 +494,7 @@
     },
     {
       "name": "get_public_holidays",
-      "description": "Get Swiss public holidays for a given year, optionally filtered by canton (e.g. ZH, BE, GE). Returns national and canton-specific holidays.",
+      "description": "Public holidays for a year, national and cantonal",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -449,18 +503,18 @@
         "properties": {
           "year": {
             "type": "number",
-            "description": "Year (e.g. 2026)"
+            "description": "e.g. 2026"
           },
           "canton": {
             "type": "string",
-            "description": "Two-letter canton code (e.g. ZH, BE, GE, BS, TI). If omitted, returns all Swiss holidays."
+            "description": "Canton code, e.g. ZH (omit for all)"
           }
         }
       }
     },
     {
       "name": "get_school_holidays",
-      "description": "Get Swiss school holidays for a given year, optionally filtered by canton. Returns holiday periods (start/end dates) by canton.",
+      "description": "School holiday periods for a year, by canton",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -469,31 +523,31 @@
         "properties": {
           "year": {
             "type": "number",
-            "description": "Year (e.g. 2026)"
+            "description": "e.g. 2026"
           },
           "canton": {
             "type": "string",
-            "description": "Two-letter canton code (e.g. ZH, BE, GE, BS, TI). If omitted, returns school holidays for all cantons."
+            "description": "Canton code, e.g. ZH (omit for all)"
           }
         }
       }
     },
     {
       "name": "is_holiday_today",
-      "description": "Check whether today is a Swiss public holiday, optionally for a specific canton. Returns the holiday name if it is one.",
+      "description": "Whether today is a public holiday",
       "inputSchema": {
         "type": "object",
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Two-letter canton code (e.g. ZH, BE, GE). If omitted, checks nationwide holidays only."
+            "description": "Canton code, e.g. ZH (omit for nationwide only)"
           }
         }
       }
     },
     {
       "name": "search_parliament_business",
-      "description": "Search Swiss Parliament political affairs — bills, motions, interpellations, postulates, questions, and initiatives. Uses OpenParlData.ch full-text search across the Federal Assembly (Bundesversammlung).",
+      "description": "Full-text search of federal parliament affairs (bills, motions, interpellations, postulates, questions, initiatives). For cantonal parliaments use search_cantonal_affairs",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -502,43 +556,46 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search term (e.g. 'Klimaschutz', 'AHV', 'Neutralität')"
+            "description": "German term, e.g. Klimaschutz, AHV"
           },
           "limit": {
             "type": "number",
-            "description": "Max results (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_parliament_members",
-      "description": "List current or past Swiss Parliament members (National Council and Council of States). Filter by canton or party.",
+      "description": "Federal parliament members (National Council, Council of States), filterable by canton/party",
       "inputSchema": {
         "type": "object",
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Canton name in German to filter by (e.g. 'Zürich', 'Bern', 'Genf', 'Waadt')"
+            "description": "Canton name in German, e.g. Zürich, Genf, Waadt"
           },
           "party": {
             "type": "string",
-            "description": "Party name or abbreviation to search (e.g. 'SVP', 'SP', 'FDP', 'Grüne', 'Mitte')"
+            "description": "Party name/abbreviation, e.g. SVP, SP, FDP, Grüne, Mitte"
           },
           "active": {
             "type": "boolean",
-            "description": "Only active (currently seated) members (default: true)"
+            "description": "Only currently seated members",
+            "default": true
           },
           "limit": {
             "type": "number",
-            "description": "Max results (default: 10, max: 50)"
+            "description": "max 50",
+            "default": 10
           }
         }
       }
     },
     {
       "name": "get_parliament_votes",
-      "description": "Get voting results for a specific parliamentary affair (Geschäft). Returns all recorded votes for the given affair ID from OpenParlData.",
+      "description": "Recorded votes on a parliamentary affair (Geschäft)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -547,27 +604,28 @@
         "properties": {
           "affair_id": {
             "type": "number",
-            "description": "OpenParlData affair ID (get from search_parliament_business results)"
+            "description": "OpenParlData affair ID (from search_parliament_business)"
           }
         }
       }
     },
     {
       "name": "get_session_schedule",
-      "description": "Get upcoming and recent Swiss parliament sessions (Sessionen). Shows session names, dates and types.",
+      "description": "Upcoming and recent federal parliament sessions",
       "inputSchema": {
         "type": "object",
         "properties": {
           "limit": {
             "type": "number",
-            "description": "Number of sessions to return (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "search_parliament_speeches",
-      "description": "Get debate speeches and contributions for a specific parliamentary affair. Returns speaker info and speech details.",
+      "description": "Debate speeches on a parliamentary affair",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -576,18 +634,19 @@
         "properties": {
           "affair_id": {
             "type": "number",
-            "description": "OpenParlData affair ID (get from search_parliament_business results)"
+            "description": "OpenParlData affair ID (from search_parliament_business)"
           },
           "limit": {
             "type": "number",
-            "description": "Max speeches to return (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_politician_interests",
-      "description": "Get declared interests and mandates of a Swiss parliament member — board memberships, consulting roles, organizations.",
+      "description": "Declared interests and mandates (boards, consulting roles) of a federal parliament member",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -596,14 +655,14 @@
         "properties": {
           "person_id": {
             "type": "number",
-            "description": "OpenParlData person ID (get from get_parliament_members results)"
+            "description": "OpenParlData person ID (from get_parliament_members)"
           }
         }
       }
     },
     {
       "name": "search_cantonal_affairs",
-      "description": "Search political affairs across Swiss cantonal parliaments (Kantonsräte). Covers all 26 cantons via OpenParlData.",
+      "description": "Search affairs in a cantonal parliament (Kantonsrat), all 26 cantons",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -612,22 +671,23 @@
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Canton abbreviation: ZH, BE, LU, UR, SZ, OW, NW, GL, ZG, FR, SO, BS, BL, SH, AR, AI, SG, GR, AG, TG, TI, VD, VS, NE, GE, JU"
+            "description": "Canton code, e.g. ZH"
           },
           "query": {
             "type": "string",
-            "description": "Search term (optional, e.g. 'Bildung', 'Verkehr')"
+            "description": "German term, e.g. Bildung"
           },
           "limit": {
             "type": "number",
-            "description": "Max results (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_parliamentary_documents",
-      "description": "Get official documents for a parliamentary affair — reports, committee opinions, federal council statements.",
+      "description": "Official documents (reports, committee opinions, Federal Council statements) for a parliamentary affair",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -636,41 +696,51 @@
         "properties": {
           "affair_id": {
             "type": "number",
-            "description": "OpenParlData affair ID (get from search_parliament_business results)"
+            "description": "OpenParlData affair ID (from search_parliament_business)"
           },
           "limit": {
             "type": "number",
-            "description": "Max documents to return (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_committee_meetings",
-      "description": "Get Swiss parliament committee/commission meeting schedule. Optionally filter by committee group ID.",
+      "description": "Federal parliament committee meeting schedule",
       "inputSchema": {
         "type": "object",
         "properties": {
           "group_id": {
             "type": "number",
-            "description": "Committee group ID to filter (optional — omit for all committees)"
+            "description": "Committee group ID (omit for all)"
           },
           "limit": {
             "type": "number",
-            "description": "Max meetings to return (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_avalanche_bulletin",
-      "description": "Get the current Swiss avalanche danger bulletin from SLF (WSL Institute for Snow and Avalanche Research). Returns current bulletin URLs, danger level descriptions, and links to the interactive map. The bulletin is published daily at ~08:00 and updated at ~17:00 Swiss time (October–May).",
+      "description": "Live SLF avalanche bulletin: danger level (1-5), avalanche problems with aspect and elevation, validity and advice text, for one warning region, a coordinate, or all of Switzerland. Outside the winter season it reports that no bulletin is in force",
       "inputSchema": {
         "type": "object",
         "properties": {
           "region": {
             "type": "string",
-            "description": "Optional region ID (e.g. CH-9 for Central Graubünden) or region name. Use list_avalanche_regions to see all options. If omitted, returns national overview."
+            "description": "EAWS region id (e.g. CH-7114) or name, see list_avalanche_regions"
+          },
+          "lat": {
+            "type": "number",
+            "description": "WGS84 latitude, with lon; alternative to region"
+          },
+          "lon": {
+            "type": "number",
+            "description": "WGS84 longitude, with lat"
           },
           "language": {
             "type": "string",
@@ -680,27 +750,35 @@
               "fr",
               "it"
             ],
-            "description": "Language for bulletin links: de (German), en (English), fr (French), it (Italian). Default: en"
+            "default": "en"
+          },
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD or ISO timestamp for an archived bulletin; omit for the current one"
           }
         }
       }
     },
     {
       "name": "list_avalanche_regions",
-      "description": "List all Swiss avalanche warning regions as defined by SLF/EAWS. Returns region IDs, names, cantons, and typical elevations. Use region IDs with get_avalanche_bulletin.",
+      "description": "The 135 SLF/EAWS avalanche warning regions (id, name, canton) for get_avalanche_bulletin",
       "inputSchema": {
         "type": "object",
         "properties": {
+          "search": {
+            "type": "string",
+            "description": "Match on region id or name"
+          },
           "canton": {
             "type": "string",
-            "description": "Filter regions by canton abbreviation (e.g. GR, VS, BE). Optional."
+            "description": "Canton code, e.g. GR"
           }
         }
       }
     },
     {
       "name": "list_air_quality_stations",
-      "description": "List all official Swiss NABEL (Nationales Beobachtungsnetz für Luftfremdstoffe) air quality monitoring stations operated by BAFU/EMPA. Returns station codes, names, cantons, coordinates, and environment types.",
+      "description": "List NABEL air-quality monitoring stations (BAFU/Empa)",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -708,7 +786,7 @@
     },
     {
       "name": "get_air_quality",
-      "description": "Get information about a Swiss NABEL air quality monitoring station, including location, environment type, Swiss legal limits (LRV), and a direct link to the BAFU live data portal. Use station codes from list_air_quality_stations (e.g. BER=Bern, ZUE=Zürich, LUG=Lugano).",
+      "description": "NABEL station info: location, environment type, legal limits (LRV) and a link to BAFU live data (no measurements returned)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -717,14 +795,14 @@
         "properties": {
           "station": {
             "type": "string",
-            "description": "NABEL station code (e.g. BER, ZUE, LUG, BAS, DAV). Use list_air_quality_stations for all codes."
+            "description": "Station code, e.g. BER, ZUE, LUG, BAS, DAV"
           }
         }
       }
     },
     {
       "name": "lookup_postcode",
-      "description": "Look up a Swiss postcode (PLZ) to get locality name, canton, and coordinates. Source: Swiss federal geodata (swisstopo).",
+      "description": "Locality, canton and coordinates for a postcode (PLZ)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -733,14 +811,14 @@
         "properties": {
           "postcode": {
             "type": "string",
-            "description": "Swiss postal code (PLZ), e.g. \"8001\" or \"3000\""
+            "description": "4 digits, e.g. 8001"
           }
         }
       }
     },
     {
       "name": "search_postcode",
-      "description": "Search Swiss postcodes by city or locality name. Returns all PLZ entries matching the name. Source: Swiss federal geodata (swisstopo).",
+      "description": "Postcodes (PLZ) for a city/locality name",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -749,14 +827,14 @@
         "properties": {
           "city_name": {
             "type": "string",
-            "description": "City or locality name, e.g. \"Zürich\", \"Bern\", \"Locarno\""
+            "description": "e.g. Zürich"
           }
         }
       }
     },
     {
       "name": "list_postcodes_in_canton",
-      "description": "List all Swiss postcodes (PLZ) in a given canton. Accepts 2-letter canton codes (ZH, BE, GR…) or full names. Source: Swiss federal geodata (swisstopo).",
+      "description": "List postcodes (PLZ) in a canton",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -765,14 +843,14 @@
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Canton code (e.g. \"ZH\", \"BE\", \"GR\") or full name (e.g. \"Zürich\", \"Bern\", \"Graubünden\")"
+            "description": "Canton code (e.g. ZH) or name"
           }
         }
       }
     },
     {
       "name": "track_parcel",
-      "description": "Generate a Swiss Post parcel tracking URL for a given tracking number. Swiss Post does not provide a public tracking API, so this returns the official tracking page URL to open in a browser.",
+      "description": "Swiss Post tracking page URL for a tracking number (no live status: there is no public tracking API)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -781,14 +859,14 @@
         "properties": {
           "tracking_number": {
             "type": "string",
-            "description": "Swiss Post tracking number, e.g. \"99.00.123456.12345678\" for parcels or \"RI 123456789 CH\" for registered mail"
+            "description": "e.g. 99.00.123456.12345678 (parcel), RI 123456789 CH (registered)"
           }
         }
       }
     },
     {
       "name": "get_electricity_tariff",
-      "description": "Get Swiss electricity tariff (price in Rappen/kWh) for a municipality from ElCom (Swiss Federal Electricity Commission). Returns total price and price breakdown by component (energy, grid, taxes). Valid years: 2011–2026.",
+      "description": "ElCom electricity tariff (Rp./kWh) for a municipality, with component breakdown",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -797,11 +875,12 @@
         "properties": {
           "municipality": {
             "type": "string",
-            "description": "Municipality BFS number (e.g. '261' for Zürich, '351' for Bern, '6621' for Genève). Use search_municipality_energy to find the ID."
+            "description": "BFS number, e.g. 261 (Zürich), 351 (Bern); see search_municipality_energy"
           },
           "category": {
             "type": "string",
-            "description": "Electricity category. Household: H1–H8 (H4 is default, ~4500 kWh/year). Commercial: C1–C7. Default: H4.",
+            "description": "H1–H8 household (H4 ≈ 4500 kWh/yr), C1–C7 commercial",
+            "default": "H4",
             "enum": [
               "H1",
               "H2",
@@ -822,14 +901,14 @@
           },
           "year": {
             "type": "string",
-            "description": "Tariff year (2011–2026). Default: current year (2026)."
+            "description": "2011 onward, default: current year"
           }
         }
       }
     },
     {
       "name": "compare_electricity_tariffs",
-      "description": "Compare Swiss electricity tariffs across multiple municipalities side-by-side. Returns prices sorted from cheapest to most expensive. Useful for relocation decisions or cost analysis.",
+      "description": "Compare electricity tariffs across 2–20 municipalities",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -841,13 +920,13 @@
             "items": {
               "type": "string"
             },
-            "description": "Array of municipality BFS numbers to compare (e.g. ['261', '351', '6621']). Max 20. Use search_municipality_energy to find IDs.",
+            "description": "BFS numbers, e.g. [\"261\", \"351\"]",
             "minItems": 2,
             "maxItems": 20
           },
           "category": {
             "type": "string",
-            "description": "Electricity category (H1–H8, C1–C7). Default: H4.",
+            "default": "H4",
             "enum": [
               "H1",
               "H2",
@@ -868,14 +947,14 @@
           },
           "year": {
             "type": "string",
-            "description": "Tariff year (2011–2026). Default: 2026."
+            "description": "2011 onward, default: current year"
           }
         }
       }
     },
     {
       "name": "search_municipality_energy",
-      "description": "Search for Swiss municipality IDs needed for electricity tariff lookup. Returns BFS municipality numbers for use with get_electricity_tariff and compare_electricity_tariffs.",
+      "description": "Find municipality BFS numbers for the electricity tariff tools",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -884,31 +963,31 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "Municipality name to search (e.g. 'Zürich', 'Bern', 'Basel', 'Lausanne', 'Luzern')."
+            "description": "e.g. Lausanne"
           }
         }
       }
     },
     {
       "name": "get_population",
-      "description": "Get Swiss population data from the Federal Statistical Office (FSO/BFS). Returns population figures for Switzerland, a canton, or all cantons. Data source: BFS STATPOP (permanent resident population).",
+      "description": "Permanent resident population (BFS STATPOP) for Switzerland, a canton or all cantons",
       "inputSchema": {
         "type": "object",
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Canton name or 2-letter code (e.g. 'ZH', 'Zürich', 'Geneva', 'BE'). Omit to get Switzerland total. Use 'all' to list all cantons."
+            "description": "Canton code or name (e.g. ZH, Geneva); 'all' for every canton; omit for national total"
           },
           "year": {
             "type": "number",
-            "description": "Year of data (2010–2024). Defaults to latest (2024)."
+            "description": "STATPOP year, from 2010; default is the latest published"
           }
         }
       }
     },
     {
       "name": "search_statistics",
-      "description": "Search Swiss Federal Statistical Office (BFS/OFS/UST) datasets on opendata.swiss. Returns matching dataset titles, IDs, and descriptions.",
+      "description": "Search BFS datasets on opendata.swiss",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -917,18 +996,19 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search query (e.g. 'unemployment', 'GDP', 'housing prices', 'birth rate')"
+            "description": "e.g. unemployment, GDP"
           },
           "limit": {
             "type": "number",
-            "description": "Max results to return (1–20, default 10)"
+            "description": "1–20",
+            "default": 10
           }
         }
       }
     },
     {
       "name": "get_statistic",
-      "description": "Fetch details and resource links for a specific BFS/OFS dataset by its opendata.swiss identifier. Use search_statistics first to find dataset IDs.",
+      "description": "Details and resource links for a BFS dataset by opendata.swiss ID (from search_statistics)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -937,14 +1017,14 @@
         "properties": {
           "dataset_id": {
             "type": "string",
-            "description": "Dataset identifier from opendata.swiss (e.g. 'bevolkerungsstatistik-einwohner')"
+            "description": "e.g. bevolkerungsstatistik-einwohner"
           }
         }
       }
     },
     {
       "name": "list_currencies",
-      "description": "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data. Returns currency codes, names, and regions.",
+      "description": "List currencies with SNB CHF exchange rates",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -952,7 +1032,7 @@
     },
     {
       "name": "get_exchange_rate",
-      "description": "Get the current CHF exchange rate for a currency from the Swiss National Bank (SNB). Returns the latest monthly average rate and currency details.",
+      "description": "Latest SNB monthly-average CHF exchange rate for a currency",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -961,14 +1041,14 @@
         "properties": {
           "currency": {
             "type": "string",
-            "description": "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP', 'JPY'). Use list_currencies to see all available codes."
+            "description": "ISO 4217 code, e.g. EUR"
           }
         }
       }
     },
     {
       "name": "get_exchange_rate_history",
-      "description": "Get historical CHF exchange rates for a currency from the Swiss National Bank (SNB). Returns monthly average rates with optional date filtering. Without date range, returns the most recent 90 months.",
+      "description": "Historical SNB monthly-average CHF exchange rates (default: last 90 months)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -977,22 +1057,22 @@
         "properties": {
           "currency": {
             "type": "string",
-            "description": "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP'). Use list_currencies to see all available codes."
+            "description": "ISO 4217 code, e.g. EUR"
           },
           "from": {
             "type": "string",
-            "description": "Start date in YYYY-MM format (e.g. '2020-01'). Optional."
+            "description": "YYYY-MM"
           },
           "to": {
             "type": "string",
-            "description": "End date in YYYY-MM format (e.g. '2026-02'). Optional."
+            "description": "YYYY-MM"
           }
         }
       }
     },
     {
       "name": "get_waste_collection",
-      "description": "Get upcoming waste collection dates for a Zurich city ZIP code. Returns the next scheduled pickups sorted by date. Currently covers Zurich city only (ZIP codes 8001–8099). Powered by OpenERZ (openerz.metaodi.ch).",
+      "description": "Upcoming waste collection dates for a ZIP code. Zurich city only (8001–8099, OpenERZ)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1001,11 +1081,11 @@
         "properties": {
           "zip": {
             "type": "string",
-            "description": "Zurich city ZIP code (e.g. '8001', '8004', '8032'). Covers 8001–8099."
+            "description": "e.g. 8004"
           },
           "type": {
             "type": "string",
-            "description": "Waste type to filter by (e.g. 'cardboard', 'waste', 'paper', 'organic', 'textile', 'special', 'mobile'). If omitted, returns all types.",
+            "description": "Omit for all",
             "enum": [
               "waste",
               "cardboard",
@@ -1018,14 +1098,15 @@
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of upcoming collection dates to return. Default: 5."
+            "description": "max 100",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "list_waste_types",
-      "description": "List all supported waste collection types for Zurich city. Returns each type with its description and local name. Currently covers Zurich city only (ZIP codes 8001–8099). Powered by OpenERZ (openerz.metaodi.ch).",
+      "description": "List waste collection types. Zurich city only (OpenERZ)",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -1033,7 +1114,7 @@
     },
     {
       "name": "get_waste_calendar",
-      "description": "Get a full monthly waste collection calendar for a Zurich city ZIP code. Returns all collection events grouped by date for the given month. Currently covers Zurich city only (ZIP codes 8001–8099). Powered by OpenERZ (openerz.metaodi.ch).",
+      "description": "Monthly waste collection calendar for a ZIP code. Zurich city only (8001–8099, OpenERZ)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1042,22 +1123,22 @@
         "properties": {
           "zip": {
             "type": "string",
-            "description": "Zurich city ZIP code (e.g. '8001', '8004', '8032'). Covers 8001–8099."
+            "description": "e.g. 8004"
           },
           "month": {
             "type": "number",
-            "description": "Month number (1–12). Defaults to the current month."
+            "description": "1–12, default: current month"
           },
           "year": {
             "type": "number",
-            "description": "Year (e.g. 2026). Defaults to the current year."
+            "description": "default: current year"
           }
         }
       }
     },
     {
       "name": "get_swiss_news",
-      "description": "Get the latest Swiss news headlines from SRF (Schweizer Radio und Fernsehen). Returns top news articles with title, description, link, and publication date.",
+      "description": "Latest SRF news headlines",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1068,18 +1149,19 @@
               "international",
               "economy"
             ],
-            "description": "News category. \"switzerland\" = domestic Swiss news (default), \"international\" = world news, \"economy\" = business & economy."
+            "default": "switzerland"
           },
           "limit": {
             "type": "number",
-            "description": "Number of articles to return (default: 10, max: 50)"
+            "description": "max 50",
+            "default": 10
           }
         }
       }
     },
     {
       "name": "search_swiss_news",
-      "description": "Search Swiss news headlines from SRF by keyword. Searches across all available news categories and returns matching articles.",
+      "description": "Keyword search in current SRF headlines (all categories)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1088,35 +1170,37 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search keyword or phrase to find in news articles"
+            "description": "Keyword or phrase"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of results to return (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_voting_results",
-      "description": "Get results of Swiss popular votes (Volksabstimmungen) from Basel-Stadt open data. Returns vote title, date, yes/no counts, yes percentage, and eligible voters. Covers national and cantonal votes since 2021.",
+      "description": "Popular vote (Volksabstimmung) results as counted in Basel-Stadt: national and cantonal votes since 2021",
       "inputSchema": {
         "type": "object",
         "properties": {
           "year": {
             "type": "number",
-            "description": "Filter by year (e.g. 2024). If omitted, returns most recent votes."
+            "description": "e.g. 2024 (omit for most recent)"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of votes to return (default: 10, max: 50)."
+            "description": "max 50",
+            "default": 10
           }
         }
       }
     },
     {
       "name": "search_votes",
-      "description": "Search Swiss popular votes by keyword in the vote title (e.g. 'Initiative', 'Klimaschutz', 'CO2', 'AHV'). Returns matching votes with yes/no results.",
+      "description": "Search popular votes by title keyword (Basel-Stadt results)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1125,35 +1209,36 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search keyword to find in vote titles (German/French/Italian)"
+            "description": "Title keyword, e.g. CO2, AHV"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of results (default: 5, max: 20)."
+            "description": "max 20",
+            "default": 5
           }
         }
       }
     },
     {
       "name": "get_vote_details",
-      "description": "Get detailed breakdown of a specific Swiss popular vote, including per-district results for Basel-Stadt (Basel city, Riehen, Bettingen, and overseas voters).",
+      "description": "Per-district Basel-Stadt results (Basel, Riehen, Bettingen, abroad) for one vote. Give vote_title and/or date",
       "inputSchema": {
         "type": "object",
         "properties": {
           "vote_title": {
             "type": "string",
-            "description": "Partial or full vote title to look up (e.g. 'CO2-Gesetz', 'AHV')"
+            "description": "Partial title, e.g. CO2-Gesetz"
           },
           "date": {
             "type": "string",
-            "description": "Vote date in YYYY-MM-DD format (e.g. '2024-11-24')"
+            "description": "YYYY-MM-DD"
           }
         }
       }
     },
     {
       "name": "search_dams",
-      "description": "Search Swiss dams and reservoirs under federal supervision by name. Searches both dam names and reservoir names. Returns dam type, height, crest length, reservoir volume, purpose, canton, and year built. Data source: Swiss Federal Office of Energy (SFOE) via swisstopo BGDI.",
+      "description": "Search federally supervised dams by dam or reservoir name (SFOE)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1162,14 +1247,14 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Dam or reservoir name to search (e.g. 'Grimsel', 'Grande Dixence', 'Mattmark', 'Lac des Dix'). Partial names are supported."
+            "description": "Partial name, e.g. Grimsel, Lac des Dix"
           }
         }
       }
     },
     {
       "name": "get_dams_by_canton",
-      "description": "List all Swiss dams under federal supervision in a given canton. Returns up to 20 dams with basic details. Data source: Swiss Federal Office of Energy (SFOE) via swisstopo BGDI.",
+      "description": "Federally supervised dams in a canton",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1178,14 +1263,19 @@
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Swiss canton 2-letter abbreviation code (e.g. 'VS' for Valais, 'GR' for Graubünden, 'BE' for Bern, 'UR' for Uri, 'TI' for Ticino, 'VD' for Vaud)."
+            "description": "Canton code, e.g. VS"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Dams to return (1-100)",
+            "default": 20
           }
         }
       }
     },
     {
       "name": "get_dam_details",
-      "description": "Get full technical details of a specific Swiss dam by name. Returns all available fields: dam type, height, crest length, crest level, reservoir name, impoundment volume, storage level, purpose, operation dates, federal supervision start, and canton. Data source: Swiss Federal Office of Energy (SFOE) via swisstopo BGDI.",
+      "description": "Full technical details of one dam by name",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1194,20 +1284,20 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "Dam name (e.g. 'Grande Dixence', 'Spitallamm', 'Mattmark', 'Verzasca'). Use search_dams first if you are unsure of the exact name."
+            "description": "e.g. Grande Dixence (see search_dams)"
           }
         }
       }
     },
     {
       "name": "get_trail_closures",
-      "description": "Get current Swiss hiking trail closures and detours from the official ASTRA/Schweizer Wanderwege dataset. Filter by closure reason (e.g. Steinschlag, Bauarbeiten, Hangrutsch) or type (closure, detour). If no parameters are given, returns all active closures. Data source: swisstopo ch.astra.wanderland-sperrungen_umleitungen.",
+      "description": "Current hiking trail closures and detours (ASTRA/Schweizer Wanderwege)",
       "inputSchema": {
         "type": "object",
         "properties": {
           "reason": {
             "type": "string",
-            "description": "Optional search term for closure reason (e.g. 'Steinschlag', 'Bauarbeiten', 'Hangrutsch', 'Hochwasser'). Matches against the reason field (German or English). Case-insensitive partial match."
+            "description": "Partial match, e.g. Steinschlag, Bauarbeiten, Hangrutsch"
           },
           "type": {
             "type": "string",
@@ -1215,32 +1305,34 @@
               "closure",
               "detour"
             ],
-            "description": "Optional: filter by type — 'closure' (Sperrung) or 'detour' (Umleitung). If omitted, returns both."
+            "description": "Omit for both"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of results to return. Default: 20. Max: 100."
+            "description": "max 100",
+            "default": 20
           }
         }
       }
     },
     {
       "name": "get_trail_closures_nearby",
-      "description": "Find Swiss hiking trail closures and detours near a given GPS coordinate. Converts WGS84 coordinates to Swiss LV95 and queries the swisstopo identify endpoint. Returns closures within the specified radius.",
+      "description": "Hiking trail closures and detours near a WGS84 point",
       "inputSchema": {
         "type": "object",
         "properties": {
           "lat": {
             "type": "number",
-            "description": "Latitude in WGS84 (e.g. 46.9480 for Bern)."
+            "description": "Latitude (WGS84)"
           },
           "lon": {
             "type": "number",
-            "description": "Longitude in WGS84 (e.g. 7.4474 for Bern)."
+            "description": "Longitude (WGS84)"
           },
           "radius": {
             "type": "number",
-            "description": "Search radius in metres. Default: 10000 (10 km). Max: 50000."
+            "description": "Metres, max 50000",
+            "default": 10000
           }
         },
         "required": [
@@ -1251,28 +1343,33 @@
     },
     {
       "name": "get_property_price_index",
-      "description": "Get the Swiss Residential Property Price Index (SWRPI) — official BFS data. Baseline Q4 2019 = 100. Returns quarterly index values tracking Swiss property prices since 2009. Covers all properties, single-family houses, and apartments separately.",
+      "description": "BFS residential property price index (IMPI), quarterly since 2017Q1, Q4 2019 = 100",
       "inputSchema": {
         "type": "object",
         "properties": {
           "type": {
             "type": "string",
-            "description": "Property type to filter by: \"all\" (combined index), \"houses\" (single-family), \"apartments\" (condominiums/flats). Defaults to \"all\"."
+            "enum": [
+              "all",
+              "houses",
+              "apartments"
+            ],
+            "default": "all"
           },
           "from": {
             "type": "string",
-            "description": "Start period (inclusive). Format: \"2020Q1\", \"2020-Q1\", or just \"2020\". Defaults to earliest available (2009-Q4)."
+            "description": "Inclusive, e.g. 2020Q1 or 2020 (default: earliest)"
           },
           "to": {
             "type": "string",
-            "description": "End period (inclusive). Format: \"2024Q4\", \"2024-Q4\", or just \"2024\". Defaults to latest available."
+            "description": "Inclusive, e.g. 2024Q4 or 2024 (default: latest)"
           }
         }
       }
     },
     {
       "name": "search_real_estate_data",
-      "description": "Search opendata.swiss for Swiss real estate and housing datasets. Finds datasets about property prices, rents, housing construction, vacancy rates, and more. Returns dataset names, descriptions, and resource download URLs.",
+      "description": "Search opendata.swiss for real-estate/housing datasets (prices, rents, construction, vacancies)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1281,35 +1378,37 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search terms in German, French, or English (e.g. \"Immobilien\", \"Miete\", \"rent\", \"logement\", \"Wohnungspreise\", \"Leerwohnungen\")."
+            "description": "DE/FR/EN terms, e.g. Miete, logement, Leerwohnungen"
           },
           "limit": {
             "type": "number",
-            "description": "Max results to return (1–20, default 10)."
+            "description": "1–20",
+            "default": 10
           }
         }
       }
     },
     {
       "name": "get_rent_index",
-      "description": "Get the Swiss Consumer Price Index (CPI/LIK), which tracks cost of living including residential rents. Baseline December 1982 = 100. Published monthly by BFS. For property purchase prices, use get_property_price_index instead.",
+      "description": "BFS consumer price index (CPI/LIK, incl. rents), monthly, Dec 1982 = 100. Not a dedicated rent index; for purchase prices use get_property_price_index",
       "inputSchema": {
         "type": "object",
         "properties": {
           "year": {
             "type": "number",
-            "description": "Filter to a specific year (1983–2025). Omit for latest 24 months."
+            "description": "1982 onward (omit for recent months)"
           },
           "limit": {
             "type": "number",
-            "description": "Number of recent monthly data points to return (1–60, default 24). Ignored if year is set."
+            "description": "Recent months, 1–60; ignored if year set",
+            "default": 24
           }
         }
       }
     },
     {
       "name": "get_traffic_count",
-      "description": "Get traffic volume at an ASTRA counting station in Switzerland by location name (e.g. 'Gotthard', 'Zürich', 'Genf'). Returns daily and weekday traffic counts, heavy vehicle percentage, and measurement year.",
+      "description": "ASTRA traffic counting station volumes by location name",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1318,14 +1417,14 @@
         "properties": {
           "location": {
             "type": "string",
-            "description": "Station or location name to search (e.g. 'Gotthard', 'Zürich', 'Basel')"
+            "description": "e.g. Gotthard"
           }
         }
       }
     },
     {
       "name": "get_traffic_by_canton",
-      "description": "List ASTRA traffic counting stations in a Swiss canton. Returns up to 20 stations with traffic data.",
+      "description": "ASTRA traffic counting stations in a canton (max 20)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1334,14 +1433,14 @@
         "properties": {
           "canton": {
             "type": "string",
-            "description": "2-letter canton code (e.g. 'ZH', 'BE', 'GE', 'VS')"
+            "description": "Canton code, e.g. ZH"
           }
         }
       }
     },
     {
       "name": "get_traffic_nearby",
-      "description": "Find ASTRA traffic counting stations near a geographic coordinate in Switzerland. Returns nearby stations with traffic volume data.",
+      "description": "ASTRA traffic counting stations near a WGS84 point",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1351,47 +1450,51 @@
         "properties": {
           "lat": {
             "type": "number",
-            "description": "Latitude in WGS84 (e.g. 47.3769 for Zürich)"
+            "description": "Latitude (WGS84)"
           },
           "lon": {
             "type": "number",
-            "description": "Longitude in WGS84 (e.g. 8.5417 for Zürich)"
+            "description": "Longitude (WGS84)"
           },
           "radius": {
             "type": "number",
-            "description": "Search radius in meters (default: 5000)"
+            "description": "Metres",
+            "default": 5000
           }
         }
       }
     },
     {
       "name": "get_recent_earthquakes",
-      "description": "Get recent seismic events in and around Switzerland from the Swiss Seismological Service (SED) at ETH Zürich. Returns earthquakes and optionally quarry blasts, sorted by most recent first.",
+      "description": "Recent earthquakes in and around Switzerland (SED, ETH Zürich)",
       "inputSchema": {
         "type": "object",
         "properties": {
           "days": {
             "type": "number",
-            "description": "Number of past days to search (default: 30, max: 365)"
+            "description": "Past days, max 365",
+            "default": 30
           },
           "min_magnitude": {
             "type": "number",
-            "description": "Minimum magnitude filter (default: 0.5)"
+            "default": 0.5
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of results to return (default: 20)"
+            "description": "max 100",
+            "default": 20
           },
           "include_blasts": {
             "type": "boolean",
-            "description": "Include quarry blasts in results (default: false — earthquakes only)"
+            "description": "Include quarry blasts",
+            "default": false
           }
         }
       }
     },
     {
       "name": "get_earthquake_details",
-      "description": "Get full details for a specific seismic event by its SED (Swiss Seismological Service) event ID. Use event IDs returned by get_recent_earthquakes or search_earthquakes_by_location.",
+      "description": "Full details of one seismic event by SED event ID",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1400,14 +1503,14 @@
         "properties": {
           "event_id": {
             "type": "string",
-            "description": "The SED event ID (e.g. 'smi:ch.ethz.sed/sc25a/Event/2026errxzt'). Obtain from get_recent_earthquakes or search_earthquakes_by_location."
+            "description": "From the other earthquake tools, e.g. smi:ch.ethz.sed/sc25a/Event/2026errxzt"
           }
         }
       }
     },
     {
       "name": "search_earthquakes_by_location",
-      "description": "Search for earthquakes near a geographic location using the Swiss Seismological Service (SED) FDSN API. Useful for finding seismic activity near a Swiss city, landmark, or custom coordinates.",
+      "description": "Earthquakes within a radius of a WGS84 point (SED)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1417,61 +1520,65 @@
         "properties": {
           "lat": {
             "type": "number",
-            "description": "Latitude of the center point (decimal degrees, e.g. 46.9 for Bern)"
+            "description": "Latitude (WGS84)"
           },
           "lon": {
             "type": "number",
-            "description": "Longitude of the center point (decimal degrees, e.g. 7.5 for Bern)"
+            "description": "Longitude (WGS84)"
           },
           "radius_km": {
             "type": "number",
-            "description": "Search radius in kilometres (default: 50, max: 500)"
+            "description": "km, max 500",
+            "default": 50
           },
           "days": {
             "type": "number",
-            "description": "Number of past days to search (default: 90, max: 365)"
+            "description": "Past days, max 365",
+            "default": 90
           },
           "min_magnitude": {
             "type": "number",
-            "description": "Minimum magnitude filter (default: 0.5)"
+            "default": 0.5
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of results to return (default: 20, max: 100)"
+            "description": "max 100",
+            "default": 20
           }
         }
       }
     },
     {
       "name": "get_snow_conditions",
-      "description": "Get current snow conditions across Switzerland from SLF (WSL Institute for Snow and Avalanche Research). Returns snow depth and new snow (24h) for IMIS stations, sorted by snow depth. Filter by canton or minimum altitude. Data updated daily.",
+      "description": "Current snow depth and 24h new snow at SLF IMIS stations, deepest first",
       "inputSchema": {
         "type": "object",
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Filter by canton abbreviation (e.g. GR, VS, BE, UR, TI). Optional."
+            "description": "Canton code, e.g. GR"
           },
           "min_altitude": {
             "type": "number",
-            "description": "Minimum station altitude in metres (e.g. 2000). Optional."
+            "description": "Metres"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of stations to return (default: 20, max: 100)."
+            "description": "max 100",
+            "default": 20
           }
         }
       }
     },
     {
       "name": "list_snow_stations",
-      "description": "List all SLF snow measurement stations in Switzerland (IMIS automatic stations and manual study plots). Returns station code, name, altitude, canton, and type. Sorted by elevation descending.",
+      "description": "List SLF snow stations (IMIS automatic, manual study plots)",
       "inputSchema": {
         "type": "object",
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Filter by canton abbreviation (e.g. GR, VS, BE). Optional."
+            "description": "Canton code, e.g. GR"
           },
           "type": {
             "type": "string",
@@ -1479,18 +1586,19 @@
               "imis",
               "study-plot"
             ],
-            "description": "Station type: \"imis\" (automatic) or \"study-plot\" (manual). Optional — returns both by default."
+            "description": "Omit for both"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of stations to return (default: 20, max: 200)."
+            "description": "max 200",
+            "default": 20
           }
         }
       }
     },
     {
       "name": "get_snow_measurements",
-      "description": "Get detailed snow and weather measurements for a specific SLF station. IMIS stations return 30-min data (snow depth, temperature, humidity, wind, radiation). Study plots return daily data (snow depth, new snow, water equivalent). Use list_snow_stations to find station codes.",
+      "description": "Measurements for one SLF station: IMIS 30-min snow/weather data, or study-plot daily snow data",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1499,7 +1607,7 @@
         "properties": {
           "station_code": {
             "type": "string",
-            "description": "Station code (e.g. DAV2, WFJ2, 4AO0). Use list_snow_stations to find codes."
+            "description": "e.g. DAV2, WFJ2, 4AO0 (see list_snow_stations)"
           },
           "type": {
             "type": "string",
@@ -1507,14 +1615,14 @@
               "imis",
               "study-plot"
             ],
-            "description": "Station type: \"imis\" (default) or \"study-plot\". Determines which API endpoint to query."
+            "default": "imis"
           }
         }
       }
     },
     {
       "name": "get_pollen_current",
-      "description": "Get current hourly pollen concentrations at a MeteoSwiss pollen monitoring station. Returns the most recent hours of data for 7 pollen types: Alder, Birch, Hazel, Beech, Ash, Oak, and Grasses. Source: MeteoSwiss.",
+      "description": "Latest hourly pollen concentrations (alder, birch, hazel, beech, ash, oak, grasses) at a MeteoSwiss station",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1523,14 +1631,14 @@
         "properties": {
           "station": {
             "type": "string",
-            "description": "Station code (e.g. \"PZH\" for Zürich, \"PBE\" for Bern, \"PBS\" for Basel). Use list_pollen_stations for all codes."
+            "description": "e.g. PZH Zürich, PBE Bern, PBS Basel"
           }
         }
       }
     },
     {
       "name": "get_pollen_daily",
-      "description": "Get daily pollen concentration averages at a MeteoSwiss pollen monitoring station. Returns daily readings for 7 pollen types over the requested number of days. Source: MeteoSwiss.",
+      "description": "Daily average pollen concentrations at a MeteoSwiss station",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1539,24 +1647,25 @@
         "properties": {
           "station": {
             "type": "string",
-            "description": "Station code (e.g. \"PZH\" for Zürich, \"PBE\" for Bern). Use list_pollen_stations for all codes."
+            "description": "e.g. PZH Zürich, PBE Bern"
           },
           "days": {
             "type": "number",
-            "description": "Number of recent days to return (default: 7, max: 90)"
+            "description": "Recent days, max 90",
+            "default": 7
           }
         }
       }
     },
     {
       "name": "list_pollen_stations",
-      "description": "List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Returns station codes, names, cantons, altitude, and coordinates. Source: MeteoSwiss.",
+      "description": "List MeteoSwiss pollen stations",
       "inputSchema": {
         "type": "object",
         "properties": {
           "canton": {
             "type": "string",
-            "description": "Filter by canton abbreviation (e.g. ZH, BE, GE, TI)"
+            "description": "Canton code, e.g. ZH"
           }
         }
       }

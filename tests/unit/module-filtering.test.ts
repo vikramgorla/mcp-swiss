@@ -76,7 +76,7 @@ describe("Presets", () => {
     expect(presets.commuter).toEqual(["transport", "weather", "holidays"]);
   });
 
-  it("outdoor should have weather, avalanche, hiking, earthquakes, dams, snow", () => {
+  it("outdoor should have weather, avalanche, hiking, earthquakes, dams, snow, pollen", () => {
     expect(presets.outdoor).toEqual([
       "weather",
       "avalanche",
@@ -84,6 +84,7 @@ describe("Presets", () => {
       "earthquakes",
       "dams",
       "snow",
+      "pollen",
     ]);
   });
 

@@ -15,11 +15,13 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage tests/unit tests/mcp",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
+    "test:integration": "VITEST_ALLOW_NETWORK=1 vitest run tests/integration",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "validate": "npm run lint && npm run build && npm test",
-    "test:qa": "bash scripts/qa-smoke-test.sh"
+    "test:qa": "bash scripts/qa-smoke-test.sh",
+    "docs:tools": "npm run build && node scripts/generate-tool-docs.mjs",
+    "docs:tokens": "npm run build && node scripts/measure-schema-tokens.mjs"
   },
   "keywords": [
     "mcp",

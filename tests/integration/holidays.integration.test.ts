@@ -3,6 +3,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { handleHolidays } from '../../src/modules/holidays.js';
+import { swissToday } from '../../src/utils/date.js';
 
 describe('Holidays API (live — openholidaysapi.org)', () => {
 
@@ -145,6 +146,11 @@ describe('Holidays API (live — openholidaysapi.org)', () => {
       expect(typeof result.is_holiday).toBe('boolean');
       expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(result.canton).toBe('all');
+    });
+
+    it('reports the Swiss calendar date', async () => {
+      const result = JSON.parse(await handleHolidays('is_holiday_today', {}));
+      expect(result.date).toBe(swissToday());
     });
 
     it('response is under 50K characters', async () => {

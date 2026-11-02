@@ -1,5 +1,23 @@
 // Mock data matching real BFS PxWeb and opendata.swiss API structures
 
+// ── PxWeb: cube metadata (GET on the .px table) ──────────────────────────────
+
+const STATPOP_YEARS = Array.from({ length: 16 }, (_, i) => String(2010 + i));
+
+export const mockPxWebPopulationMetadata = {
+  title:
+    "Permanent and non permanent resident population by Year, Canton (-) / District (>>) / Commune (......), Population type, Citizenship (category), Sex and Age",
+  variables: [
+    { code: "Jahr", text: "Year", values: STATPOP_YEARS, valueTexts: STATPOP_YEARS },
+    {
+      code: "Bevölkerungstyp",
+      text: "Population type",
+      values: ["1", "2"],
+      valueTexts: ["Permanent resident population", "Non permanent resident population"],
+    },
+  ],
+};
+
 // ── PxWeb: Switzerland total ─────────────────────────────────────────────────
 
 export const mockPxWebSwitzerlandTotal = {
