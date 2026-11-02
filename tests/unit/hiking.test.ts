@@ -3,6 +3,7 @@ import { handleHiking, hikingTools, wgs84ToLv95 } from "../../src/modules/hiking
 import {
   mockFindResponse,
   mockFindResponseSingle,
+  mockFindResponseWithGeometry,
   mockFindResponseEmpty,
   mockFindResponseDetourOnly,
   expectedSlimClosure,
@@ -69,7 +70,7 @@ describe("hikingTools", () => {
   it("has get_trail_closures_nearby tool", () => {
     const tool = hikingTools.find((t) => t.name === "get_trail_closures_nearby");
     expect(tool).toBeDefined();
-    expect(tool?.description).toContain("GPS");
+    expect(tool?.description).toContain("WGS84");
     expect(tool?.inputSchema.type).toBe("object");
   });
 
@@ -332,6 +333,55 @@ describe("get_trail_closures", () => {
 // ── get_trail_closures_nearby ─────────────────────────────────────────────────
 
 describe("get_trail_closures_nearby", () => {
+  it("keeps only closures within the radius, nearest first", async () => {
+    mockFetch(mockFindResponseWithGeometry);
+    const result = JSON.parse(
+      await handleHiking("get_trail_closures_nearby", {
+        lat: BERN_LAT,
+        lon: BERN_LON,
+        radius: 5000,
+      })
+    );
+    // fixture: one closure ~2 km away, one ~20 km away
+    expect(result.count).toBe(1);
+    expect(result.closures[0].distance_m).toBeLessThan(5000);
+  });
+
+  it("includes the distant closure once the radius covers it", async () => {
+    mockFetch(mockFindResponseWithGeometry);
+    const result = JSON.parse(
+      await handleHiking("get_trail_closures_nearby", {
+        lat: BERN_LAT,
+        lon: BERN_LON,
+        radius: 30000,
+      })
+    );
+    expect(result.count).toBe(2);
+    const distances = result.closures.map((c: { distance_m: number }) => c.distance_m);
+    expect(distances).toEqual([...distances].sort((a: number, b: number) => a - b));
+  });
+
+  it("queries an LV95 envelope, not a pixel tolerance", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.resolve(mockFindResponseWithGeometry),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await handleHiking("get_trail_closures_nearby", {
+      lat: BERN_LAT,
+      lon: BERN_LON,
+      radius: 4000,
+    });
+    const params = new URL(fetchMock.mock.calls[0][0] as string).searchParams;
+    expect(params.get("geometryType")).toBe("esriGeometryEnvelope");
+    expect(params.get("tolerance")).toBe("0");
+    expect(params.get("returnGeometry")).toBe("true");
+    const [minE, , maxE] = params.get("geometry")!.split(",").map(Number);
+    expect(maxE - minE).toBe(8000);
+  });
+
   it("returns count, query, source, closures", async () => {
     mockFetch(mockFindResponse);
     const result = JSON.parse(

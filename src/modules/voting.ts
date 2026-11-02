@@ -3,7 +3,6 @@ import { fetchJSON, buildUrl } from "../utils/http.js";
 // ── Base URLs ─────────────────────────────────────────────────────────────────
 
 const BS_BASE = "https://data.bs.ch/api/v2/catalog/datasets/100345/exports/json";
-const USER_AGENT = "mcp-swiss/0.3.1";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -63,17 +62,18 @@ export const votingTools = [
   {
     name: "get_voting_results",
     description:
-      "Get results of Swiss popular votes (Volksabstimmungen) from Basel-Stadt open data. Returns vote title, date, yes/no counts, yes percentage, and eligible voters. Covers national and cantonal votes since 2021.",
+      "Popular vote (Volksabstimmung) results as counted in Basel-Stadt: national and cantonal votes since 2021",
     inputSchema: {
       type: "object",
       properties: {
         year: {
           type: "number",
-          description: "Filter by year (e.g. 2024). If omitted, returns most recent votes.",
+          description: "e.g. 2024 (omit for most recent)",
         },
         limit: {
           type: "number",
-          description: "Maximum number of votes to return (default: 10, max: 50).",
+          description: "max 50",
+          default: 10,
         },
       },
     },
@@ -81,18 +81,19 @@ export const votingTools = [
   {
     name: "search_votes",
     description:
-      "Search Swiss popular votes by keyword in the vote title (e.g. 'Initiative', 'Klimaschutz', 'CO2', 'AHV'). Returns matching votes with yes/no results.",
+      "Search popular votes by title keyword (Basel-Stadt results)",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description: "Search keyword to find in vote titles (German/French/Italian)",
+          description: "Title keyword, e.g. CO2, AHV",
         },
         limit: {
           type: "number",
-          description: "Maximum number of results (default: 5, max: 20).",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -100,17 +101,17 @@ export const votingTools = [
   {
     name: "get_vote_details",
     description:
-      "Get detailed breakdown of a specific Swiss popular vote, including per-district results for Basel-Stadt (Basel city, Riehen, Bettingen, and overseas voters).",
+      "Per-district Basel-Stadt results (Basel, Riehen, Bettingen, abroad) for one vote. Give vote_title and/or date",
     inputSchema: {
       type: "object",
       properties: {
         vote_title: {
           type: "string",
-          description: "Partial or full vote title to look up (e.g. 'CO2-Gesetz', 'AHV')",
+          description: "Partial title, e.g. CO2-Gesetz",
         },
         date: {
           type: "string",
-          description: "Vote date in YYYY-MM-DD format (e.g. '2024-11-24')",
+          description: "YYYY-MM-DD",
         },
       },
     },
@@ -124,6 +125,21 @@ function formatPct(v: number): number {
 }
 
 /**
+ * Quote a value for an ODSQL string literal. Escapes backslashes and double
+ * quotes so a search term cannot close the literal and inject its own
+ * conditions; `%` and `_` stay literal because ODSQL `like` only treats `*`
+ * and `?` as wildcards.
+ */
+export function odsqlString(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/** ODSQL `like` pattern matching anywhere in the field. */
+function odsqlContains(field: string, value: string): string {
+  return `${field} like ${odsqlString(`*${value}*`)}`;
+}
+
+/**
  * Fetch aggregate rows per vote (one row per commune Total per vote).
  * Filters on wahllok_name LIKE '%Total%' to get commune-level totals,
  * then aggregates across communes for a canton-wide result.
@@ -134,7 +150,7 @@ async function fetchVoteRows(
 ): Promise<BsVotingRecord[]> {
   // We fetch more rows than `limit` to handle aggregation
   const fetchLimit = Math.min(limit * 30, 500);
-  const where = `wahllok_name like "%Total%" AND result_art="Schlussresultat"${extraWhere ? " AND " + extraWhere : ""}`;
+  const where = `wahllok_name like "*Total*" AND result_art="Schlussresultat"${extraWhere ? " AND " + extraWhere : ""}`;
 
   const url = buildUrl(BS_BASE, {
     limit: fetchLimit,
@@ -144,9 +160,7 @@ async function fetchVoteRows(
     order_by: "abst_datum_text desc",
   });
 
-  return fetchJSON<BsVotingRecord[]>(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  return fetchJSON<BsVotingRecord[]>(url);
 }
 
 /**
@@ -221,8 +235,11 @@ export async function handleGetVotingResults(params: {
 
   if (votes.length === 0) {
     return JSON.stringify({
-      error: "No voting results found for the given parameters",
+      count: 0,
+      votes: [],
       hint: "Try without a year filter, or use a different year (available: 2021–2025)",
+      source: "Basel-Stadt open data — national & cantonal votes",
+      data_url: "https://data.bs.ch/explore/dataset/100345/",
     });
   }
 
@@ -247,13 +264,13 @@ export async function handleSearchVotes(params: {
   limit?: number;
 }): Promise<string> {
   if (!params.query?.trim()) {
-    return JSON.stringify({ error: "query parameter is required" });
+    throw new Error("query is required: a keyword from the vote title, in German, French or Italian.");
   }
 
   const limit = Math.min(params.limit ?? 5, 20);
   const keyword = params.query.trim();
 
-  const extraWhere = `abst_titel like "%${keyword}%"`;
+  const extraWhere = odsqlContains("abst_titel", keyword);
   const rows = await fetchVoteRows(extraWhere, limit);
   const votes = aggregateVotes(rows).slice(0, limit);
 
@@ -280,21 +297,19 @@ export async function handleGetVoteDetails(params: {
   date?: string;
 }): Promise<string> {
   if (!params.vote_title && !params.date) {
-    return JSON.stringify({
-      error: "Provide at least vote_title or date",
-    });
+    throw new Error("Provide vote_title or date (YYYY-MM-DD). Use search_votes to find either.");
   }
 
   const conditions: string[] = [
-    `wahllok_name like "%Total%"`,
+    `wahllok_name like "*Total*"`,
     `result_art="Schlussresultat"`,
   ];
 
   if (params.vote_title) {
-    conditions.push(`abst_titel like "%${params.vote_title.trim()}%"`);
+    conditions.push(odsqlContains("abst_titel", params.vote_title.trim()));
   }
   if (params.date) {
-    conditions.push(`abst_datum_text="${params.date.trim()}"`);
+    conditions.push(`abst_datum_text=${odsqlString(params.date.trim())}`);
   }
 
   const where = conditions.join(" AND ");
@@ -306,15 +321,12 @@ export async function handleGetVoteDetails(params: {
     order_by: "abst_datum_text desc,abst_id asc",
   });
 
-  const rows = await fetchJSON<BsVotingRecord[]>(url, {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const rows = await fetchJSON<BsVotingRecord[]>(url);
 
   if (!rows || rows.length === 0) {
-    return JSON.stringify({
-      error: "No vote found matching the given parameters",
-      hint: "Try partial title (e.g. 'CO2' instead of 'CO2-Gesetz') or check the date format (YYYY-MM-DD)",
-    });
+    throw new Error(
+      "No vote matches those parameters. Use search_votes to get an exact title, or pass a date as YYYY-MM-DD.",
+    );
   }
 
   // Group by (date, abst_id) — take the first match if multiple votes match
@@ -361,65 +373,6 @@ export async function handleGetVoteDetails(params: {
   };
 
   return JSON.stringify(detail);
-}
-
-// ── MCP registration ──────────────────────────────────────────────────────────
-
-export function registerVotingTools(server: {
-  tool: (
-    name: string,
-    description: string,
-    schema: object,
-    handler: (params: Record<string, unknown>) => Promise<{ content: Array<{ type: string; text: string }> }>,
-  ) => void;
-}): void {
-  server.tool(
-    "get_voting_results",
-    votingTools[0].description,
-    votingTools[0].inputSchema,
-    async (params) => ({
-      content: [
-        {
-          type: "text",
-          text: await handleGetVotingResults(
-            params as { year?: number; limit?: number },
-          ),
-        },
-      ],
-    }),
-  );
-
-  server.tool(
-    "search_votes",
-    votingTools[1].description,
-    votingTools[1].inputSchema,
-    async (params) => ({
-      content: [
-        {
-          type: "text",
-          text: await handleSearchVotes(
-            params as { query: string; limit?: number },
-          ),
-        },
-      ],
-    }),
-  );
-
-  server.tool(
-    "get_vote_details",
-    votingTools[2].description,
-    votingTools[2].inputSchema,
-    async (params) => ({
-      content: [
-        {
-          type: "text",
-          text: await handleGetVoteDetails(
-            params as { vote_title?: string; date?: string },
-          ),
-        },
-      ],
-    }),
-  );
 }
 
 // ── Adapter export for index.ts integration ───────────────────────────────────
