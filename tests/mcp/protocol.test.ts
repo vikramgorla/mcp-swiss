@@ -134,7 +134,7 @@ describe('MCP protocol: tools/list', () => {
     });
 
     const result = response.result as { tools: Tool[] };
-    expect(result.tools).toHaveLength(79);
+    expect(result.tools).toHaveLength(82);
   });
 
   it('marks every tool read-only and idempotent', async () => {
@@ -248,6 +248,9 @@ describe('MCP protocol: tools/list', () => {
     expect(names).toContain('search_companies_by_locality');
     expect(names).toContain('list_cantons');
     expect(names).toContain('list_legal_forms');
+    expect(names).toContain('search_buildings');
+    expect(names).toContain('get_building');
+    expect(names).toContain('buildings_near');
   });
 });
 
