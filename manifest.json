@@ -222,15 +222,15 @@
     },
     {
       "name": "list_currencies",
-      "description": "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data. Returns currency codes, names, and regions."
+      "description": "List currencies with SNB CHF exchange rates"
     },
     {
       "name": "get_exchange_rate",
-      "description": "Get the current CHF exchange rate for a currency from the Swiss National Bank (SNB). Returns the latest monthly average rate and currency details."
+      "description": "Latest SNB monthly-average CHF exchange rate for a currency"
     },
     {
       "name": "get_exchange_rate_history",
-      "description": "Get historical CHF exchange rates for a currency from the Swiss National Bank (SNB). Returns monthly average rates with optional date filtering. Without date range, returns the most recent 90 months."
+      "description": "Historical SNB monthly-average CHF exchange rates (default: last 90 months)"
     },
     {
       "name": "get_waste_collection",
@@ -246,11 +246,11 @@
     },
     {
       "name": "get_swiss_news",
-      "description": "Get the latest Swiss news headlines from SRF (Schweizer Radio und Fernsehen). Returns top news articles with title, description, link, and publication date."
+      "description": "Latest SRF news headlines"
     },
     {
       "name": "search_swiss_news",
-      "description": "Search Swiss news headlines from SRF by keyword. Searches across all available news categories and returns matching articles."
+      "description": "Keyword search in current SRF headlines (all categories)"
     },
     {
       "name": "get_voting_results",

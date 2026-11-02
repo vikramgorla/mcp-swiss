@@ -37,6 +37,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   - Postcodes in a canton come from the official locality register. Reference lists expire and share one in-flight fetch. ODSQL search terms in the voting tools are escaped.
   - The `outdoor` preset includes pollen.
 
+### Changed
+
+- Tool schemas are shorter. Closes [#107](https://github.com/vikramgorla/mcp-swiss/issues/107). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
+- `scripts/measure-schema-tokens.mjs` (`npm run docs:tokens`) and `scripts/generate-tool-docs.mjs` (`npm run docs:tools`, `--check` in CI) keep `docs/tools.schema.json` and the manifest tool list aligned with the source.
+- Transport `x`/`y` descriptions now match the API: `x` is latitude and `y` is longitude.
+
 ---
 
 ## [0.1.0] - 2026-03-07

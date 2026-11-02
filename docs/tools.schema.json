@@ -1024,7 +1024,7 @@
     },
     {
       "name": "list_currencies",
-      "description": "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data. Returns currency codes, names, and regions.",
+      "description": "List currencies with SNB CHF exchange rates",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -1032,7 +1032,7 @@
     },
     {
       "name": "get_exchange_rate",
-      "description": "Get the current CHF exchange rate for a currency from the Swiss National Bank (SNB). Returns the latest monthly average rate and currency details.",
+      "description": "Latest SNB monthly-average CHF exchange rate for a currency",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1041,14 +1041,14 @@
         "properties": {
           "currency": {
             "type": "string",
-            "description": "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP', 'JPY'). Use list_currencies to see all available codes."
+            "description": "ISO 4217 code, e.g. EUR"
           }
         }
       }
     },
     {
       "name": "get_exchange_rate_history",
-      "description": "Get historical CHF exchange rates for a currency from the Swiss National Bank (SNB). Returns monthly average rates with optional date filtering. Without date range, returns the most recent 90 months.",
+      "description": "Historical SNB monthly-average CHF exchange rates (default: last 90 months)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1057,15 +1057,15 @@
         "properties": {
           "currency": {
             "type": "string",
-            "description": "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP'). Use list_currencies to see all available codes."
+            "description": "ISO 4217 code, e.g. EUR"
           },
           "from": {
             "type": "string",
-            "description": "Start date in YYYY-MM format (e.g. '2020-01'). Optional."
+            "description": "YYYY-MM"
           },
           "to": {
             "type": "string",
-            "description": "End date in YYYY-MM format (e.g. '2026-02'). Optional."
+            "description": "YYYY-MM"
           }
         }
       }
@@ -1138,7 +1138,7 @@
     },
     {
       "name": "get_swiss_news",
-      "description": "Get the latest Swiss news headlines from SRF (Schweizer Radio und Fernsehen). Returns top news articles with title, description, link, and publication date.",
+      "description": "Latest SRF news headlines",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1149,18 +1149,19 @@
               "international",
               "economy"
             ],
-            "description": "News category. \"switzerland\" = domestic Swiss news (default), \"international\" = world news, \"economy\" = business & economy."
+            "default": "switzerland"
           },
           "limit": {
             "type": "number",
-            "description": "Number of articles to return (default: 10, max: 50)"
+            "description": "max 50",
+            "default": 10
           }
         }
       }
     },
     {
       "name": "search_swiss_news",
-      "description": "Search Swiss news headlines from SRF by keyword. Searches across all available news categories and returns matching articles.",
+      "description": "Keyword search in current SRF headlines (all categories)",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1169,11 +1170,12 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search keyword or phrase to find in news articles"
+            "description": "Keyword or phrase"
           },
           "limit": {
             "type": "number",
-            "description": "Maximum number of results to return (default: 5, max: 20)"
+            "description": "max 20",
+            "default": 5
           }
         }
       }
