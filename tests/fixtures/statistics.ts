@@ -31,7 +31,7 @@ export const mockPxWebSwitzerlandTotal = {
   ],
   comments: [],
   data: [
-    { key: ["2024", "1", "-99999", "-99999", "-99999"], values: ["9051029"] },
+    { key: ["2024", "8100", "1", "-99999", "-99999", "-99999"], values: ["9051029"] },
   ],
   metadata: [],
 };

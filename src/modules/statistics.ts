@@ -166,10 +166,19 @@ const YEARS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 let _yearsCache: string[] | null = null;
 let _yearsCachedAt = 0;
 
-/** Clear the cached STATPOP year list (for testing) */
+type PopulationRow = { key: string[]; values: string[] };
+
+/** One PxWeb query per year. Canton lookups are slices of that table. */
+const POPULATION_CACHE_TTL_MS = 60 * 60 * 1000;
+const populationCache = new Map<string, { at: number; rows: PopulationRow[] }>();
+const populationPending = new Map<string, Promise<PopulationRow[]>>();
+
+/** Clear the cached STATPOP year list and population tables (for testing). */
 export function clearStatisticsCache(): void {
   _yearsCache = null;
   _yearsCachedAt = 0;
+  populationCache.clear();
+  populationPending.clear();
 }
 
 /**
@@ -252,6 +261,56 @@ export const statisticsTools = [
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
+function populationOf(rows: PopulationRow[], code: string): number | null {
+  const row = rows.find((item) => item.key[1] === code);
+  if (!row) return null;
+  const pop = parseInt(row.values[0], 10);
+  return Number.isFinite(pop) ? pop : null;
+}
+
+/**
+ * Fetch Switzerland plus every canton for one year. PxWeb is slow on a cold
+ * cache and fast after that, so later canton lookups reuse this table.
+ */
+async function populationTable(year: string): Promise<PopulationRow[]> {
+  const hit = populationCache.get(year);
+  if (hit && Date.now() - hit.at < POPULATION_CACHE_TTL_MS) return hit.rows;
+
+  const inflight = populationPending.get(year);
+  if (inflight) return inflight;
+
+  const pending = fetchJSON<PxWebResponse>(POPULATION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "Jahr", selection: { filter: "item", values: [year] } },
+        {
+          code: "Kanton (-) / Bezirk (>>) / Gemeinde (......)",
+          selection: { filter: "item", values: ["8100", ...ALL_CANTON_CODES] },
+        },
+        { code: "Bevölkerungstyp", selection: { filter: "item", values: ["1"] } },
+        { code: "Staatsangehörigkeit (Kategorie)", selection: { filter: "item", values: ["-99999"] } },
+        { code: "Geschlecht", selection: { filter: "item", values: ["-99999"] } },
+        { code: "Alter", selection: { filter: "item", values: ["-99999"] } },
+      ],
+      response: { format: "json" },
+    }),
+    // BFS PxWeb regularly takes longer than the 30s default, and longer than
+    // a minute when its own cache is cold.
+    timeoutMs: 120_000,
+  }).then((data) => {
+    const rows = data.data ?? [];
+    populationCache.set(year, { at: Date.now(), rows });
+    return rows;
+  }).finally(() => {
+    populationPending.delete(year);
+  });
+
+  populationPending.set(year, pending);
+  return pending;
+}
+
 async function handleGetPopulation(args: Record<string, unknown>): Promise<string> {
   const rawCanton = typeof args.canton === "string" ? args.canton.trim() : "";
 
@@ -285,35 +344,10 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
     throw new Error(`Year must be between ${availableYears[0]} and ${latestYear}. Got: ${year}`);
   }
 
-  const url = POPULATION_URL;
-
-  const body = {
-    query: [
-      { code: "Jahr", selection: { filter: "item", values: [year] } },
-      {
-        code: "Kanton (-) / Bezirk (>>) / Gemeinde (......)",
-        selection: { filter: "item", values: locationCodes },
-      },
-      { code: "Bevölkerungstyp", selection: { filter: "item", values: ["1"] } },
-      { code: "Staatsangehörigkeit (Kategorie)", selection: { filter: "item", values: ["-99999"] } },
-      { code: "Geschlecht", selection: { filter: "item", values: ["-99999"] } },
-      { code: "Alter", selection: { filter: "item", values: ["-99999"] } },
-    ],
-    response: { format: "json" },
-  };
-
-  // BFS PxWeb can take >60 s on a cold cache (then answers in ~0.1 s)
-  const data = await fetchJSON<PxWebResponse>(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    // BFS PxWeb regularly takes longer than the 30s default.
-    timeoutMs: 120_000,
-  });
+  const rows = await populationTable(year);
 
   if (mode === "switzerland") {
-    const row = data.data[0];
-    const pop = row ? parseInt(row.values[0], 10) : null;
+    const pop = populationOf(rows, "8100");
     return JSON.stringify({
       location: "Switzerland",
       year: parseInt(year, 10),
@@ -326,8 +360,7 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
 
   if (mode === "canton") {
     const code = locationCodes[0];
-    const row = data.data[0];
-    const pop = row ? parseInt(row.values[0], 10) : null;
+    const pop = populationOf(rows, code);
     return JSON.stringify({
       /* c8 ignore next */
       location: CANTON_NAMES[code] ?? code, // defensive: code always in CANTON_NAMES
@@ -345,7 +378,7 @@ async function handleGetPopulation(args: Record<string, unknown>): Promise<strin
   const cantons: Array<{ canton: string; code: string; population: number }> = [];
   let switzerland: number | null = null;
 
-  for (const row of data.data) {
+  for (const row of rows) {
     const locCode = row.key[1]; // year, location, poptype, citizenship, sex, age
     const pop = parseInt(row.values[0], 10);
     if (locCode === "8100") {

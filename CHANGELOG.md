@@ -40,6 +40,7 @@ Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-
   - Study-plot snow measurements return an empty result off-season instead of an HTTP 404. Electricity tariffs default to the current year.
   - Postcodes in a canton come from the official locality register. Reference lists expire and share one in-flight fetch. ODSQL search terms in the voting tools are escaped.
   - The `outdoor` preset includes pollen.
+- `get_population` fetches the STATPOP table for a year once and serves canton lookups from that result. BFS PxWeb is slow on a cold cache.
 
 ### Changed
 
