@@ -3,8 +3,8 @@
   "name": "mcp-swiss",
   "display_name": "Switzerland MCP \ud83c\udde8\ud83c\udded",
   "version": "0.8.0",
-  "description": "Swiss open data MCP server \u2014 85 tools, 24 modules, zero API keys",
-  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 85 tools across 24 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), the federal building register (GWR), and the opendata.swiss catalogue. All APIs are free and require zero authentication.",
+  "description": "Swiss open data MCP server \u2014 88 tools, 25 modules, zero API keys",
+  "long_description": "mcp-swiss gives any AI assistant direct access to Swiss open data. 88 tools across 25 modules: train schedules (SBB), weather (MeteoSwiss), river levels (BAFU), geodata (swisstopo), company registry (ZEFIX), parliament (OpenParlData.ch), avalanche bulletins, holidays, postal services, electricity prices, population statistics, exchange rates (SNB), recycling schedules, news (SRF), voting results, dam registry, hiking trail alerts, real estate data, traffic counts, earthquake monitoring, snow conditions (SLF), the federal building register (GWR), and the opendata.swiss catalogue, and MeteoSwiss OGD measurements. All APIs are free and require zero authentication.",
   "author": {
     "name": "Vikram Gorla",
     "url": "https://github.com/vikramgorla"
@@ -367,6 +367,18 @@
     {
       "name": "list_opendata_resources",
       "description": "List downloadable resources (files and services) for an opendata.swiss dataset. Optional format filter such as CSV, JSON, or WMS."
+    },
+    {
+      "name": "list_ogd_stations",
+      "description": "List MeteoSwiss Open Government Data stations from a STAC collection on data.geo.admin.ch. Defaults to SwissMetNet automatic weather stations (smn). Other station collections: smn-precip, smn-tower, nime, nbcn, nbcn-precip, obs, phenology, tot. Filter by canton or a name/code search."
+    },
+    {
+      "name": "get_ogd_recent",
+      "description": "Get the latest MeteoSwiss OGD measurements for one station by reading the STAC CSV asset (10-minute/hourly 'now' file when available, otherwise the recent file). Times are Swiss local time. Use list_ogd_stations for codes such as BER, SMA, LUG."
+    },
+    {
+      "name": "get_ogd_history",
+      "description": "Get historical MeteoSwiss OGD measurements for one station and date range by parsing the STAC CSV assets. Daily data defaults to the smaller recent/historical files. Hourly history is limited to 14 days because decade files are large. Times are Swiss local time (no offset)."
     }
   ],
   "keywords": [

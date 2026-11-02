@@ -1806,6 +1806,105 @@
           }
         }
       }
+    },
+    {
+      "name": "list_ogd_stations",
+      "description": "List MeteoSwiss Open Government Data stations from a STAC collection on data.geo.admin.ch. Defaults to SwissMetNet automatic weather stations (smn). Other station collections: smn-precip, smn-tower, nime, nbcn, nbcn-precip, obs, phenology, tot. Filter by canton or a name/code search.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string",
+            "description": "OGD collection alias (default smn). Aliases: smn, smn-precip, smn-tower, nime, nbcn, nbcn-precip, obs, phenology, tot. A full STAC id such as ch.meteoschweiz.ogd-smn is also accepted."
+          },
+          "canton": {
+            "type": "string",
+            "description": "Canton abbreviation (e.g. BE, ZH, VS, TI)."
+          },
+          "query": {
+            "type": "string",
+            "description": "Case-insensitive match on station code or name (e.g. BER, Zürich)."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum stations to return (default 30, max 150)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_ogd_recent",
+      "description": "Get the latest MeteoSwiss OGD measurements for one station by reading the STAC CSV asset (10-minute/hourly 'now' file when available, otherwise the recent file). Times are Swiss local time. Use list_ogd_stations for codes such as BER, SMA, LUG.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "station"
+        ],
+        "properties": {
+          "station": {
+            "type": "string",
+            "description": "Station abbreviation (e.g. BER, SMA, LUG, BAS)."
+          },
+          "collection": {
+            "type": "string",
+            "description": "OGD collection alias (default smn). Aliases: smn, smn-precip, smn-tower, nime, nbcn, nbcn-precip, obs, phenology, tot. A full STAC id such as ch.meteoschweiz.ogd-smn is also accepted."
+          },
+          "granularity": {
+            "type": "string",
+            "description": "Resolution: t (10-minute), h (hourly, default), d (daily), m (monthly), y (yearly)."
+          },
+          "parameters": {
+            "type": "string",
+            "description": "Comma-separated parameter codes (e.g. tre200h0,rre150h0). Omit for the common temperature, humidity, precipitation, wind, pressure, sunshine, and radiation columns. Use 'all' for the first data columns."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Number of most recent rows (default 24, max 168)."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_ogd_history",
+      "description": "Get historical MeteoSwiss OGD measurements for one station and date range by parsing the STAC CSV assets. Daily data defaults to the smaller recent/historical files. Hourly history is limited to 14 days because decade files are large. Times are Swiss local time (no offset).",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "station",
+          "start_date",
+          "end_date"
+        ],
+        "properties": {
+          "station": {
+            "type": "string",
+            "description": "Station abbreviation (e.g. BER)."
+          },
+          "collection": {
+            "type": "string",
+            "description": "OGD collection alias (default smn). Aliases: smn, smn-precip, smn-tower, nime, nbcn, nbcn-precip, obs, phenology, tot. A full STAC id such as ch.meteoschweiz.ogd-smn is also accepted."
+          },
+          "granularity": {
+            "type": "string",
+            "description": "Resolution: t, h, d (daily, default), m, or y."
+          },
+          "start_date": {
+            "type": "string",
+            "description": "First day YYYY-MM-DD (inclusive)."
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Last day YYYY-MM-DD (inclusive)."
+          },
+          "parameters": {
+            "type": "string",
+            "description": "Comma-separated parameter codes, or omit for the common meteorological columns."
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum rows (default 31, max 100). When truncated, the latest rows in the range are kept."
+          }
+        }
+      }
     }
   ]
 }

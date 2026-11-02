@@ -50,6 +50,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - `buildings_near` — buildings around a WGS84 point, closest first
 - Added to the `business` preset
 - **opendata.swiss catalogue** (3 tools) — `search_opendata`, `get_opendata_dataset`, `list_opendata_resources`.
+- **MeteoSwiss OGD** (3 tools) — `list_ogd_stations`, `get_ogd_recent`, `get_ogd_history`.
 - Discovery mode (`--discovery`, `--mode discovery`, or `MCP_SWISS_MODE=discovery`). Closes [#106](https://github.com/vikramgorla/mcp-swiss/issues/106). The default is still the full tool list. Ported in spirit from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng), using a search-then-execute pair instead of dynamic registration:
   - `swiss_search_tools` — keyword or module search; returns matching names, descriptions, and input schemas
   - `swiss_call_tool` — runs one tool after checking the arguments against that tool's schema

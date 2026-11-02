@@ -9,8 +9,8 @@ import {
 // ── Module Registry ──────────────────────────────────────────────────────────
 
 describe("Module Registry", () => {
-  it("should have all 23 modules", () => {
-    expect(Object.keys(moduleRegistry)).toHaveLength(24);
+  it("should have all 25 modules", () => {
+    expect(Object.keys(moduleRegistry)).toHaveLength(25);
   });
 
   it("should contain every expected module name", () => {
@@ -39,6 +39,7 @@ describe("Module Registry", () => {
       "pollen",
       "gwr",
       "opendata",
+      "meteoswiss",
     ];
     for (const name of expected) {
       expect(moduleRegistry).toHaveProperty(name);
@@ -62,7 +63,7 @@ describe("Module Registry", () => {
       (sum, m) => sum + m.tools.length,
       0
     );
-    expect(total).toBe(85);
+    expect(total).toBe(88);
   });
 });
 
@@ -114,8 +115,8 @@ describe("Presets", () => {
     expect(presets.minimal).toEqual(["transport"]);
   });
 
-  it("full should have all 23 modules", () => {
-    expect(presets.full).toHaveLength(24);
+  it("full should have all 25 modules", () => {
+    expect(presets.full).toHaveLength(25);
     expect(new Set(presets.full)).toEqual(
       new Set(Object.keys(moduleRegistry))
     );
@@ -224,7 +225,7 @@ describe("CLI Arguments — parseArgs()", () => {
 describe("resolveModules()", () => {
   it("should return all modules when null is passed", () => {
     const active = resolveModules(null);
-    expect(active).toHaveLength(24);
+    expect(active).toHaveLength(25);
     expect(active.map((m) => m.name)).toEqual(Object.keys(moduleRegistry));
   });
 

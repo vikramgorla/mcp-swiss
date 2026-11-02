@@ -27,7 +27,7 @@
 
 `mcp-swiss` is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives any AI assistant direct access to Swiss open data — trains, weather, rivers, maps, and companies.
 
-**85 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
+**88 tools. No API keys. No registration. No server to run. Just `npx mcp-swiss`.**
 
 ```
 🚆 Transport    — SBB, PostBus, trams, live departures, journey planning
@@ -55,6 +55,7 @@
 🌿 Pollen       — MeteoSwiss pollen concentrations at the published stations
 🏠 Buildings    — Federal register of buildings and dwellings (GWR)
 📂 Catalogue    — opendata.swiss dataset search, metadata, and downloads
+🌡️ Meteo OGD    — SwissMetNet stations and measurements (STAC CSV)
 ```
 
 ---
@@ -301,7 +302,7 @@ A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to star
 
 ## Module Filtering
 
-By default, mcp-swiss loads all 24 modules (85 tools). The full `tools/list` schema is about 7,200 tokens (28,854 characters), down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
+By default, mcp-swiss loads all 25 modules (88 tools). The full `tools/list` schema is about 7,200 tokens (28,854 characters), down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.
 
 ### Discovery mode
 
@@ -351,7 +352,7 @@ Search, then execute. The server lists three meta-tools instead of every schema 
 | `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 68% |
 | `citizen` | parliament, voting, holidays, news | 17 | 80% |
 | `minimal` | transport | 5 | 94% |
-| `full` | all 24 modules (default) | 85 | — |
+| `full` | all 25 modules (default) | 88 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 
@@ -385,7 +386,7 @@ Once connected, try asking your AI:
 
 ## Tools
 
-> 85 tools across 24 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
+> 88 tools across 25 modules. Full specifications: [`docs/tool-specs.md`](docs/tool-specs.md) · Machine-readable: [`docs/tools.schema.json`](docs/tools.schema.json)
 
 ### 🚆 Transport (5 tools)
 
@@ -592,6 +593,14 @@ Once connected, try asking your AI:
 | `get_opendata_dataset` | Metadata for one dataset: publisher, description, keywords, and a short resource summary |
 | `list_opendata_resources` | Download links and services for a dataset, with an optional format filter |
 
+### 🌡️ MeteoSwiss OGD (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_ogd_stations` | Stations in a MeteoSwiss OGD STAC collection (SwissMetNet by default, plus precipitation, climate, phenology, and totaliser networks) |
+| `get_ogd_recent` | Latest measurements for one station, parsed from the now/recent CSV asset |
+| `get_ogd_history` | Historical measurements for a date range, parsed from the historical or recent CSV assets |
+
 ---
 
 ## Data Sources
@@ -622,6 +631,7 @@ All official Swiss open data — no API keys required:
 | [arclink.ethz.ch](http://arclink.ethz.ch) | Swiss Seismological Service earthquakes (SED/ETH) | [SED](http://www.seismo.ethz.ch) |
 | [measurement-api.slf.ch](https://measurement-api.slf.ch/public/api) | SLF snow depth + measurements (IMIS + study plots, CC BY 4.0) | [SLF](https://www.slf.ch) |
 | [data.geo.admin.ch](https://data.geo.admin.ch/ch.meteoschweiz.ogd-pollen/) | MeteoSwiss pollen concentrations (16 automatic stations, CC BY) | [MeteoSwiss](https://www.meteoswiss.admin.ch) |
+| [data.geo.admin.ch STAC](https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-smn) | MeteoSwiss OGD station measurements (CSV assets, CC BY) | [MeteoSwiss open data](https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html) |
 | [ckan.opendata.swiss](https://ckan.opendata.swiss/api/3/action/) | National open data catalogue (datasets and resources) | [opendata.swiss](https://opendata.swiss) |
 
 ---

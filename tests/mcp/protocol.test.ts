@@ -128,7 +128,7 @@ describe('MCP protocol: tools/list', () => {
     expect(Array.isArray(result.tools)).toBe(true);
   });
 
-  it('returns exactly 85 tools', async () => {
+  it('returns exactly 88 tools', async () => {
     const response = await sendMcpRequest({
       jsonrpc: '2.0',
       id: 3,
@@ -136,7 +136,7 @@ describe('MCP protocol: tools/list', () => {
     });
 
     const result = response.result as { tools: Tool[] };
-    expect(result.tools).toHaveLength(85);
+    expect(result.tools).toHaveLength(88);
   });
 
   it('marks every tool read-only and idempotent', async () => {
@@ -254,6 +254,9 @@ describe('MCP protocol: tools/list', () => {
     expect(names).toContain('search_opendata');
     expect(names).toContain('get_opendata_dataset');
     expect(names).toContain('list_opendata_resources');
+    expect(names).toContain('list_ogd_stations');
+    expect(names).toContain('get_ogd_recent');
+    expect(names).toContain('get_ogd_history');
     expect(names).toContain('get_building');
     expect(names).toContain('buildings_near');
   });

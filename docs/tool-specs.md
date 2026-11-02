@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 85 MCP tools.
+> Complete human + machine-readable specification for all 88 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 85 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 88 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -31,6 +31,7 @@
 - [Earthquakes / SED Module (3 tools)](#earthquakes)
 - [Snow Conditions / SLF Module (3 tools)](#snow-conditions)
 - [Pollen / MeteoSwiss Module (3 tools)](#pollen)
+- [MeteoSwiss OGD (3 tools)](#meteoswiss-ogd)
 - [Open Data Catalogue (3 tools)](#open-data-catalogue)
 
 ---
@@ -2527,6 +2528,18 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 
 ---
 
+## MeteoSwiss OGD
+
+**Base API:** `https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-smn`  
+**Docs:** https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html  
+**Auth:** None required
+
+Station lists and measurements are CSV assets linked from the STAC collection. Times are Swiss local time. Collection aliases: `smn`, `smn-precip`, `smn-tower`, `nime`, `nbcn`, `nbcn-precip`, `obs`, `phenology`, `tot`.
+
+### `list_ogd_stations`
+
+List stations in one MeteoSwiss OGD collection. Defaults to SwissMetNet (`smn`).
+
 ## Open Data Catalogue
 
 **Base API:** `https://ckan.opendata.swiss/api/3/action`  
@@ -2543,6 +2556,14 @@ Search the Swiss open data catalogue for datasets. Returns titles, publishers, a
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| collection | string | ❌ | Collection alias or full STAC id (default `smn`) |
+| canton | string | ❌ | Canton abbreviation such as BE or ZH |
+| query | string | ❌ | Case-insensitive station code or name |
+| limit | number | ❌ | Maximum stations (default 30, max 150) |
+
+### `get_ogd_recent`
+
+Latest measurements for one station from the now or recent CSV asset.
 | query | string | ✅ | Full-text search (e.g. weather, population) |
 | organization | string | ❌ | Publisher slug, e.g. `bundesamt-fur-statistik-bfs` |
 | limit | number | ❌ | Maximum datasets to return (default 10, max 20) |
@@ -2555,6 +2576,15 @@ Get metadata for one opendata.swiss dataset by catalogue name or UUID.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| station | string | ✅ | Station code such as BER, SMA, or LUG |
+| collection | string | ❌ | Collection alias (default `smn`) |
+| granularity | string | ❌ | `t` 10-minute, `h` hourly (default), `d` daily, `m` monthly, `y` yearly |
+| parameters | string | ❌ | Comma-separated parameter codes, or `all` |
+| limit | number | ❌ | Most recent rows (default 24, max 168) |
+
+### `get_ogd_history`
+
+Measurements for an inclusive date range. Hourly requests are limited to 14 days. Current-year daily data is read from the smaller recent file.
 | dataset_id | string | ✅ | Dataset name or id (e.g. `weather-station-klosters`) |
 
 ### `list_opendata_resources`
@@ -2565,6 +2595,13 @@ List downloadable resources for a dataset, with an optional format filter.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
+| station | string | ✅ | Station code such as BER |
+| start_date | string | ✅ | First day `YYYY-MM-DD` |
+| end_date | string | ✅ | Last day `YYYY-MM-DD` |
+| collection | string | ❌ | Collection alias (default `smn`) |
+| granularity | string | ❌ | `t`, `h`, `d` (default), `m`, or `y` |
+| parameters | string | ❌ | Comma-separated parameter codes |
+| limit | number | ❌ | Maximum rows (default 31, max 100) |
 | dataset_id | string | ✅ | Dataset name or id from `search_opendata` |
 | format | string | ❌ | Format filter such as CSV, JSON, XML, WMS, or ZIP |
 | limit | number | ❌ | Maximum resources to return (default 20, max 50) |
