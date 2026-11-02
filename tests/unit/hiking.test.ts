@@ -69,7 +69,7 @@ describe("hikingTools", () => {
   it("has get_trail_closures_nearby tool", () => {
     const tool = hikingTools.find((t) => t.name === "get_trail_closures_nearby");
     expect(tool).toBeDefined();
-    expect(tool?.description).toContain("GPS");
+    expect(tool?.description).toContain("WGS84");
     expect(tool?.inputSchema.type).toBe("object");
   });
 

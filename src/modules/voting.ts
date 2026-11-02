@@ -63,17 +63,18 @@ export const votingTools = [
   {
     name: "get_voting_results",
     description:
-      "Get results of Swiss popular votes (Volksabstimmungen) from Basel-Stadt open data. Returns vote title, date, yes/no counts, yes percentage, and eligible voters. Covers national and cantonal votes since 2021.",
+      "Popular vote (Volksabstimmung) results as counted in Basel-Stadt: national and cantonal votes since 2021",
     inputSchema: {
       type: "object",
       properties: {
         year: {
           type: "number",
-          description: "Filter by year (e.g. 2024). If omitted, returns most recent votes.",
+          description: "e.g. 2024 (omit for most recent)",
         },
         limit: {
           type: "number",
-          description: "Maximum number of votes to return (default: 10, max: 50).",
+          description: "max 50",
+          default: 10,
         },
       },
     },
@@ -81,18 +82,19 @@ export const votingTools = [
   {
     name: "search_votes",
     description:
-      "Search Swiss popular votes by keyword in the vote title (e.g. 'Initiative', 'Klimaschutz', 'CO2', 'AHV'). Returns matching votes with yes/no results.",
+      "Search popular votes by title keyword (Basel-Stadt results)",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description: "Search keyword to find in vote titles (German/French/Italian)",
+          description: "Title keyword, e.g. CO2, AHV",
         },
         limit: {
           type: "number",
-          description: "Maximum number of results (default: 5, max: 20).",
+          description: "max 20",
+          default: 5,
         },
       },
     },
@@ -100,17 +102,17 @@ export const votingTools = [
   {
     name: "get_vote_details",
     description:
-      "Get detailed breakdown of a specific Swiss popular vote, including per-district results for Basel-Stadt (Basel city, Riehen, Bettingen, and overseas voters).",
+      "Per-district Basel-Stadt results (Basel, Riehen, Bettingen, abroad) for one vote. Give vote_title and/or date",
     inputSchema: {
       type: "object",
       properties: {
         vote_title: {
           type: "string",
-          description: "Partial or full vote title to look up (e.g. 'CO2-Gesetz', 'AHV')",
+          description: "Partial title, e.g. CO2-Gesetz",
         },
         date: {
           type: "string",
-          description: "Vote date in YYYY-MM-DD format (e.g. '2024-11-24')",
+          description: "YYYY-MM-DD",
         },
       },
     },

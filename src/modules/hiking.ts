@@ -119,27 +119,23 @@ export const hikingTools = [
   {
     name: "get_trail_closures",
     description:
-      "Get current Swiss hiking trail closures and detours from the official ASTRA/Schweizer Wanderwege dataset. " +
-      "Filter by closure reason (e.g. Steinschlag, Bauarbeiten, Hangrutsch) or type (closure, detour). " +
-      "If no parameters are given, returns all active closures. " +
-      "Data source: swisstopo ch.astra.wanderland-sperrungen_umleitungen.",
+      "Current hiking trail closures and detours (ASTRA/Schweizer Wanderwege)",
     inputSchema: {
       type: "object",
       properties: {
         reason: {
           type: "string",
-          description:
-            "Optional search term for closure reason (e.g. 'Steinschlag', 'Bauarbeiten', 'Hangrutsch', 'Hochwasser'). " +
-            "Matches against the reason field (German or English). Case-insensitive partial match.",
+          description: "Partial match, e.g. Steinschlag, Bauarbeiten, Hangrutsch",
         },
         type: {
           type: "string",
           enum: ["closure", "detour"],
-          description: "Optional: filter by type — 'closure' (Sperrung) or 'detour' (Umleitung). If omitted, returns both.",
+          description: "Omit for both",
         },
         limit: {
           type: "number",
-          description: "Maximum number of results to return. Default: 20. Max: 100.",
+          description: "max 100",
+          default: 20,
         },
       },
     },
@@ -147,23 +143,22 @@ export const hikingTools = [
   {
     name: "get_trail_closures_nearby",
     description:
-      "Find Swiss hiking trail closures and detours near a given GPS coordinate. " +
-      "Converts WGS84 coordinates to Swiss LV95 and queries the swisstopo identify endpoint. " +
-      "Returns closures within the specified radius.",
+      "Hiking trail closures and detours near a WGS84 point",
     inputSchema: {
       type: "object",
       properties: {
         lat: {
           type: "number",
-          description: "Latitude in WGS84 (e.g. 46.9480 for Bern).",
+          description: "Latitude (WGS84)",
         },
         lon: {
           type: "number",
-          description: "Longitude in WGS84 (e.g. 7.4474 for Bern).",
+          description: "Longitude (WGS84)",
         },
         radius: {
           type: "number",
-          description: "Search radius in metres. Default: 10000 (10 km). Max: 50000.",
+          description: "Metres, max 50000",
+          default: 10000,
         },
       },
       required: ["lat", "lon"],

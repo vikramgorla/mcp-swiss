@@ -5,44 +5,44 @@ const BASE = "https://www.zefix.admin.ch/ZefixREST/api/v1";
 export const companiesTools = [
   {
     name: "search_companies",
-    description: "Search Swiss company registry (ZEFIX) by name, canton, or legal form",
+    description: "Search the ZEFIX commercial register by company name, optionally filtered by canton/legal form",
     inputSchema: {
       type: "object",
       required: ["name"],
       properties: {
-        name: { type: "string", description: "Company name or partial name to search" },
-        canton: { type: "string", description: "Canton abbreviation (e.g. ZH, BE, GE, ZG)" },
-        legal_form: { type: "string", description: "Legal form code (e.g. 0106=GmbH, 0101=AG)" },
-        limit: { type: "number", description: "Max results (default: 20)" },
+        name: { type: "string", description: "Full or partial name" },
+        canton: { type: "string", description: "Canton code, e.g. ZH" },
+        legal_form: { type: "string", description: "Legal form code, e.g. 0106=GmbH, 0101=AG (see list_legal_forms)" },
+        limit: { type: "number", default: 20 },
       },
     },
   },
   {
     name: "get_company",
-    description: "Get full details of a Swiss company by its ZEFIX internal ID (ehraid). Use search_companies first to find the ehraid — it is returned in company search results.",
+    description: "Full company details by ZEFIX ehraid (from search_companies)",
     inputSchema: {
       type: "object",
       required: ["ehraid"],
       properties: {
-        ehraid: { type: "number", description: "Company internal ZEFIX ID (ehraid integer, e.g. 119283). Returned by search_companies." },
+        ehraid: { type: "number", description: "e.g. 119283" },
       },
     },
   },
   {
     name: "search_companies_by_address",
-    description: "Search Swiss companies registered at a specific address or locality",
+    description: "Companies registered at an address or locality",
     inputSchema: {
       type: "object",
       required: ["address"],
       properties: {
-        address: { type: "string", description: "Address or locality name" },
-        limit: { type: "number", description: "Max results (default: 20)" },
+        address: { type: "string" },
+        limit: { type: "number", default: 20 },
       },
     },
   },
   {
     name: "list_cantons",
-    description: "List all Swiss cantons with their codes",
+    description: "List cantons with codes",
     inputSchema: {
       type: "object",
       properties: {},
@@ -50,7 +50,7 @@ export const companiesTools = [
   },
   {
     name: "list_legal_forms",
-    description: "List all Swiss company legal forms (AG, GmbH, etc.)",
+    description: "List company legal forms (AG, GmbH, ...) with codes",
     inputSchema: {
       type: "object",
       properties: {},

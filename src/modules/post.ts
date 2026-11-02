@@ -140,14 +140,14 @@ export const postTools = [
   {
     name: "lookup_postcode",
     description:
-      "Look up a Swiss postcode (PLZ) to get locality name, canton, and coordinates. Source: Swiss federal geodata (swisstopo).",
+      "Locality, canton and coordinates for a postcode (PLZ)",
     inputSchema: {
       type: "object",
       required: ["postcode"],
       properties: {
         postcode: {
           type: "string",
-          description: "Swiss postal code (PLZ), e.g. \"8001\" or \"3000\"",
+          description: "4 digits, e.g. 8001",
         },
       },
     },
@@ -155,14 +155,14 @@ export const postTools = [
   {
     name: "search_postcode",
     description:
-      "Search Swiss postcodes by city or locality name. Returns all PLZ entries matching the name. Source: Swiss federal geodata (swisstopo).",
+      "Postcodes (PLZ) for a city/locality name",
     inputSchema: {
       type: "object",
       required: ["city_name"],
       properties: {
         city_name: {
           type: "string",
-          description: "City or locality name, e.g. \"Zürich\", \"Bern\", \"Locarno\"",
+          description: "e.g. Zürich",
         },
       },
     },
@@ -170,7 +170,7 @@ export const postTools = [
   {
     name: "list_postcodes_in_canton",
     description:
-      "List all Swiss postcodes (PLZ) in a given canton. Accepts 2-letter canton codes (ZH, BE, GR…) or full names. Source: Swiss federal geodata (swisstopo).",
+      "List postcodes (PLZ) in a canton",
     inputSchema: {
       type: "object",
       required: ["canton"],
@@ -178,7 +178,7 @@ export const postTools = [
         canton: {
           type: "string",
           description:
-            "Canton code (e.g. \"ZH\", \"BE\", \"GR\") or full name (e.g. \"Zürich\", \"Bern\", \"Graubünden\")",
+            "Canton code (e.g. ZH) or name",
         },
       },
     },
@@ -186,7 +186,7 @@ export const postTools = [
   {
     name: "track_parcel",
     description:
-      "Generate a Swiss Post parcel tracking URL for a given tracking number. Swiss Post does not provide a public tracking API, so this returns the official tracking page URL to open in a browser.",
+      "Swiss Post tracking page URL for a tracking number (no live status: there is no public tracking API)",
     inputSchema: {
       type: "object",
       required: ["tracking_number"],
@@ -194,7 +194,7 @@ export const postTools = [
         tracking_number: {
           type: "string",
           description:
-            "Swiss Post tracking number, e.g. \"99.00.123456.12345678\" for parcels or \"RI 123456789 CH\" for registered mail",
+            "e.g. 99.00.123456.12345678 (parcel), RI 123456789 CH (registered)",
         },
       },
     },

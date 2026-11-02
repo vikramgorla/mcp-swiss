@@ -86,22 +86,19 @@ export const avalancheTools: AvalancheTool[] = [
   {
     name: "get_avalanche_bulletin",
     description:
-      "Get the current Swiss avalanche danger bulletin from SLF (WSL Institute for Snow and Avalanche Research). " +
-      "Returns current bulletin URLs, danger level descriptions, and links to the interactive map. " +
-      "The bulletin is published daily at ~08:00 and updated at ~17:00 Swiss time (October–May).",
+      "SLF avalanche bulletin: links to today's PDF bulletin and interactive map plus the danger scale (no live danger levels). Published daily Oct–May",
     inputSchema: {
       type: "object",
       properties: {
         region: {
           type: "string",
           description:
-            "Optional region ID (e.g. CH-9 for Central Graubünden) or region name. " +
-            "Use list_avalanche_regions to see all options. If omitted, returns national overview.",
+            "Region ID (e.g. CH-9) or name, from list_avalanche_regions. Omit for national overview",
         },
         language: {
           type: "string",
           enum: ["de", "en", "fr", "it"],
-          description: "Language for bulletin links: de (German), en (English), fr (French), it (Italian). Default: en",
+          default: "en",
         },
       },
     },
@@ -109,15 +106,13 @@ export const avalancheTools: AvalancheTool[] = [
   {
     name: "list_avalanche_regions",
     description:
-      "List all Swiss avalanche warning regions as defined by SLF/EAWS. " +
-      "Returns region IDs, names, cantons, and typical elevations. " +
-      "Use region IDs with get_avalanche_bulletin.",
+      "List SLF avalanche warning regions (IDs for get_avalanche_bulletin)",
     inputSchema: {
       type: "object",
       properties: {
         canton: {
           type: "string",
-          description: "Filter regions by canton abbreviation (e.g. GR, VS, BE). Optional.",
+          description: "Canton code, e.g. GR",
         },
       },
     },

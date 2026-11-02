@@ -73,7 +73,7 @@ export const airqualityTools = [
   {
     name: "list_air_quality_stations",
     description:
-      "List all official Swiss NABEL (Nationales Beobachtungsnetz für Luftfremdstoffe) air quality monitoring stations operated by BAFU/EMPA. Returns station codes, names, cantons, coordinates, and environment types.",
+      "List NABEL air-quality monitoring stations (BAFU/Empa)",
     inputSchema: {
       type: "object",
       properties: {},
@@ -82,7 +82,7 @@ export const airqualityTools = [
   {
     name: "get_air_quality",
     description:
-      "Get information about a Swiss NABEL air quality monitoring station, including location, environment type, Swiss legal limits (LRV), and a direct link to the BAFU live data portal. Use station codes from list_air_quality_stations (e.g. BER=Bern, ZUE=Zürich, LUG=Lugano).",
+      "NABEL station info: location, environment type, legal limits (LRV) and a link to BAFU live data (no measurements returned)",
     inputSchema: {
       type: "object",
       required: ["station"],
@@ -90,7 +90,7 @@ export const airqualityTools = [
         station: {
           type: "string",
           description:
-            "NABEL station code (e.g. BER, ZUE, LUG, BAS, DAV). Use list_air_quality_stations for all codes.",
+            "Station code, e.g. BER, ZUE, LUG, BAS, DAV",
         },
       },
     },

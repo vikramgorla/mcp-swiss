@@ -120,21 +120,19 @@ export const statisticsTools = [
   {
     name: "get_population",
     description:
-      "Get Swiss population data from the Federal Statistical Office (FSO/BFS). " +
-      "Returns population figures for Switzerland, a canton, or all cantons. " +
-      "Data source: BFS STATPOP (permanent resident population).",
+      "Permanent resident population (BFS STATPOP) for Switzerland, a canton or all cantons",
     inputSchema: {
       type: "object",
       properties: {
         canton: {
           type: "string",
           description:
-            "Canton name or 2-letter code (e.g. 'ZH', 'Zürich', 'Geneva', 'BE'). " +
-            "Omit to get Switzerland total. Use 'all' to list all cantons.",
+            "Canton code or name (e.g. ZH, Geneva); 'all' for every canton; omit for national total",
         },
         year: {
           type: "number",
-          description: `Year of data (${AVAILABLE_YEARS[0]}–${LATEST_YEAR}). Defaults to latest (${LATEST_YEAR}).`,
+          description: `${AVAILABLE_YEARS[0]}–${LATEST_YEAR}`,
+          default: Number(LATEST_YEAR),
         },
       },
     },
@@ -142,19 +140,19 @@ export const statisticsTools = [
   {
     name: "search_statistics",
     description:
-      "Search Swiss Federal Statistical Office (BFS/OFS/UST) datasets on opendata.swiss. " +
-      "Returns matching dataset titles, IDs, and descriptions.",
+      "Search BFS datasets on opendata.swiss",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description: "Search query (e.g. 'unemployment', 'GDP', 'housing prices', 'birth rate')",
+          description: "e.g. unemployment, GDP",
         },
         limit: {
           type: "number",
-          description: "Max results to return (1–20, default 10)",
+          description: "1–20",
+          default: 10,
         },
       },
     },
@@ -162,15 +160,14 @@ export const statisticsTools = [
   {
     name: "get_statistic",
     description:
-      "Fetch details and resource links for a specific BFS/OFS dataset by its opendata.swiss identifier. " +
-      "Use search_statistics first to find dataset IDs.",
+      "Details and resource links for a BFS dataset by opendata.swiss ID (from search_statistics)",
     inputSchema: {
       type: "object",
       required: ["dataset_id"],
       properties: {
         dataset_id: {
           type: "string",
-          description: "Dataset identifier from opendata.swiss (e.g. 'bevolkerungsstatistik-einwohner')",
+          description: "e.g. bevolkerungsstatistik-einwohner",
         },
       },
     },

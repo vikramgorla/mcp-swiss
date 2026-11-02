@@ -87,14 +87,14 @@ export const trafficTools = [
   {
     name: "get_traffic_count",
     description:
-      "Get traffic volume at an ASTRA counting station in Switzerland by location name (e.g. 'Gotthard', 'Zürich', 'Genf'). Returns daily and weekday traffic counts, heavy vehicle percentage, and measurement year.",
+      "ASTRA traffic counting station volumes by location name",
     inputSchema: {
       type: "object",
       required: ["location"],
       properties: {
         location: {
           type: "string",
-          description: "Station or location name to search (e.g. 'Gotthard', 'Zürich', 'Basel')",
+          description: "e.g. Gotthard",
         },
       },
     },
@@ -102,14 +102,14 @@ export const trafficTools = [
   {
     name: "get_traffic_by_canton",
     description:
-      "List ASTRA traffic counting stations in a Swiss canton. Returns up to 20 stations with traffic data.",
+      "ASTRA traffic counting stations in a canton (max 20)",
     inputSchema: {
       type: "object",
       required: ["canton"],
       properties: {
         canton: {
           type: "string",
-          description: "2-letter canton code (e.g. 'ZH', 'BE', 'GE', 'VS')",
+          description: "Canton code, e.g. ZH",
         },
       },
     },
@@ -117,22 +117,23 @@ export const trafficTools = [
   {
     name: "get_traffic_nearby",
     description:
-      "Find ASTRA traffic counting stations near a geographic coordinate in Switzerland. Returns nearby stations with traffic volume data.",
+      "ASTRA traffic counting stations near a WGS84 point",
     inputSchema: {
       type: "object",
       required: ["lat", "lon"],
       properties: {
         lat: {
           type: "number",
-          description: "Latitude in WGS84 (e.g. 47.3769 for Zürich)",
+          description: "Latitude (WGS84)",
         },
         lon: {
           type: "number",
-          description: "Longitude in WGS84 (e.g. 8.5417 for Zürich)",
+          description: "Longitude (WGS84)",
         },
         radius: {
           type: "number",
-          description: "Search radius in meters (default: 5000)",
+          description: "Metres",
+          default: 5000,
         },
       },
     },

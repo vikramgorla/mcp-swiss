@@ -200,7 +200,7 @@ export const damsTools = [
   {
     name: "search_dams",
     description:
-      "Search Swiss dams and reservoirs under federal supervision by name. Searches both dam names and reservoir names. Returns dam type, height, crest length, reservoir volume, purpose, canton, and year built. Data source: Swiss Federal Office of Energy (SFOE) via swisstopo BGDI.",
+      "Search federally supervised dams by dam or reservoir name (SFOE)",
     inputSchema: {
       type: "object",
       required: ["query"],
@@ -208,7 +208,7 @@ export const damsTools = [
         query: {
           type: "string",
           description:
-            "Dam or reservoir name to search (e.g. 'Grimsel', 'Grande Dixence', 'Mattmark', 'Lac des Dix'). Partial names are supported.",
+            "Partial name, e.g. Grimsel, Lac des Dix",
         },
       },
     },
@@ -216,7 +216,7 @@ export const damsTools = [
   {
     name: "get_dams_by_canton",
     description:
-      "List all Swiss dams under federal supervision in a given canton. Returns up to 20 dams with basic details. Data source: Swiss Federal Office of Energy (SFOE) via swisstopo BGDI.",
+      "Federally supervised dams in a canton (max 20)",
     inputSchema: {
       type: "object",
       required: ["canton"],
@@ -224,7 +224,7 @@ export const damsTools = [
         canton: {
           type: "string",
           description:
-            "Swiss canton 2-letter abbreviation code (e.g. 'VS' for Valais, 'GR' for Graubünden, 'BE' for Bern, 'UR' for Uri, 'TI' for Ticino, 'VD' for Vaud).",
+            "Canton code, e.g. VS",
         },
       },
     },
@@ -232,7 +232,7 @@ export const damsTools = [
   {
     name: "get_dam_details",
     description:
-      "Get full technical details of a specific Swiss dam by name. Returns all available fields: dam type, height, crest length, crest level, reservoir name, impoundment volume, storage level, purpose, operation dates, federal supervision start, and canton. Data source: Swiss Federal Office of Energy (SFOE) via swisstopo BGDI.",
+      "Full technical details of one dam by name",
     inputSchema: {
       type: "object",
       required: ["name"],
@@ -240,7 +240,7 @@ export const damsTools = [
         name: {
           type: "string",
           description:
-            "Dam name (e.g. 'Grande Dixence', 'Spitallamm', 'Mattmark', 'Verzasca'). Use search_dams first if you are unsure of the exact name.",
+            "e.g. Grande Dixence (see search_dams)",
         },
       },
     },

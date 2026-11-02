@@ -182,7 +182,7 @@ export async function handleSearchSwissNews(args: {
 export function registerNewsTools(server: McpServer): void {
   server.tool(
     "get_swiss_news",
-    "Get the latest Swiss news headlines from SRF (Schweizer Radio und Fernsehen). Returns top news articles with title, description, link, and publication date.",
+    "Latest SRF news headlines",
     {
       category: z
         .enum(["switzerland", "international", "economy"])
@@ -196,7 +196,7 @@ export function registerNewsTools(server: McpServer): void {
         .min(1)
         .max(50)
         .optional()
-        .describe("Number of articles to return (default: 10, max: 50)"),
+        .describe("max 50"),
     },
     async (args) => {
       const text = await handleGetSwissNews(args);
@@ -206,16 +206,16 @@ export function registerNewsTools(server: McpServer): void {
 
   server.tool(
     "search_swiss_news",
-    "Search Swiss news headlines from SRF by keyword. Searches across all available news categories and returns matching articles.",
+    "Keyword search in current SRF headlines (all categories)",
     {
-      query: z.string().min(1).describe("Search keyword or phrase to find in news articles"),
+      query: z.string().min(1).describe("Keyword or phrase"),
       limit: z
         .number()
         .int()
         .min(1)
         .max(20)
         .optional()
-        .describe("Maximum number of results to return (default: 5, max: 20)"),
+        .describe("max 20"),
     },
     async (args) => {
       const text = await handleSearchSwissNews(args);
@@ -230,19 +230,19 @@ export const newsTools = [
   {
     name: "get_swiss_news",
     description:
-      "Get the latest Swiss news headlines from SRF (Schweizer Radio und Fernsehen). Returns top news articles with title, description, link, and publication date.",
+      "Latest SRF news headlines",
     inputSchema: {
       type: "object" as const,
       properties: {
         category: {
           type: "string",
           enum: ["switzerland", "international", "economy"],
-          description:
-            'News category. "switzerland" = domestic Swiss news (default), "international" = world news, "economy" = business & economy.',
+          default: "switzerland",
         },
         limit: {
           type: "number",
-          description: "Number of articles to return (default: 10, max: 50)",
+          description: "max 50",
+          default: 10,
         },
       },
     },
@@ -250,18 +250,19 @@ export const newsTools = [
   {
     name: "search_swiss_news",
     description:
-      "Search Swiss news headlines from SRF by keyword. Searches across all available news categories and returns matching articles.",
+      "Keyword search in current SRF headlines (all categories)",
     inputSchema: {
       type: "object" as const,
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description: "Search keyword or phrase to find in news articles",
+          description: "Keyword or phrase",
         },
         limit: {
           type: "number",
-          description: "Maximum number of results to return (default: 5, max: 20)",
+          description: "max 20",
+          default: 5,
         },
       },
     },

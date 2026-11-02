@@ -399,29 +399,22 @@ export const realEstateTools = [
   {
     name: "get_property_price_index",
     description:
-      "Get the Swiss Residential Property Price Index (SWRPI) — official BFS data. " +
-      "Baseline Q4 2019 = 100. Returns quarterly index values tracking Swiss property prices " +
-      "since 2009. Covers all properties, single-family houses, and apartments separately.",
+      "BFS residential property price index (SWRPI), quarterly since 2009, Q4 2019 = 100",
     inputSchema: {
       type: "object",
       properties: {
         type: {
           type: "string",
-          description:
-            'Property type to filter by: "all" (combined index), "houses" (single-family), ' +
-            '"apartments" (condominiums/flats). Defaults to "all".',
+          enum: ["all", "houses", "apartments"],
+          default: "all",
         },
         from: {
           type: "string",
-          description:
-            'Start period (inclusive). Format: "2020Q1", "2020-Q1", or just "2020". ' +
-            "Defaults to earliest available (2009-Q4).",
+          description: "Inclusive, e.g. 2020Q1 or 2020 (default: earliest)",
         },
         to: {
           type: "string",
-          description:
-            'End period (inclusive). Format: "2024Q4", "2024-Q4", or just "2024". ' +
-            "Defaults to latest available.",
+          description: "Inclusive, e.g. 2024Q4 or 2024 (default: latest)",
         },
       },
     },
@@ -429,22 +422,19 @@ export const realEstateTools = [
   {
     name: "search_real_estate_data",
     description:
-      "Search opendata.swiss for Swiss real estate and housing datasets. " +
-      "Finds datasets about property prices, rents, housing construction, vacancy rates, and more. " +
-      "Returns dataset names, descriptions, and resource download URLs.",
+      "Search opendata.swiss for real-estate/housing datasets (prices, rents, construction, vacancies)",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
         query: {
           type: "string",
-          description:
-            'Search terms in German, French, or English (e.g. "Immobilien", "Miete", ' +
-            '"rent", "logement", "Wohnungspreise", "Leerwohnungen").',
+          description: "DE/FR/EN terms, e.g. Miete, logement, Leerwohnungen",
         },
         limit: {
           type: "number",
-          description: "Max results to return (1–20, default 10).",
+          description: "1–20",
+          default: 10,
         },
       },
     },
@@ -452,21 +442,18 @@ export const realEstateTools = [
   {
     name: "get_rent_index",
     description:
-      "Get the Swiss Consumer Price Index (CPI/LIK), which tracks cost of living including " +
-      "residential rents. Baseline December 1982 = 100. Published monthly by BFS. " +
-      "For property purchase prices, use get_property_price_index instead.",
+      "BFS consumer price index (CPI/LIK, incl. rents), monthly, Dec 1982 = 100. Not a dedicated rent index; for purchase prices use get_property_price_index",
     inputSchema: {
       type: "object",
       properties: {
         year: {
           type: "number",
-          description:
-            "Filter to a specific year (1983–2025). Omit for latest 24 months.",
+          description: "1983 onward (omit for recent months)",
         },
         limit: {
           type: "number",
-          description:
-            "Number of recent monthly data points to return (1–60, default 24). Ignored if year is set.",
+          description: "Recent months, 1–60; ignored if year set",
+          default: 24,
         },
       },
     },

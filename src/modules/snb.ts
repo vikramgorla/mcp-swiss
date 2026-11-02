@@ -374,7 +374,7 @@ export function registerSnbTools(server: McpServer): void {
 
   server.tool(
     "list_currencies",
-    "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data. Returns currency codes, names, and regions.",
+    "List currencies with SNB CHF exchange rates",
     {},
     async () => {
       const result = await handleListCurrencies();
@@ -386,12 +386,12 @@ export function registerSnbTools(server: McpServer): void {
 
   server.tool(
     "get_exchange_rate",
-    "Get the current CHF exchange rate for a currency from the Swiss National Bank (SNB). Returns the latest monthly average rate and currency details.",
+    "Latest SNB monthly-average CHF exchange rate for a currency",
     {
       currency: z
         .string()
         .describe(
-          "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP', 'JPY'). Use list_currencies to see all available codes."
+          "ISO 4217 code, e.g. EUR"
         ),
     },
     async ({ currency }) => {
@@ -404,12 +404,12 @@ export function registerSnbTools(server: McpServer): void {
 
   server.tool(
     "get_exchange_rate_history",
-    "Get historical CHF exchange rates for a currency from the Swiss National Bank (SNB). Returns monthly average rates with optional date filtering. Without date range, returns the most recent 90 months.",
+    "Historical SNB monthly-average CHF exchange rates (default: last 90 months)",
     {
       currency: z
         .string()
         .describe(
-          "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP'). Use list_currencies to see all available codes."
+          "ISO 4217 code, e.g. EUR"
         ),
       from: z
         .string()
@@ -445,20 +445,20 @@ export const snbTools = [
   {
     name: "list_currencies",
     description:
-      "List all currencies available from the Swiss National Bank (SNB) for CHF exchange rate data. Returns currency codes, names, and regions.",
+      "List currencies with SNB CHF exchange rates",
     inputSchema: { type: "object" as const, properties: {} },
   },
   {
     name: "get_exchange_rate",
     description:
-      "Get the current CHF exchange rate for a currency from the Swiss National Bank (SNB). Returns the latest monthly average rate and currency details.",
+      "Latest SNB monthly-average CHF exchange rate for a currency",
     inputSchema: {
       type: "object" as const,
       required: ["currency"],
       properties: {
         currency: {
           type: "string",
-          description: "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP', 'JPY'). Use list_currencies to see all available codes.",
+          description: "ISO 4217 code, e.g. EUR",
         },
       },
     },
@@ -466,22 +466,22 @@ export const snbTools = [
   {
     name: "get_exchange_rate_history",
     description:
-      "Get historical CHF exchange rates for a currency from the Swiss National Bank (SNB). Returns monthly average rates with optional date filtering. Without date range, returns the most recent 90 months.",
+      "Historical SNB monthly-average CHF exchange rates (default: last 90 months)",
     inputSchema: {
       type: "object" as const,
       required: ["currency"],
       properties: {
         currency: {
           type: "string",
-          description: "ISO 4217 currency code (e.g. 'EUR', 'USD', 'GBP'). Use list_currencies to see all available codes.",
+          description: "ISO 4217 code, e.g. EUR",
         },
         from: {
           type: "string",
-          description: "Start date in YYYY-MM format (e.g. '2020-01'). Optional.",
+          description: "YYYY-MM",
         },
         to: {
           type: "string",
-          description: "End date in YYYY-MM format (e.g. '2026-02'). Optional.",
+          description: "YYYY-MM",
         },
       },
     },

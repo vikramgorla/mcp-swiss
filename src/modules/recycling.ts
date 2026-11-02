@@ -117,27 +117,24 @@ export const recyclingTools = [
   {
     name: "get_waste_collection",
     description:
-      "Get upcoming waste collection dates for a Zurich city ZIP code. Returns the next scheduled pickups sorted by date. " +
-      "Currently covers Zurich city only (ZIP codes 8001–8099). " +
-      "Powered by OpenERZ (openerz.metaodi.ch).",
+      "Upcoming waste collection dates for a ZIP code. Zurich city only (8001–8099, OpenERZ)",
     inputSchema: {
       type: "object",
       required: ["zip"],
       properties: {
         zip: {
           type: "string",
-          description: "Zurich city ZIP code (e.g. '8001', '8004', '8032'). Covers 8001–8099.",
+          description: "e.g. 8004",
         },
         type: {
           type: "string",
-          description:
-            "Waste type to filter by (e.g. 'cardboard', 'waste', 'paper', 'organic', 'textile', 'special', 'mobile'). " +
-            "If omitted, returns all types.",
+          description: "Omit for all",
           enum: SUPPORTED_WASTE_TYPES,
         },
         limit: {
           type: "number",
-          description: "Maximum number of upcoming collection dates to return. Default: 5.",
+          description: "max 100",
+          default: 5,
         },
       },
     },
@@ -145,10 +142,7 @@ export const recyclingTools = [
   {
     name: "list_waste_types",
     description:
-      "List all supported waste collection types for Zurich city. " +
-      "Returns each type with its description and local name. " +
-      "Currently covers Zurich city only (ZIP codes 8001–8099). " +
-      "Powered by OpenERZ (openerz.metaodi.ch).",
+      "List waste collection types. Zurich city only (OpenERZ)",
     inputSchema: {
       type: "object",
       properties: {},
@@ -157,25 +151,22 @@ export const recyclingTools = [
   {
     name: "get_waste_calendar",
     description:
-      "Get a full monthly waste collection calendar for a Zurich city ZIP code. " +
-      "Returns all collection events grouped by date for the given month. " +
-      "Currently covers Zurich city only (ZIP codes 8001–8099). " +
-      "Powered by OpenERZ (openerz.metaodi.ch).",
+      "Monthly waste collection calendar for a ZIP code. Zurich city only (8001–8099, OpenERZ)",
     inputSchema: {
       type: "object",
       required: ["zip"],
       properties: {
         zip: {
           type: "string",
-          description: "Zurich city ZIP code (e.g. '8001', '8004', '8032'). Covers 8001–8099.",
+          description: "e.g. 8004",
         },
         month: {
           type: "number",
-          description: "Month number (1–12). Defaults to the current month.",
+          description: "1–12, default: current month",
         },
         year: {
           type: "number",
-          description: "Year (e.g. 2026). Defaults to the current year.",
+          description: "default: current year",
         },
       },
     },

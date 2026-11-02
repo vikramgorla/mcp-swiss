@@ -47,26 +47,27 @@ export const earthquakeTools: EarthquakeTool[] = [
   {
     name: "get_recent_earthquakes",
     description:
-      "Get recent seismic events in and around Switzerland from the Swiss Seismological Service (SED) at ETH Zürich. " +
-      "Returns earthquakes and optionally quarry blasts, sorted by most recent first.",
+      "Recent earthquakes in and around Switzerland (SED, ETH Zürich)",
     inputSchema: {
       type: "object",
       properties: {
         days: {
           type: "number",
-          description: "Number of past days to search (default: 30, max: 365)",
+          description: "Past days, max 365",
+          default: 30,
         },
         min_magnitude: {
           type: "number",
-          description: "Minimum magnitude filter (default: 0.5)",
+          default: 0.5,
         },
         limit: {
           type: "number",
-          description: "Maximum number of results to return (default: 20)",
+          default: 20,
         },
         include_blasts: {
           type: "boolean",
-          description: "Include quarry blasts in results (default: false — earthquakes only)",
+          description: "Include quarry blasts",
+          default: false,
         },
       },
     },
@@ -74,8 +75,7 @@ export const earthquakeTools: EarthquakeTool[] = [
   {
     name: "get_earthquake_details",
     description:
-      "Get full details for a specific seismic event by its SED (Swiss Seismological Service) event ID. " +
-      "Use event IDs returned by get_recent_earthquakes or search_earthquakes_by_location.",
+      "Full details of one seismic event by SED event ID",
     inputSchema: {
       type: "object",
       required: ["event_id"],
@@ -83,8 +83,7 @@ export const earthquakeTools: EarthquakeTool[] = [
         event_id: {
           type: "string",
           description:
-            "The SED event ID (e.g. 'smi:ch.ethz.sed/sc25a/Event/2026errxzt'). " +
-            "Obtain from get_recent_earthquakes or search_earthquakes_by_location.",
+            "From the other earthquake tools, e.g. smi:ch.ethz.sed/sc25a/Event/2026errxzt",
         },
       },
     },
@@ -92,35 +91,37 @@ export const earthquakeTools: EarthquakeTool[] = [
   {
     name: "search_earthquakes_by_location",
     description:
-      "Search for earthquakes near a geographic location using the Swiss Seismological Service (SED) FDSN API. " +
-      "Useful for finding seismic activity near a Swiss city, landmark, or custom coordinates.",
+      "Earthquakes within a radius of a WGS84 point (SED)",
     inputSchema: {
       type: "object",
       required: ["lat", "lon"],
       properties: {
         lat: {
           type: "number",
-          description: "Latitude of the center point (decimal degrees, e.g. 46.9 for Bern)",
+          description: "Latitude (WGS84)",
         },
         lon: {
           type: "number",
-          description: "Longitude of the center point (decimal degrees, e.g. 7.5 for Bern)",
+          description: "Longitude (WGS84)",
         },
         radius_km: {
           type: "number",
-          description: "Search radius in kilometres (default: 50, max: 500)",
+          description: "km, max 500",
+          default: 50,
         },
         days: {
           type: "number",
-          description: "Number of past days to search (default: 90, max: 365)",
+          description: "Past days, max 365",
+          default: 90,
         },
         min_magnitude: {
           type: "number",
-          description: "Minimum magnitude filter (default: 0.5)",
+          default: 0.5,
         },
         limit: {
           type: "number",
-          description: "Maximum number of results to return (default: 20, max: 100)",
+          description: "max 100",
+          default: 20,
         },
       },
     },

@@ -102,15 +102,15 @@ export const pollenTools = [
   {
     name: "get_pollen_current",
     description:
-      "Get current hourly pollen concentrations at a MeteoSwiss pollen monitoring station. Returns the most recent hours of data for 7 pollen types: Alder, Birch, Hazel, Beech, Ash, Oak, and Grasses. Source: MeteoSwiss.",
+      "Latest hourly pollen concentrations (alder, birch, hazel, beech, ash, oak, grasses) at a MeteoSwiss station",
     inputSchema: {
       type: "object" as const,
       required: ["station"],
       properties: {
         station: {
           type: "string",
-          description:
-            'Station code (e.g. "PZH" for Zürich, "PBE" for Bern, "PBS" for Basel). Use list_pollen_stations for all codes.',
+          enum: [...VALID_STATIONS],
+          description: "e.g. PZH Zürich, PBE Bern, PBS Basel",
         },
       },
     },
@@ -118,19 +118,20 @@ export const pollenTools = [
   {
     name: "get_pollen_daily",
     description:
-      "Get daily pollen concentration averages at a MeteoSwiss pollen monitoring station. Returns daily readings for 7 pollen types over the requested number of days. Source: MeteoSwiss.",
+      "Daily average pollen concentrations at a MeteoSwiss station",
     inputSchema: {
       type: "object" as const,
       required: ["station"],
       properties: {
         station: {
           type: "string",
-          description:
-            'Station code (e.g. "PZH" for Zürich, "PBE" for Bern). Use list_pollen_stations for all codes.',
+          enum: [...VALID_STATIONS],
+          description: "e.g. PZH Zürich, PBE Bern",
         },
         days: {
           type: "number",
-          description: "Number of recent days to return (default: 7, max: 90)",
+          description: "Recent days, max 90",
+          default: 7,
         },
       },
     },
@@ -138,13 +139,13 @@ export const pollenTools = [
   {
     name: "list_pollen_stations",
     description:
-      "List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Returns station codes, names, cantons, altitude, and coordinates. Source: MeteoSwiss.",
+      "List MeteoSwiss pollen stations",
     inputSchema: {
       type: "object" as const,
       properties: {
         canton: {
           type: "string",
-          description: "Filter by canton abbreviation (e.g. ZH, BE, GE, TI)",
+          description: "Canton code, e.g. ZH",
         },
       },
     },

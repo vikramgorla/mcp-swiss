@@ -55,18 +55,18 @@ const PARAM_NAMES: Record<string, string> = {
 export const weatherTools = [
   {
     name: "get_weather",
-    description: "Get current weather conditions at a Swiss MeteoSwiss station (e.g. BER=Bern, ZUE=Zürich, LUG=Lugano)",
+    description: "Current weather at a MeteoSwiss station. For past dates use get_weather_history",
     inputSchema: {
       type: "object",
       required: ["station"],
       properties: {
-        station: { type: "string", description: "Station code (e.g. BER, ZUE, LUG, GVE, SMA)" },
+        station: { type: "string", description: "Station code, e.g. BER, ZUE, LUG, GVE, SMA" },
       },
     },
   },
   {
     name: "list_weather_stations",
-    description: "List all available MeteoSwiss weather stations in Switzerland",
+    description: "List MeteoSwiss weather station codes",
     inputSchema: {
       type: "object",
       properties: {},
@@ -74,31 +74,31 @@ export const weatherTools = [
   },
   {
     name: "get_weather_history",
-    description: "Get historical weather data for a Swiss station",
+    description: "Historical weather readings for a MeteoSwiss station over a date range",
     inputSchema: {
       type: "object",
       required: ["station", "start_date", "end_date"],
       properties: {
-        station: { type: "string", description: "Station code (e.g. BER)" },
-        start_date: { type: "string", description: "Start date YYYY-MM-DD" },
-        end_date: { type: "string", description: "End date YYYY-MM-DD" },
+        station: { type: "string", description: "Station code, e.g. BER" },
+        start_date: { type: "string", description: "YYYY-MM-DD" },
+        end_date: { type: "string", description: "YYYY-MM-DD" },
       },
     },
   },
   {
     name: "get_water_level",
-    description: "Get current river or lake water level and temperature at a Swiss hydrological station",
+    description: "Current river/lake level and temperature at a BAFU hydro station",
     inputSchema: {
       type: "object",
       required: ["station"],
       properties: {
-        station: { type: "string", description: "Hydro station ID (e.g. 2135 for Aare/Bern, 2243 for Rhine/Basel)" },
+        station: { type: "string", description: "Hydro station ID, e.g. 2135 (Aare/Bern), 2243 (Rhine/Basel)" },
       },
     },
   },
   {
     name: "list_hydro_stations",
-    description: "List all available BAFU hydrological monitoring stations (rivers and lakes) in Switzerland",
+    description: "List BAFU hydro station IDs (rivers, lakes)",
     inputSchema: {
       type: "object",
       properties: {},
@@ -106,14 +106,14 @@ export const weatherTools = [
   },
   {
     name: "get_water_history",
-    description: "Get historical river/lake water level data for a Swiss hydrological station",
+    description: "Historical river/lake levels for a BAFU hydro station over a date range",
     inputSchema: {
       type: "object",
       required: ["station", "start_date", "end_date"],
       properties: {
         station: { type: "string", description: "Hydro station ID" },
-        start_date: { type: "string", description: "Start date YYYY-MM-DD" },
-        end_date: { type: "string", description: "End date YYYY-MM-DD" },
+        start_date: { type: "string", description: "YYYY-MM-DD" },
+        end_date: { type: "string", description: "YYYY-MM-DD" },
       },
     },
   },

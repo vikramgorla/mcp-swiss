@@ -90,18 +90,18 @@ function slimIdentifyResult(r: IdentifyResult) {
 export const geodataTools = [
   {
     name: "geocode",
-    description: "Convert a Swiss address or place name to coordinates (swisstopo)",
+    description: "Address or place name to WGS84 coordinates (swisstopo)",
     inputSchema: {
       type: "object",
       required: ["address"],
       properties: {
-        address: { type: "string", description: "Swiss address or place name" },
+        address: { type: "string" },
       },
     },
   },
   {
     name: "reverse_geocode",
-    description: "Convert coordinates to a Swiss address (swisstopo)",
+    description: "WGS84 coordinates to address (swisstopo)",
     inputSchema: {
       type: "object",
       required: ["lat", "lng"],
@@ -113,19 +113,19 @@ export const geodataTools = [
   },
   {
     name: "search_places",
-    description: "Search Swiss place names, localities, mountains, and geographic features",
+    description: "Search place names, localities, mountains, geographic features",
     inputSchema: {
       type: "object",
       required: ["query"],
       properties: {
-        query: { type: "string", description: "Place name to search" },
-        type: { type: "string", description: "Type filter: locations, featuresearch" },
+        query: { type: "string" },
+        type: { type: "string", enum: ["locations", "featuresearch"], default: "locations" },
       },
     },
   },
   {
     name: "get_solar_potential",
-    description: "Get rooftop solar energy potential for a location in Switzerland",
+    description: "Rooftop solar potential at a location",
     inputSchema: {
       type: "object",
       required: ["lat", "lng"],
@@ -137,25 +137,25 @@ export const geodataTools = [
   },
   {
     name: "identify_location",
-    description: "Identify geographic features and data layers at a specific Swiss location",
+    description: "Geographic features and swisstopo data layers at a location",
     inputSchema: {
       type: "object",
       required: ["lat", "lng"],
       properties: {
         lat: { type: "number", description: "Latitude (WGS84)" },
         lng: { type: "number", description: "Longitude (WGS84)" },
-        layers: { type: "string", description: "Comma-separated layer ids (default: all visible)" },
+        layers: { type: "string", description: "Comma-separated layer IDs (default: all)" },
       },
     },
   },
   {
     name: "get_municipality",
-    description: "Get information about a Swiss municipality by name",
+    description: "Municipality info by name",
     inputSchema: {
       type: "object",
       required: ["name"],
       properties: {
-        name: { type: "string", description: "Municipality name" },
+        name: { type: "string" },
       },
     },
   },
