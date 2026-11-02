@@ -247,7 +247,18 @@ export async function handleTransport(name: string, args: Record<string, unknown
         type: "station",
       });
       const data = await fetchJSON<{ stations: Station[] }>(url);
-      return JSON.stringify(data.stations.map(slimStation));
+
+      // /locations ignores limit and distance, but returns the distance of
+      // every station, so both are applied here.
+      const maxDistance = args.distance as number | undefined;
+      const limit = args.limit as number | undefined;
+      let stations = [...data.stations].sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+      if (maxDistance !== undefined) {
+        stations = stations.filter((s) => s.distance !== null && s.distance <= maxDistance);
+      }
+      if (limit !== undefined) stations = stations.slice(0, Math.max(0, limit));
+
+      return JSON.stringify(stations.map(slimStation));
     }
 
     default:

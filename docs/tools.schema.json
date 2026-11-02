@@ -170,7 +170,7 @@
     },
     {
       "name": "get_weather_history",
-      "description": "Historical weather readings for a MeteoSwiss station over a date range",
+      "description": "Historical weather readings for a MeteoSwiss station. Only the last 32 days are available",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -185,11 +185,22 @@
           },
           "start_date": {
             "type": "string",
-            "description": "YYYY-MM-DD"
+            "description": "YYYY-MM-DD, within the last 32 days"
           },
           "end_date": {
             "type": "string",
             "description": "YYYY-MM-DD"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "raw",
+              "hourly",
+              "daily"
+            ],
+            "description": "auto summarises long ranges to min/max/mean per period",
+            "default": "auto"
           }
         }
       }
@@ -220,7 +231,7 @@
     },
     {
       "name": "get_water_history",
-      "description": "Historical river/lake levels for a BAFU hydro station over a date range",
+      "description": "Historical river/lake levels for a BAFU hydro station. Only the last 32 days are available",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -235,11 +246,22 @@
           },
           "start_date": {
             "type": "string",
-            "description": "YYYY-MM-DD"
+            "description": "YYYY-MM-DD, within the last 32 days"
           },
           "end_date": {
             "type": "string",
             "description": "YYYY-MM-DD"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "raw",
+              "hourly",
+              "daily"
+            ],
+            "description": "auto summarises long ranges to min/max/mean per period",
+            "default": "auto"
           }
         }
       }
@@ -291,14 +313,6 @@
         "properties": {
           "query": {
             "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "locations",
-              "featuresearch"
-            ],
-            "default": "locations"
           }
         }
       }
@@ -375,19 +389,48 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "Full or partial name"
+            "description": "Full or partial name, min 3 chars; * is a wildcard"
           },
           "canton": {
             "type": "string",
-            "description": "Canton code, e.g. ZH"
+            "enum": [
+              "AG",
+              "AI",
+              "AR",
+              "BE",
+              "BL",
+              "BS",
+              "FR",
+              "GE",
+              "GL",
+              "GR",
+              "JU",
+              "LU",
+              "NE",
+              "NW",
+              "OW",
+              "SG",
+              "SH",
+              "SO",
+              "SZ",
+              "TG",
+              "TI",
+              "UR",
+              "VD",
+              "VS",
+              "ZG",
+              "ZH"
+            ],
+            "description": "Canton of the registered seat"
           },
           "legal_form": {
-            "type": "string",
-            "description": "Legal form code, e.g. 0106=GmbH, 0101=AG (see list_legal_forms)"
+            "type": "number",
+            "description": "Legal form id, e.g. 3=AG, 4=GmbH (see list_legal_forms)"
           },
           "limit": {
             "type": "number",
-            "default": 20
+            "default": 20,
+            "maximum": 100
           }
         }
       }
@@ -409,20 +452,26 @@
       }
     },
     {
-      "name": "search_companies_by_address",
-      "description": "Companies registered at an address or locality",
+      "name": "search_companies_by_locality",
+      "description": "Companies whose registered seat is in a commune/town. ZEFIX has no street-address search",
       "inputSchema": {
         "type": "object",
         "required": [
-          "address"
+          "locality"
         ],
         "properties": {
-          "address": {
-            "type": "string"
+          "locality": {
+            "type": "string",
+            "description": "Commune or town, e.g. Zug, Lausanne"
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional name filter, min 3 chars"
           },
           "limit": {
             "type": "number",
-            "default": 20
+            "default": 20,
+            "maximum": 100
           }
         }
       }
@@ -437,7 +486,7 @@
     },
     {
       "name": "list_legal_forms",
-      "description": "List company legal forms (AG, GmbH, ...) with codes",
+      "description": "List company legal forms (AG, GmbH, ...) with the ids used by search_companies",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -677,13 +726,21 @@
     },
     {
       "name": "get_avalanche_bulletin",
-      "description": "SLF avalanche bulletin: links to today's PDF bulletin and interactive map plus the danger scale (no live danger levels). Published daily Oct–May",
+      "description": "Live SLF avalanche bulletin: danger level (1-5), avalanche problems with aspect and elevation, validity and advice text, for one warning region, a coordinate, or all of Switzerland. Outside the winter season it reports that no bulletin is in force",
       "inputSchema": {
         "type": "object",
         "properties": {
           "region": {
             "type": "string",
-            "description": "Region ID (e.g. CH-9) or name, from list_avalanche_regions. Omit for national overview"
+            "description": "EAWS region id (e.g. CH-7114) or name, see list_avalanche_regions"
+          },
+          "lat": {
+            "type": "number",
+            "description": "WGS84 latitude, with lon; alternative to region"
+          },
+          "lon": {
+            "type": "number",
+            "description": "WGS84 longitude, with lat"
           },
           "language": {
             "type": "string",
@@ -694,16 +751,24 @@
               "it"
             ],
             "default": "en"
+          },
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD or ISO timestamp for an archived bulletin; omit for the current one"
           }
         }
       }
     },
     {
       "name": "list_avalanche_regions",
-      "description": "List SLF avalanche warning regions (IDs for get_avalanche_bulletin)",
+      "description": "The 135 SLF/EAWS avalanche warning regions (id, name, canton) for get_avalanche_bulletin",
       "inputSchema": {
         "type": "object",
         "properties": {
+          "search": {
+            "type": "string",
+            "description": "Match on region id or name"
+          },
           "canton": {
             "type": "string",
             "description": "Canton code, e.g. GR"
@@ -915,8 +980,7 @@
           },
           "year": {
             "type": "number",
-            "description": "2010–2024",
-            "default": 2024
+            "description": "STATPOP year, from 2010; default is the latest published"
           }
         }
       }
@@ -1190,7 +1254,7 @@
     },
     {
       "name": "get_dams_by_canton",
-      "description": "Federally supervised dams in a canton (max 20)",
+      "description": "Federally supervised dams in a canton",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -1200,6 +1264,11 @@
           "canton": {
             "type": "string",
             "description": "Canton code, e.g. VS"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Dams to return (1-100)",
+            "default": 20
           }
         }
       }
@@ -1274,7 +1343,7 @@
     },
     {
       "name": "get_property_price_index",
-      "description": "BFS residential property price index (SWRPI), quarterly since 2009, Q4 2019 = 100",
+      "description": "BFS residential property price index (IMPI), quarterly since 2017Q1, Q4 2019 = 100",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1327,7 +1396,7 @@
         "properties": {
           "year": {
             "type": "number",
-            "description": "1983 onward (omit for recent months)"
+            "description": "1982 onward (omit for recent months)"
           },
           "limit": {
             "type": "number",
@@ -1412,6 +1481,7 @@
           },
           "limit": {
             "type": "number",
+            "description": "max 100",
             "default": 20
           },
           "include_blasts": {
@@ -1561,24 +1631,6 @@
         "properties": {
           "station": {
             "type": "string",
-            "enum": [
-              "PBE",
-              "PBS",
-              "PBU",
-              "PCF",
-              "PDS",
-              "PGE",
-              "PJU",
-              "PLO",
-              "PLS",
-              "PLU",
-              "PLZ",
-              "PMU",
-              "PNE",
-              "PPY",
-              "PSN",
-              "PZH"
-            ],
             "description": "e.g. PZH Zürich, PBE Bern, PBS Basel"
           }
         }
@@ -1595,24 +1647,6 @@
         "properties": {
           "station": {
             "type": "string",
-            "enum": [
-              "PBE",
-              "PBS",
-              "PBU",
-              "PCF",
-              "PDS",
-              "PGE",
-              "PJU",
-              "PLO",
-              "PLS",
-              "PLU",
-              "PLZ",
-              "PMU",
-              "PNE",
-              "PPY",
-              "PSN",
-              "PZH"
-            ],
             "description": "e.g. PZH Zürich, PBE Bern"
           },
           "days": {

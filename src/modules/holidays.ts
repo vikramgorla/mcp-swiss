@@ -1,4 +1,5 @@
 import { fetchJSON, buildUrl } from "../utils/http.js";
+import { swissToday } from "../utils/date.js";
 
 const BASE = "https://openholidaysapi.org";
 
@@ -174,7 +175,7 @@ export async function handleHolidays(
 
     case "is_holiday_today": {
       const canton = args.canton as string | undefined;
-      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const today = swissToday();
 
       const params: Record<string, string> = {
         countryIsoCode: "CH",

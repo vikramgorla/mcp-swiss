@@ -2,7 +2,7 @@
  * Swiss Earthquake module
  *
  * Data source: Swiss Seismological Service (SED) at ETH Zürich
- * API: FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/
+ * API: FDSN Event Web Service — https://eida.ethz.ch/fdsnws/event/1/
  * Format: Pipe-delimited text (format=text)
  * Auth: None required
  *
@@ -12,9 +12,25 @@
  *   - search_earthquakes_by_location: earthquakes near given coordinates
  */
 
-import { buildUrl } from "../utils/http.js";
+import { buildUrl, fetchBody } from "../utils/http.js";
 
-const BASE = "http://arclink.ethz.ch/fdsnws/event/1/query";
+// SED's EIDA node serves the same catalog as arclink.ethz.ch, which is
+// plain HTTP only (nothing listens on 443).
+const BASE = "https://eida.ethz.ch/fdsnws/event/1/query";
+
+// The SED catalogue is regional already — a year of events at M>=0 spans
+// 45.4–48.3 N and 5.7–11.0 E — but the service is a generic FDSN endpoint, so
+// the box is sent explicitly rather than assumed.
+const CH_BOX = {
+  minlatitude: 45.0,
+  maxlatitude: 48.5,
+  minlongitude: 5.5,
+  maxlongitude: 11.5,
+};
+
+// Same ceiling as search_earthquakes_by_location. Uncapped, a year at M>=0 is
+// ~2200 events and half a megabyte of text.
+const MAX_LIMIT = 100;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,6 +78,7 @@ export const earthquakeTools: EarthquakeTool[] = [
         },
         limit: {
           type: "number",
+          description: "max 100",
           default: 20,
         },
         include_blasts: {
@@ -130,6 +147,13 @@ export const earthquakeTools: EarthquakeTool[] = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/** Clamp a numeric argument, falling back to the default when it is not a number. */
+function bounded(value: unknown, fallback: number, min: number, max: number): number {
+  const n = Number(value ?? fallback);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(Math.floor(n), min), max);
+}
+
 /**
  * Build an ISO date string for `now - days`.
  */
@@ -144,23 +168,14 @@ function startTimeISO(days: number): string {
  * Returns the raw text body.
  */
 async function fetchFdsnText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "mcp-swiss/1.0.0",
-      "Accept": "text/plain",
-    },
+  return fetchBody(url, { headers: { "Accept": "text/plain" }, rawStatus: true }, async (response) => {
+    // 204 No Content = no events found — not an error
+    if (response.status === 204) return "";
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText} — ${url}`);
+    }
+    return response.text();
   });
-
-  // 204 No Content = no events found — not an error
-  if (response.status === 204) {
-    return "";
-  }
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} — ${url}`);
-  }
-
-  return response.text();
 }
 
 /**
@@ -211,15 +226,17 @@ function parseFdsnText(text: string): EarthquakeEvent[] {
 async function handleGetRecentEarthquakes(
   args: Record<string, string | number | boolean>
 ): Promise<string> {
-  const days = Math.min(Number(args.days ?? 30), 365);
+  const days = bounded(args.days, 30, 1, 365);
   const minMag = Number(args.min_magnitude ?? 0.5);
-  const limit = Number(args.limit ?? 20);
+  const limit = bounded(args.limit, 20, 1, MAX_LIMIT);
   const includeBlasts = args.include_blasts === true || args.include_blasts === "true";
 
+  // One row past the cap tells us the catalogue has more without downloading it.
   const url = buildUrl(BASE, {
+    ...CH_BOX,
     starttime: startTimeISO(days),
     minmagnitude: minMag,
-    limit: limit,
+    limit: limit + 1,
     format: "text",
     orderby: "time",
   });
@@ -235,39 +252,30 @@ async function handleGetRecentEarthquakes(
     });
   }
 
-  let events = parseFdsnText(raw);
+  const matched = parseFdsnText(raw);
+  const more = matched.length > limit;
+  let events = matched.slice(0, limit);
 
   // Filter out quarry blasts unless explicitly requested
   if (!includeBlasts) {
     events = events.filter((e) => e.event_type.toLowerCase() !== "quarry blast");
   }
 
-  const result = JSON.stringify({
+  return JSON.stringify({
     count: events.length,
+    limit,
+    truncated: more,
     days_searched: days,
     min_magnitude: minMag,
     include_blasts: includeBlasts,
+    area: "Switzerland and its immediate surroundings",
     source: "Swiss Seismological Service (SED), ETH Zürich",
-    api: "FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/",
+    api: "FDSN Event Web Service — https://eida.ethz.ch/fdsnws/event/1/",
+    ...(more
+      ? { note: `More than ${limit} events match. Raise limit (max ${MAX_LIMIT}), or narrow days/min_magnitude.` }
+      : {}),
     events,
   });
-
-  if (result.length > 50000) {
-    // Trim to stay under 50K
-    const trimmed = events.slice(0, Math.max(1, Math.floor(events.length * 0.8)));
-    return JSON.stringify({
-      count: trimmed.length,
-      truncated: true,
-      days_searched: days,
-      min_magnitude: minMag,
-      include_blasts: includeBlasts,
-      source: "Swiss Seismological Service (SED), ETH Zürich",
-      api: "FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/",
-      events: trimmed,
-    });
-  }
-
-  return result;
 }
 
 async function handleGetEarthquakeDetails(
@@ -286,26 +294,22 @@ async function handleGetEarthquakeDetails(
   const raw = await fetchFdsnText(url);
 
   if (!raw) {
-    return JSON.stringify({
-      error: "Event not found",
-      event_id: eventId,
-      source: "Swiss Seismological Service (SED), ETH Zürich",
-    });
+    throw new Error(
+      `No earthquake with event_id "${eventId}". Get an id from get_recent_earthquakes or search_earthquakes_by_location.`
+    );
   }
 
   const events = parseFdsnText(raw);
 
   if (events.length === 0) {
-    return JSON.stringify({
-      error: "Event not found or could not be parsed",
-      event_id: eventId,
-      source: "Swiss Seismological Service (SED), ETH Zürich",
-    });
+    throw new Error(
+      `Event "${eventId}" returned no parsable record from the SED service. Check the id with get_recent_earthquakes.`
+    );
   }
 
   return JSON.stringify({
     source: "Swiss Seismological Service (SED), ETH Zürich",
-    api: "FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/",
+    api: "FDSN Event Web Service — https://eida.ethz.ch/fdsnws/event/1/",
     event: events[0],
   });
 }
@@ -365,7 +369,7 @@ async function handleSearchEarthquakesByLocation(
     min_magnitude: minMag,
     limit,
     source: "Swiss Seismological Service (SED), ETH Zürich",
-    api: "FDSN Event Web Service — http://arclink.ethz.ch/fdsnws/event/1/",
+    api: "FDSN Event Web Service — https://eida.ethz.ch/fdsnws/event/1/",
     events,
   });
 }

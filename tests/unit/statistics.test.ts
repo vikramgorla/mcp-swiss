@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { handleStatistics, statisticsTools } from "../../src/modules/statistics.js";
+import { handleStatistics, statisticsTools, clearStatisticsCache } from "../../src/modules/statistics.js";
 import {
+  mockPxWebPopulationMetadata,
   mockPxWebSwitzerlandTotal,
   mockPxWebCantonZH,
   mockPxWebAllCantons,
@@ -12,20 +13,34 @@ import {
   mockCkanSearchResultsSparse,
 } from "../fixtures/statistics.js";
 
+const YEARS = mockPxWebPopulationMetadata.variables[0].values;
+const LATEST_YEAR = Number(YEARS[YEARS.length - 1]);
+
+/** get_population first GETs the cube metadata, then POSTs the actual query. */
+function isCubeMetadataRequest(url: string, init?: RequestInit) {
+  return url.endsWith(".px") && init?.method !== "POST";
+}
+
 function mockFetch(payload: unknown, status = 200) {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      ok: status >= 200 && status < 300,
-      status,
-      statusText: status === 200 ? "OK" : "Error",
-      json: () => Promise.resolve(payload),
-    })
+    vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+      Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        statusText: status === 200 ? "OK" : "Error",
+        json: () =>
+          Promise.resolve(
+            isCubeMetadataRequest(url, init) ? mockPxWebPopulationMetadata : payload
+          ),
+      })
+    )
   );
 }
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  clearStatisticsCache();
 });
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
@@ -61,7 +76,7 @@ describe("get_population — Switzerland total", () => {
     mockFetch(mockPxWebSwitzerlandTotal);
     const result = JSON.parse(await handleStatistics("get_population", {}));
     expect(result.location).toBe("Switzerland");
-    expect(result.year).toBe(2024);
+    expect(result.year).toBe(LATEST_YEAR);
     expect(result.population).toBe(9051029);
     expect(result.source).toContain("BFS");
   });
@@ -90,9 +105,24 @@ describe("get_population — Switzerland total", () => {
   });
 
   it("invalid year throws error", async () => {
+    mockFetch(mockPxWebSwitzerlandTotal);
     await expect(
       handleStatistics("get_population", { year: 1999 })
     ).rejects.toThrow(/Year must be between/);
+  });
+
+  // The year list used to be hard-coded and went stale every vintage
+  it("takes the available years from the cube metadata", async () => {
+    mockFetch(mockPxWebSwitzerlandTotal);
+    const result = JSON.parse(
+      await handleStatistics("get_population", { year: LATEST_YEAR })
+    );
+    expect(result.year).toBe(LATEST_YEAR);
+
+    mockFetch(mockPxWebSwitzerlandTotal);
+    await expect(
+      handleStatistics("get_population", { year: LATEST_YEAR + 1 })
+    ).rejects.toThrow(`Year must be between ${YEARS[0]} and ${LATEST_YEAR}`);
   });
 });
 
@@ -107,7 +137,7 @@ describe("get_population — single canton", () => {
     expect(result.canton_code).toBe("ZH");
     expect(result.location).toBe("Zürich");
     expect(result.population).toBe(1620020);
-    expect(result.year).toBe(2024);
+    expect(result.year).toBe(LATEST_YEAR);
   });
 
   it("returns population for ZH by lowercase code", async () => {
@@ -158,18 +188,38 @@ describe("get_population — single canton", () => {
   });
 
   it("POST request is sent to BFS PxWeb endpoint", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      json: () => Promise.resolve(mockPxWebCantonZH),
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    mockFetch(mockPxWebCantonZH);
     await handleStatistics("get_population", { canton: "ZH" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    const [url, opts] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
     expect(url).toContain("pxweb.bfs.admin.ch");
     expect(opts.method).toBe("POST");
+  });
+
+  // "Zürich"/"Genève" used to be rejected as unknown cantons
+  it("resolves canton names with accents, in any language", async () => {
+    for (const [name, code] of [
+      ["Zürich", "ZH"],
+      ["Genève", "GE"],
+      ["Neuchâtel", "NE"],
+      ["Grigioni", "GR"],
+      ["Vallese", "VS"],
+      ["Saint-Gall", "SG"],
+      // both halves used to collapse onto AR
+      ["Appenzell Innerrhoden", "AI"],
+      ["Appenzell Ausserrhoden", "AR"],
+      ["Appenzello Interno", "AI"],
+      ["Appenzell Rhodes-Intérieures", "AI"],
+    ] as const) {
+      mockFetch({
+        ...mockPxWebCantonZH,
+        data: [{ key: ["2024", code, "1", "-99999", "-99999", "-99999"], values: ["1"] }],
+      });
+      const result = JSON.parse(
+        await handleStatistics("get_population", { canton: name })
+      );
+      expect(result.canton_code).toBe(code);
+    }
   });
 });
 
@@ -225,7 +275,7 @@ describe("get_population — all cantons", () => {
     const result = JSON.parse(
       await handleStatistics("get_population", { canton: "all" })
     );
-    expect(result.year).toBe(2024);
+    expect(result.year).toBe(LATEST_YEAR);
     expect(result.source).toContain("BFS");
   });
 });

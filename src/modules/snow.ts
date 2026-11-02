@@ -268,9 +268,26 @@ async function handleGetSnowMeasurements(
       : "imis";
 
   if (stationType === "study-plot") {
-    const measurements = await fetchJSON<StudyPlotMeasurement[]>(
-      `${BASE}/study-plot/station/${encodeURIComponent(code)}/measurements`
-    );
+    let measurements: StudyPlotMeasurement[];
+    try {
+      measurements = await fetchJSON<StudyPlotMeasurement[]>(
+        `${BASE}/study-plot/station/${encodeURIComponent(code)}/measurements`
+      );
+    } catch (err) {
+      // SLF answers 404 NO_DATA when a manual study plot has no recent
+      // observations — normal outside the winter season (roughly Nov–May).
+      if (err instanceof Error && err.message.startsWith("HTTP 404")) {
+        return JSON.stringify({
+          station_code: code,
+          type: "study-plot",
+          measurement_count: 0,
+          measurements: [],
+          note: "No recent observations. Study plots are read manually during the snow season (roughly November–May); use type 'imis' for year-round automatic stations.",
+          source: "WSL Institute for Snow and Avalanche Research SLF (CC BY 4.0)",
+        });
+      }
+      throw err;
+    }
 
     const latest = measurements.slice(-10).reverse().map((m) => ({
       time: m.measure_date,

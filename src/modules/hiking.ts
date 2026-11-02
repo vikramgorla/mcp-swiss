@@ -37,6 +37,8 @@ interface FindResult {
   featureId: number;
   id: number;
   attributes: ClosureAttributes;
+  /** LV95 polyline parts, present when the request asks for geometry. */
+  geometry?: { paths?: number[][][] };
 }
 
 interface FindResponse {
@@ -274,22 +276,28 @@ async function handleGetTrailClosuresNearby(
   // Convert WGS84 → LV95
   const [e, n] = wgs84ToLv95(lat, lon);
 
-  // Build map extent based on radius (approx 1 metre = 1 LV95 unit)
-  const extent = `${e - radius},${n - radius},${e + radius},${n + radius}`;
+  // An LV95 box around the point, then filter on the real distance to each
+  // closure's geometry. `tolerance` counts screen pixels, so passing the radius
+  // there (with a 1x1 px display) turned this into a nationwide search.
+  const bbox = `${e - radius},${n - radius},${e + radius},${n + radius}`;
 
   const url = buildUrl(`${BASE}/identify`, {
     layers: `all:${LAYER}`,
-    geometry: `${e},${n}`,
-    geometryType: "esriGeometryPoint",
+    geometry: bbox,
+    geometryType: "esriGeometryEnvelope",
     sr: 2056,
-    tolerance: radius,
-    imageDisplay: "1,1,100",
-    mapExtent: extent,
-    returnGeometry: false,
+    tolerance: 0,
+    returnGeometry: true,
   });
 
   const data = await fetchJSON<FindResponse>(url);
-  const closures = deduplicate((data.results ?? []).map(slimClosure));
+  const withinRadius = (data.results ?? [])
+    .map((f) => ({ f, distance_m: distanceToPaths(e, n, f.geometry?.paths) }))
+    .filter((r) => r.distance_m <= radius)
+    .sort((a, b) => a.distance_m - b.distance_m);
+  const closures = deduplicate(
+    withinRadius.map(({ f, distance_m }) => ({ ...slimClosure(f), distance_m }))
+  );
 
   const result = {
     count: closures.length,
@@ -313,6 +321,22 @@ async function handleGetTrailClosuresNearby(
     return JSON.stringify(trimmed);
   }
   return json;
+}
+
+/**
+ * Distance in metres from an LV95 point to the closest vertex of a polyline.
+ * Vertices are dense enough (a few metres apart) for a proximity search.
+ */
+function distanceToPaths(e: number, n: number, paths?: number[][][]): number {
+  if (!paths?.length) return Number.POSITIVE_INFINITY;
+  let best = Number.POSITIVE_INFINITY;
+  for (const path of paths) {
+    for (const [x, y] of path) {
+      const d = Math.hypot(x - e, y - n);
+      if (d < best) best = d;
+    }
+  }
+  return Math.round(best);
 }
 
 // ── Main dispatcher ───────────────────────────────────────────────────────────

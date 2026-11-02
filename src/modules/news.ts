@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { fetchText } from "../utils/http.js";
 
 // ── SRF RSS Feed IDs ─────────────────────────────────────────────────────────
 // Verified working feeds (tested March 2026)
@@ -73,14 +74,7 @@ export function parseRssItems(xml: string): NewsArticle[] {
 
 async function fetchFeed(feedId: number): Promise<string> {
   const url = `${BASE_URL}/${feedId}`;
-  const response = await fetch(url, {
-    headers: { "User-Agent": "mcp-swiss/1.0.0" },
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} — ${url}`);
-  }
-  return response.text();
+  return fetchText(url, { timeoutMs: 10_000 });
 }
 
 // ── Tool handlers ─────────────────────────────────────────────────────────────

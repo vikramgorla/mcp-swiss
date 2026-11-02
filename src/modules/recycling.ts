@@ -3,6 +3,8 @@
 // Coverage: Zurich city ZIP codes (8001–8099)
 // No authentication required
 
+import { swissToday } from "../utils/date.js";
+
 import { fetchJSON, buildUrl } from "../utils/http.js";
 
 const BASE = "https://openerz.metaodi.ch/api";
@@ -56,13 +58,9 @@ interface CollectionEntry {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns today's date as YYYY-MM-DD in local time */
+/** Today in Switzerland, not on whatever timezone the server runs in. */
 function todayISO(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return swissToday();
 }
 
 /** Returns the first and last day of a given month/year as YYYY-MM-DD */
@@ -227,13 +225,11 @@ export async function handleRecycling(
         throw new Error("zip is required (e.g. '8001')");
       }
 
-      const now = new Date();
+      const [thisYear, thisMonth] = swissToday().split("-").map(Number);
       const month = typeof args.month === "number"
-        ? Math.max(1, Math.min(args.month, 12))
-        : now.getMonth() + 1;
-      const year = typeof args.year === "number"
-        ? args.year
-        : now.getFullYear();
+        ? Math.max(1, Math.min(Math.trunc(args.month), 12))
+        : thisMonth;
+      const year = typeof args.year === "number" ? Math.trunc(args.year) : thisYear;
 
       const { start, end } = monthRange(month, year);
 

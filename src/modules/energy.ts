@@ -2,8 +2,10 @@
 // Data source: https://www.strompreis.elcom.admin.ch (official Swiss electricity price portal)
 // GraphQL API: https://www.strompreis.elcom.admin.ch/api/graphql
 
+import { fetchBody } from "../utils/http.js";
+
 const GRAPHQL_URL = "https://www.strompreis.elcom.admin.ch/api/graphql";
-const CURRENT_YEAR = "2026";
+const currentYear = (): string => String(new Date().getFullYear());
 
 // ── Category reference ───────────────────────────────────────────────────────
 // H = Household, C = Commercial
@@ -53,21 +55,18 @@ interface GraphQLResponse<T> {
 // ── GraphQL helper ───────────────────────────────────────────────────────────
 
 async function gql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  const response = await fetch(GRAPHQL_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "User-Agent": "mcp-swiss/1.0.0",
+  const json = await fetchBody<GraphQLResponse<T>>(
+    GRAPHQL_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ query, variables }),
     },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} — ElCom GraphQL`);
-  }
-
-  const json = await response.json() as GraphQLResponse<T>;
+    (res) => res.json() as Promise<GraphQLResponse<T>>
+  );
 
   if (json.errors?.length) {
     throw new Error(`ElCom API error: ${json.errors.map((e) => e.message).join("; ")}`);
@@ -203,7 +202,7 @@ export async function handleEnergy(
     case "get_electricity_tariff": {
       const municipality = args.municipality as string;
       const category = (args.category as string | undefined) ?? "H4";
-      const year = (args.year as string | undefined) ?? CURRENT_YEAR;
+      const year = (args.year as string | undefined) ?? currentYear();
 
       if (!municipality?.trim()) {
         throw new Error("municipality is required. Use search_municipality_energy to find the BFS number.");
@@ -213,14 +212,10 @@ export async function handleEnergy(
       const observations = raw.observations as Array<Record<string, unknown>>;
 
       if (!observations.length) {
-        return JSON.stringify({
-          error: "No tariff data found",
-          municipality,
-          category,
-          year,
-          hint: "Check the municipality BFS number with search_municipality_energy. Not all municipalities have tariff data for every year.",
-          source: "https://www.strompreis.elcom.admin.ch",
-        }, null, 2);
+        throw new Error(
+          `No tariff data for municipality ${municipality}, category ${category}, year ${year}. ` +
+            "Check the BFS number with search_municipality_energy, or try another year."
+        );
       }
 
       // If multiple operators, return all (some municipalities served by multiple operators)
@@ -255,7 +250,7 @@ export async function handleEnergy(
     case "compare_electricity_tariffs": {
       const municipalities = args.municipalities as string[];
       const category = (args.category as string | undefined) ?? "H4";
-      const year = (args.year as string | undefined) ?? CURRENT_YEAR;
+      const year = (args.year as string | undefined) ?? currentYear();
 
       if (!Array.isArray(municipalities) || municipalities.length < 2) {
         throw new Error("At least 2 municipality IDs are required for comparison.");
@@ -294,14 +289,10 @@ export async function handleEnergy(
       const observations = data.observations ?? [];
 
       if (!observations.length) {
-        return JSON.stringify({
-          error: "No tariff data found for the given municipalities",
-          municipalities,
-          category,
-          year,
-          hint: "Use search_municipality_energy to verify BFS numbers.",
-          source: "https://www.strompreis.elcom.admin.ch",
-        }, null, 2);
+        throw new Error(
+          `No tariff data for any of ${municipalities.join(", ")} (category ${category}, year ${year}). ` +
+            "Verify the BFS numbers with search_municipality_energy."
+        );
       }
 
       // Deduplicate by municipality (keep first/cheapest operator if multiple)

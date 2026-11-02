@@ -29,13 +29,19 @@ describe("search_dams (live API)", () => {
     expect(result.results[0].volume_million_m3).toBe(385);
   });
 
-  it("resolves canton for Grande Dixence as VS (or null if canton API unavailable)", async () => {
+  it("resolves canton for Grande Dixence as VS", async () => {
     const result = JSON.parse(
       await handleDams("search_dams", { query: "Grande Dixence" })
     );
-    // Canton is resolved via a secondary swisstopo API call; may be null if API is slow
-    const canton = result.results[0].canton;
-    expect(canton === "VS" || canton === null).toBe(true);
+    expect(result.results[0].canton).toBe("VS");
+  });
+
+  it("resolves the canton of the Grimsel dams as BE", async () => {
+    const result = JSON.parse(await handleDams("search_dams", { query: "Grimsel" }));
+    expect(result.results.length).toBeGreaterThan(0);
+    for (const dam of result.results) {
+      expect(dam.canton).toBe("BE");
+    }
   });
 
   it("returns year_built for Grande Dixence", async () => {
@@ -128,6 +134,99 @@ describe("get_dams_by_canton (live API)", () => {
     }
   });
 
+  it("every VS dam is confirmed as VS by get_dam_details", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "VS" })
+    );
+    for (const dam of result.dams.slice(0, 8)) {
+      const detail = JSON.parse(await handleDams("get_dam_details", { name: dam.dam_name }));
+      expect(detail.canton).toBe("VS");
+    }
+  }, 60_000);
+
+  it("does not put neighbouring dams in VS", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "VS" })
+    );
+    const names = result.dams.map((d: { dam_name: string }) => d.dam_name);
+    // All inside the VS bounding box, all in another canton.
+    for (const outsider of ["Spitallamm", "Seeuferegg", "Hongrin Nord", "Lessoc", "Montsalvens"]) {
+      expect(names).not.toContain(outsider);
+    }
+  });
+
+  it("LU has no federally supervised dams", async () => {
+    // The Lucerne bounding box catches six dams, none of which is in LU.
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "LU" })
+    );
+    expect(result.count).toBe(0);
+    expect(result.message).toContain("No dams found");
+  });
+
+  it("ZG has no federally supervised dams", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "ZG" })
+    );
+    expect(result.count).toBe(0);
+  });
+
+  it("keeps the Rhine power plants in AG and flags them as border structures", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "AG" })
+    );
+    const names = result.dams.map((d: { dam_name: string }) => d.dam_name);
+    expect(names).toContain("Rheinfelden");
+    const rheinfelden = result.dams.find(
+      (d: { dam_name: string }) => d.dam_name === "Rheinfelden"
+    );
+    expect(rheinfelden.canton).toBe("AG");
+    expect(rheinfelden.canton_on_national_border).toBe(true);
+  });
+
+  it("names the layer the canton was read from", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "VS" })
+    );
+    expect(result.canton_source).toContain("swissboundaries3d-kanton");
+  });
+
+  it("returns the dams past the 201-row API cap", async () => {
+    // These sort alphabetically after the cut-off the find endpoint used to impose.
+    const vs = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "VS", limit: 100 })
+    );
+    const vsNames = vs.dams.map((d: { dam_name: string }) => d.dam_name);
+    expect(vs.total_in_canton).toBeGreaterThan(40);
+    for (const name of ["Zeuzier", "Vieux Emosson", "Zermeiggern", "Vordersee"]) {
+      expect(vsNames).toContain(name);
+    }
+
+    const gr = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "GR", limit: 100 })
+    );
+    const grNames = gr.dams.map((d: { dam_name: string }) => d.dam_name);
+    expect(grNames).toContain("Zervreila");
+    expect(grNames).toContain("Viderjoch");
+
+    const ge = JSON.parse(await handleDams("get_dams_by_canton", { canton: "GE" }));
+    expect(ge.dams.map((d: { dam_name: string }) => d.dam_name)).toContain("Verbois");
+  }, 120_000);
+
+  it("caps the list at limit and reports the canton total", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dams_by_canton", { canton: "VS", limit: 5 })
+    );
+    expect(result.count).toBe(5);
+    expect(result.total_in_canton).toBeGreaterThan(5);
+    expect(result.note).toContain("of " + result.total_in_canton);
+  });
+
+  it("a canton list with limit 100 stays under 50K chars", async () => {
+    const raw = await handleDams("get_dams_by_canton", { canton: "VS", limit: 100 });
+    expect(raw.length).toBeLessThan(50000);
+  });
+
   it("dam results have required fields", async () => {
     const result = JSON.parse(
       await handleDams("get_dams_by_canton", { canton: "VS" })
@@ -209,6 +308,13 @@ describe("get_dam_details (live API)", () => {
     expect(result.canton).toBe("VS");
   });
 
+  it("includes canton BE for Spitallamm, which sits in the VS bounding box", async () => {
+    const result = JSON.parse(
+      await handleDams("get_dam_details", { name: "Spitallamm" })
+    );
+    expect(result.canton).toBe("BE");
+  });
+
   it("includes crest_level_masl", async () => {
     const result = JSON.parse(
       await handleDams("get_dam_details", { name: "Grande Dixence" })
@@ -216,12 +322,10 @@ describe("get_dam_details (live API)", () => {
     expect(result.crest_level_masl).toBeGreaterThan(2000);
   });
 
-  it("returns found:false for nonexistent dam", async () => {
-    const result = JSON.parse(
-      await handleDams("get_dam_details", { name: "Nonexistent Dam 12345" })
-    );
-    expect(result.found).toBe(false);
-    expect(result.message).toContain("No dam found");
+  it("rejects for a nonexistent dam", async () => {
+    await expect(
+      handleDams("get_dam_details", { name: "Nonexistent Dam 12345" })
+    ).rejects.toThrow(/No dam named/);
   });
 
   it("response is under 50K chars", async () => {

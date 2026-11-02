@@ -119,7 +119,6 @@ export const geodataTools = [
       required: ["query"],
       properties: {
         query: { type: "string" },
-        type: { type: "string", enum: ["locations", "featuresearch"], default: "locations" },
       },
     },
   },
@@ -163,13 +162,114 @@ export const geodataTools = [
 
 // ── Handler ─────────────────────────────────────────────────────────────────
 
+// ── Reverse geocoding ────────────────────────────────────────────────────────
+// SearchServer has no reverse lookup (a "lat,lng" searchText returns nothing),
+// so resolve the point against the address register and the municipality layer.
+
+const ADDRESS_LAYER = "ch.bfs.gebaeude_wohnungs_register";
+const MUNICIPALITY_LAYER = "ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill";
+
+interface IdentifyFeature<T> {
+  attributes: T;
+  geometry?: { x: number; y: number };
+}
+
+interface AddressAttributes {
+  strname_deinr?: string | null;
+  dplz4?: number | null;
+  dplzname?: string | null;
+  ggdename?: string | null;
+  gdekt?: string | null;
+  egid?: string | number | null;
+}
+
+interface MunicipalityAttributes {
+  gemname?: string | null;
+  kanton?: string | null;
+  gde_nr?: number | null;
+}
+
+function metresBetween(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * identify() on a WGS84 envelope. A point geometry needs a matching mapExtent
+ * to hit-test reliably, so every lookup here uses a small box instead.
+ */
+async function identify<T>(
+  layer: string,
+  envelope: string,
+  returnGeometry: boolean
+): Promise<Array<IdentifyFeature<T>>> {
+  const res = await fetchJSON<{ results?: Array<IdentifyFeature<T>> }>(
+    buildUrl(`${BASE}/rest/services/api/MapServer/identify`, {
+      layers: `all:${layer}`,
+      geometry: envelope,
+      geometryType: "esriGeometryEnvelope",
+      sr: 4326,
+      tolerance: 0,
+      returnGeometry,
+    })
+  );
+  return res.results ?? [];
+}
+
+/** WGS84 envelope of `radius` metres around a point. */
+function envelopeAround(lat: number, lng: number, radius: number): string {
+  const dLat = radius / 111320;
+  const dLon = radius / (111320 * Math.cos((lat * Math.PI) / 180));
+  return [lng - dLon, lat - dLat, lng + dLon, lat + dLat]
+    .map((v) => Number(v.toFixed(6)))
+    .join(",");
+}
+
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const radius = 150;
+  const [addresses, municipalities] = await Promise.all([
+    identify<AddressAttributes>(ADDRESS_LAYER, envelopeAround(lat, lng, radius), true).catch(() => []),
+    identify<MunicipalityAttributes>(MUNICIPALITY_LAYER, envelopeAround(lat, lng, 10), false).catch(() => []),
+  ]);
+
+  let nearest: { a: AddressAttributes; dist: number } | undefined;
+  for (const f of addresses) {
+    if (!f.geometry) continue;
+    const dist = metresBetween(lat, lng, f.geometry.y, f.geometry.x);
+    if (!nearest || dist < nearest.dist) nearest = { a: f.attributes, dist };
+  }
+
+  const muni = municipalities[0]?.attributes;
+  const a = nearest?.a;
+  return JSON.stringify({
+    lat,
+    lng,
+    address: a?.strname_deinr ?? null,
+    postcode: a?.dplz4 ?? null,
+    locality: a?.dplzname ?? null,
+    municipality: muni?.gemname ?? a?.ggdename ?? null,
+    bfs_municipality_number: muni?.gde_nr ?? null,
+    canton: muni?.kanton ?? a?.gdekt ?? null,
+    egid: a?.egid ?? null,
+    address_distance_m: nearest ? Math.round(nearest.dist) : null,
+    note: nearest ? undefined : `No address within ${radius} m; only the municipality was resolved.`,
+    source: "swisstopo / BFS building register (api3.geo.admin.ch)",
+  });
+}
+
 export async function handleGeodata(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
     case "geocode":
     case "search_places": {
       const url = buildUrl(`${BASE}/rest/services/api/SearchServer`, {
         searchText: args.address as string ?? args.query as string,
-        type: args.type as string ?? "locations",
+        type: "locations",
         sr: 4326,
         limit: 10,
       });
@@ -183,17 +283,10 @@ export async function handleGeodata(name: string, args: Record<string, unknown>)
     case "reverse_geocode": {
       const lat = args.lat as number;
       const lng = args.lng as number;
-      const url = buildUrl(`${BASE}/rest/services/api/SearchServer`, {
-        searchText: `${lat},${lng}`,
-        type: "locations",
-        sr: 4326,
-        limit: 5,
-      });
-      const data = await fetchJSON<SearchResponse>(url);
-      return JSON.stringify({
-        count: data.results.length,
-        results: data.results.map(slimSearchResult),
-      });
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        throw new Error("lat and lng are required (WGS84)");
+      }
+      return reverseGeocode(lat, lng);
     }
 
     case "get_solar_potential": {

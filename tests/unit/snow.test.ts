@@ -304,6 +304,33 @@ describe("list_snow_stations", () => {
 // ── get_snow_measurements ─────────────────────────────────────────────────────
 
 describe("get_snow_measurements", () => {
+  it("returns an empty result with a note when a study plot has no data (off-season 404)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      json: () => Promise.resolve({ code: "NO_DATA" }),
+    }));
+    const result = JSON.parse(
+      await handleSnow("get_snow_measurements", { station_code: "4AO0", type: "study-plot" })
+    );
+    expect(result.measurement_count).toBe(0);
+    expect(result.measurements).toEqual([]);
+    expect(result.note).toMatch(/snow season/);
+  });
+
+  it("still throws non-404 errors for study plots", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Server Error",
+      json: () => Promise.resolve({}),
+    }));
+    await expect(
+      handleSnow("get_snow_measurements", { station_code: "4AO0", type: "study-plot" })
+    ).rejects.toThrow("HTTP 500");
+  });
+
   it("returns IMIS measurements by default", async () => {
     mockFetchJSON(mockImisMeasurements);
     const result = JSON.parse(

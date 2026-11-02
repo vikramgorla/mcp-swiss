@@ -12,6 +12,7 @@ export const mockStationsCSV = [
   "PZH;Zürich;ZH;;Pollenstationen;Stations pollen;Stazioni pollini;Pollen stations;MeteoSchweiz;01.01.1982;556.0;;2683472.0;1248088.0;47.378233;8.566069;;;;;;;;",
   "PGE;Genève;GE;;Pollenstationen;Stations pollen;Stazioni pollini;Pollen stations;MeteoSchweiz;01.01.1979;379.0;;2500330.0;1116432.0;46.191969;6.147544;;;;;;;;",
   "PLU;Lugano;TI;;Pollenstationen;Stations pollen;Stazioni pollini;Pollen stations;MeteoSchweiz;01.01.1992;273.0;;2717880.0;1095710.0;46.004;8.946;;;;;;;;",
+  "PDS;Davos / Wolfgang;GR;;Pollenstationen;Stations pollen;Stazioni pollini;Pollen stations;MeteoSchweiz;01.01.1969;1631.0;;2782175.0;1188090.0;46.833;9.851;;;;;;;;",
 ].join("\n");
 
 // ── Hourly recent CSV ───────────────────────────────────────────────────────

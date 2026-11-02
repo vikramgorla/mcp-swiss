@@ -7,7 +7,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { fetchJSON } from "../utils/http.js";
+import { fetchJSON, fetchText } from "../utils/http.js";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -180,18 +180,9 @@ async function fetchRatesMap(): Promise<Map<string, RateEntry[]>> {
     return _ratesMapCache;
   }
 
-  const response = await fetch(SNB_MONTHLY_CSV, {
-    headers: {
-      "Accept": "text/csv,text/plain,*/*",
-      "User-Agent": "mcp-swiss/0.1.0",
-    },
+  const csv = await fetchText(SNB_MONTHLY_CSV, {
+    headers: { Accept: "text/csv,text/plain,*/*" },
   });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} — SNB CSV`);
-  }
-
-  const csv = await response.text();
   _ratesMapCache = parseSnbCsv(csv);
   _ratesMapCachedAt = now;
   return _ratesMapCache;
@@ -239,15 +230,8 @@ async function handleGetExchangeRate(currency: string): Promise<string> {
 
   const entries = ratesMap.get(info.seriesId);
   if (!entries || entries.length === 0) {
-    return JSON.stringify(
-      {
-        error: "No exchange rate data available",
-        currency: currency.toUpperCase(),
-        hint: "The SNB may not publish rates for this currency for recent periods.",
-        source: "https://data.snb.ch",
-      },
-      null,
-      2
+    throw new Error(
+      `The SNB publishes no rates for ${info.code}. Use list_currencies to see which currencies carry data.`
     );
   }
 
@@ -298,14 +282,8 @@ async function handleGetExchangeRateHistory(
   let entries = ratesMap.get(info.seriesId) ?? [];
 
   if (entries.length === 0) {
-    return JSON.stringify(
-      {
-        error: "No historical data available",
-        currency: currency.toUpperCase(),
-        source: "https://data.snb.ch",
-      },
-      null,
-      2
+    throw new Error(
+      `The SNB publishes no rates for ${info.code}. Use list_currencies to see which currencies carry data.`
     );
   }
 
@@ -325,10 +303,13 @@ async function handleGetExchangeRateHistory(
   if (entries.length === 0) {
     return JSON.stringify(
       {
-        error: "No data in the specified date range",
-        currency: currency.toUpperCase(),
+        currency: info.code,
+        currencyName: info.name,
         from: from ?? null,
         to: to ?? null,
+        count: 0,
+        history: [],
+        note: "No monthly averages in that range. Dates are YYYY-MM.",
         source: "https://data.snb.ch",
       },
       null,

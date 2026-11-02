@@ -58,7 +58,7 @@
     },
     {
       "name": "get_weather_history",
-      "description": "Historical weather readings for a MeteoSwiss station over a date range"
+      "description": "Historical weather readings for a MeteoSwiss station. Only the last 32 days are available"
     },
     {
       "name": "get_water_level",
@@ -70,7 +70,7 @@
     },
     {
       "name": "get_water_history",
-      "description": "Historical river/lake levels for a BAFU hydro station over a date range"
+      "description": "Historical river/lake levels for a BAFU hydro station. Only the last 32 days are available"
     },
     {
       "name": "geocode",
@@ -105,8 +105,8 @@
       "description": "Full company details by ZEFIX ehraid (from search_companies)"
     },
     {
-      "name": "search_companies_by_address",
-      "description": "Companies registered at an address or locality"
+      "name": "search_companies_by_locality",
+      "description": "Companies whose registered seat is in a commune/town. ZEFIX has no street-address search"
     },
     {
       "name": "list_cantons",
@@ -114,7 +114,7 @@
     },
     {
       "name": "list_legal_forms",
-      "description": "List company legal forms (AG, GmbH, ...) with codes"
+      "description": "List company legal forms (AG, GmbH, ...) with the ids used by search_companies"
     },
     {
       "name": "get_public_holidays",
@@ -166,11 +166,11 @@
     },
     {
       "name": "get_avalanche_bulletin",
-      "description": "SLF avalanche bulletin: links to today's PDF bulletin and interactive map plus the danger scale (no live danger levels). Published daily Oct–May"
+      "description": "Live SLF avalanche bulletin: danger level (1-5), avalanche problems with aspect and elevation, validity and advice text, for one warning region, a coordinate, or all of Switzerland. Outside the winter season it reports that no bulletin is in force"
     },
     {
       "name": "list_avalanche_regions",
-      "description": "List SLF avalanche warning regions (IDs for get_avalanche_bulletin)"
+      "description": "The 135 SLF/EAWS avalanche warning regions (id, name, canton) for get_avalanche_bulletin"
     },
     {
       "name": "list_air_quality_stations",
@@ -270,7 +270,7 @@
     },
     {
       "name": "get_dams_by_canton",
-      "description": "Federally supervised dams in a canton (max 20)"
+      "description": "Federally supervised dams in a canton"
     },
     {
       "name": "get_dam_details",
@@ -286,7 +286,7 @@
     },
     {
       "name": "get_property_price_index",
-      "description": "BFS residential property price index (SWRPI), quarterly since 2009, Q4 2019 = 100"
+      "description": "BFS residential property price index (IMPI), quarterly since 2017Q1, Q4 2019 = 100"
     },
     {
       "name": "search_real_estate_data",

@@ -31,6 +31,8 @@ interface TrafficFeature {
   featureId: number;
   id: number;
   attributes: TrafficAttributes;
+  /** LV95 point, present when the request asks for geometry. */
+  geometry?: { x: number; y: number };
 }
 
 interface FindResponse {
@@ -184,25 +186,33 @@ export async function handleTraffic(name: string, args: Record<string, unknown>)
     case "get_traffic_nearby": {
       const lat = args.lat as number;
       const lon = args.lon as number;
-      const radius = (args.radius as number | undefined) ?? 5000;
+      const radius = Math.min(50000, Math.max(1, Number(args.radius) || 5000));
 
       const [e, n] = wgs84ToLv95(lat, lon);
 
-      // Build a map extent around the point using the radius
-      const extentPadding = radius * 3;
-      const mapExtent = `${e - extentPadding},${n - extentPadding},${e + extentPadding},${n + extentPadding}`;
+      // An LV95 box around the point, then filter by true distance. Passing the
+      // radius as `tolerance` made this a nationwide search: tolerance counts
+      // screen pixels, and the 1x1 px display made every pixel the whole extent.
+      const bbox = `${e - radius},${n - radius},${e + radius},${n + radius}`;
 
       const url = buildUrl(`${GEO_ADMIN}/identify`, {
-        geometry: `${e},${n}`,
-        geometryType: "esriGeometryPoint",
-        tolerance: radius,
-        mapExtent,
-        imageDisplay: "1,1,96",
+        geometry: bbox,
+        geometryType: "esriGeometryEnvelope",
+        sr: 2056,
+        tolerance: 0,
         layers: `all:${TRAFFIC_LAYER}`,
-        returnGeometry: false,
+        returnGeometry: true,
       });
       const data = await fetchJSON<IdentifyResponse>(url);
-      const stations = data.results.map(slimTrafficStation);
+      const stations = data.results
+        .map((f) => {
+          const g = f.geometry;
+          const dist = g ? Math.hypot(g.x - e, g.y - n) : Number.POSITIVE_INFINITY;
+          return { ...slimTrafficStation(f), distance_m: Math.round(dist) };
+        })
+        .filter((s) => s.distance_m <= radius)
+        .sort((a, b) => a.distance_m - b.distance_m);
+
       return JSON.stringify({
         count: stations.length,
         lat,
