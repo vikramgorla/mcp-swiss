@@ -284,6 +284,20 @@ docker pull ghcr.io/vikramgorla/mcp-swiss
 
 ---
 
+## Streamable HTTP
+
+stdio is still the default. For a local HTTP client, run:
+
+```bash
+npx mcp-swiss --http
+```
+
+That listens on `127.0.0.1:3000` and serves MCP at `POST /mcp` (also `GET` and `DELETE`) plus `GET /health`. `--port`, `--host`, `PORT`, `HOST`, and `MCP_TRANSPORT=http` are the other switches.
+
+A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to start unless both `MCP_AUTH_TOKEN` and `MCP_ALLOWED_HOSTS` are set. Sessions are capped (`MCP_MAX_SESSIONS`, default 64) and idle ones expire. This is the transport half of [#64](https://github.com/vikramgorla/mcp-swiss/issues/64). It does not deploy a hosted instance.
+
+---
+
 ## Module Filtering
 
 By default, mcp-swiss loads all 23 modules (82 tools). The full `tools/list` schema is about 6,800 tokens, down from about 9,200 before the descriptions were shortened. For a smaller startup list, load only the modules you need.

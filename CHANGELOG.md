@@ -53,6 +53,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   - `swiss_search_tools` — keyword or module search; returns matching names, descriptions, and input schemas
   - `swiss_call_tool` — runs one tool after checking the arguments against that tool's schema
   - `swiss_list_modules` — module catalog
+- Streamable HTTP transport (`--http` or `MCP_TRANSPORT=http`) alongside stdio. `POST`/`GET`/`DELETE /mcp`, `GET /health`, idle and maximum session lifetime, bearer auth, Host allow-list, and a session cap (`MCP_MAX_SESSIONS`, default 64). A public bind is refused unless `MCP_AUTH_TOKEN` and `MCP_ALLOWED_HOSTS` are set. References [#64](https://github.com/vikramgorla/mcp-swiss/issues/64); no hosted deployment in this change. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng).
 
 ---
 

@@ -1,37 +1,19 @@
 #!/usr/bin/env node
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
 
+import { discoveryEnabled } from "./discovery.js";
 import {
-  annotationsFor,
-  callTool,
-  DISCOVERY_TOOLS,
-  discoveryEnabled,
-  listModules,
-  searchTools,
-  SEARCH_TOOLS_TOOL,
-  CALL_TOOL,
-  LIST_MODULES_TOOL,
-} from "./discovery.js";
-import { moduleRegistry, presets, resolveModules, type ToolHandler } from "./registry.js";
-import { errorMessage } from "./utils/errors.js";
+  defaultAllowedHosts,
+  isLoopbackBind,
+  publicBindProblems,
+  startHttpServer,
+} from "./http-server.js";
+import { moduleRegistry, presets, resolveModules } from "./registry.js";
+import { createServer } from "./server.js";
 import { VERSION } from "./utils/http.js";
-import { validateArgs, type ValidatableTool } from "./utils/validate.js";
 
 export { moduleRegistry, presets, resolveModules };
 export type { ModuleEntry, ToolHandler } from "./registry.js";
-
-// Every tool is a read-only lookup against a public Swiss open-data API.
-const TOOL_ANNOTATIONS = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: true,
-} as const;
 
 // ── CLI Argument Parsing ─────────────────────────────────────────────────────
 
@@ -39,7 +21,16 @@ export interface ParsedArgs {
   modules: Set<string> | null;
   listModules: boolean;
   listPresets: boolean;
+  /** Serve Streamable HTTP instead of stdio (--http or MCP_TRANSPORT=http). */
+  http: boolean;
+  port: number;
+  host: string;
   discovery: boolean;
+}
+
+function flagValue(argv: string[], flag: string): string | undefined {
+  const idx = argv.indexOf(flag);
+  return idx !== -1 ? argv[idx + 1] : undefined;
 }
 
 export function parseArgs(
@@ -51,7 +42,6 @@ export function parseArgs(
 
   let selectedModules: Set<string> | null = null;
 
-  // Parse --preset
   const presetIdx = argv.indexOf("--preset");
   if (presetIdx !== -1 && argv[presetIdx + 1]) {
     const presetName = argv[presetIdx + 1];
@@ -64,7 +54,6 @@ export function parseArgs(
     selectedModules = new Set(presets[presetName]);
   }
 
-  // Parse --modules (additive with preset)
   const modulesIdx = argv.indexOf("--modules");
   if (modulesIdx !== -1 && argv[modulesIdx + 1]) {
     const moduleNames = argv[modulesIdx + 1].split(",").map((m) => m.trim());
@@ -82,7 +71,33 @@ export function parseArgs(
     }
   }
 
-  return { modules: selectedModules, listModules, listPresets, discovery: discoveryEnabled(argv, env) };
+  const http = argv.includes("--http") || env.MCP_TRANSPORT?.toLowerCase() === "http";
+  const port = Number(flagValue(argv, "--port") ?? env.PORT ?? 3000);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    process.stderr.write(`Invalid port: ${flagValue(argv, "--port") ?? env.PORT}\n`);
+    process.exit(1);
+  }
+  const host = flagValue(argv, "--host") ?? env.HOST ?? "127.0.0.1";
+
+  return {
+    modules: selectedModules,
+    listModules,
+    listPresets,
+    http,
+    port,
+    host,
+    discovery: discoveryEnabled(argv, env),
+  };
+}
+
+function parsePositiveInt(value: string | undefined, name: string): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    process.stderr.write(`${name} must be a positive integer, got: ${value}\n`);
+    process.exit(1);
+  }
+  return parsed;
 }
 
 // ── List Helpers ─────────────────────────────────────────────────────────────
@@ -94,9 +109,7 @@ function printModules(): void {
       `  ${name.padEnd(14)} ${String(mod.tools.length).padStart(2)} tools  ${mod.description}\n`
     );
   }
-  process.stdout.write(
-    "\nUsage: npx mcp-swiss --modules transport,weather\n\n"
-  );
+  process.stdout.write("\nUsage: npx mcp-swiss --modules transport,weather\n\n");
 }
 
 function printPresets(): void {
@@ -111,12 +124,8 @@ function printPresets(): void {
     );
   }
   process.stdout.write("\nUsage: npx mcp-swiss --preset commuter\n");
-  process.stdout.write(
-    "Combine: npx mcp-swiss --preset commuter --modules parliament\n\n"
-  );
+  process.stdout.write("Combine: npx mcp-swiss --preset commuter --modules parliament\n\n");
 }
-
-// ── Resolve Active Modules ───────────────────────────────────────────────────
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
@@ -132,70 +141,65 @@ if (config.listPresets) {
 }
 
 const activeModules = resolveModules(config.modules);
-const allTools = activeModules.flatMap((m) => m.tools);
 
-// Build tool → handler lookup
-const toolHandlerMap = new Map<string, ToolHandler>();
-for (const mod of activeModules) {
-  for (const tool of mod.tools) {
-    toolHandlerMap.set(tool.name, mod.handler);
-  }
+function buildMcpServer() {
+  return createServer({
+    version: VERSION,
+    modules: activeModules,
+    discovery: config.discovery,
+  });
 }
 
-const server = new Server(
-  { name: "mcp-swiss", version: VERSION },
-  { capabilities: { tools: {} } }
-);
-
-const listedTools = config.discovery
-  ? DISCOVERY_TOOLS.map((tool) => ({ ...tool, annotations: annotationsFor(tool) }))
-  : allTools.map((tool) => ({ ...tool, annotations: TOOL_ANNOTATIONS }));
-
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: listedTools,
-}));
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  const safeArgs = (args ?? {}) as Record<string, unknown>;
-
-  try {
-    let result: string;
-    if (config.discovery && name === SEARCH_TOOLS_TOOL.name) {
-      result = searchTools(activeModules, safeArgs);
-    } else if (config.discovery && name === LIST_MODULES_TOOL.name) {
-      result = listModules(activeModules);
-    } else if (config.discovery && name === CALL_TOOL.name) {
-      result = await callTool(activeModules, safeArgs);
-    } else if (config.discovery) {
-      throw new Error(
-        `Tool ${name} is not listed in discovery mode. Use swiss_search_tools, then swiss_call_tool.`
-      );
-    } else {
-      const handler = toolHandlerMap.get(name);
-      if (!handler) throw new Error(`Unknown tool: ${name}`);
-      const definition = allTools.find((tool) => tool.name === name) as ValidatableTool | undefined;
-      const validated = definition ? validateArgs(definition, safeArgs) : safeArgs;
-      result = await handler(name, validated);
-    }
-    return { content: [{ type: "text", text: result }] };
-  } catch (error) {
-    return {
-      content: [{ type: "text", text: `Error: ${errorMessage(error)}` }],
-      isError: true,
-    };
-  }
-});
-
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
   const moduleCount = activeModules.length;
-  const toolCount = config.discovery ? DISCOVERY_TOOLS.length : allTools.length;
+  const toolCount = config.discovery
+    ? 3
+    : activeModules.reduce((sum, mod) => sum + mod.tools.length, 0);
   const mode = config.discovery ? ", discovery" : "";
-  process.stderr.write(
-    `mcp-swiss running on stdio (${moduleCount} modules, ${toolCount} tools${mode})\n`
-  );
+  const summary = `${moduleCount} modules, ${toolCount} tools${mode}`;
+
+  if (config.http) {
+    const env = process.env;
+    const allowedHosts = env.MCP_ALLOWED_HOSTS
+      ? env.MCP_ALLOWED_HOSTS.split(",").map((h) => h.trim()).filter(Boolean)
+      : defaultAllowedHosts(config.host, config.port);
+    const authToken = env.MCP_AUTH_TOKEN || undefined;
+    const problems = publicBindProblems({ host: config.host, authToken, allowedHosts });
+    if (problems.length) {
+      process.stderr.write(
+        `Refusing to listen on ${config.host}: ${problems.join(" and ")}.\n` +
+          "A server reachable from outside this machine needs a bearer token and a Host allow-list:\n" +
+          "  MCP_AUTH_TOKEN=<secret> MCP_ALLOWED_HOSTS=mcp.example.ch:3000 ...\n" +
+          "Or bind to loopback (--host 127.0.0.1) and put a reverse proxy in front.\n"
+      );
+      process.exit(1);
+    }
+
+    const httpServer = await startHttpServer({
+      port: config.port,
+      host: config.host,
+      authToken,
+      allowedHosts,
+      corsOrigin: env.MCP_CORS_ORIGIN || undefined,
+      maxSessions: parsePositiveInt(env.MCP_MAX_SESSIONS, "MCP_MAX_SESSIONS"),
+      exposeSessionCount: isLoopbackBind(config.host),
+      createMcpServer: buildMcpServer,
+    });
+    const shutdown = () => {
+      httpServer.close(() => process.exit(0));
+      httpServer.closeAllConnections();
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+    process.stderr.write(
+      `mcp-swiss ${VERSION} listening on http://${config.host}:${config.port}/mcp (${summary})\n`
+    );
+    return;
+  }
+
+  const server = buildMcpServer();
+  await server.connect(new StdioServerTransport());
+  process.stderr.write(`mcp-swiss ${VERSION} running on stdio (${summary})\n`);
 }
 
 main().catch((err) => {

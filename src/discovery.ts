@@ -1,4 +1,11 @@
-import { moduleRegistry, type ActiveModule, type ToolDefinition } from "./registry.js";
+import { moduleRegistry, type ToolDefinition, type ToolHandler } from "./registry.js";
+
+export interface DiscoveryModule {
+  name: string;
+  description?: string;
+  tools: ToolDefinition[];
+  handler: ToolHandler;
+}
 import { validateArgs } from "./utils/validate.js";
 
 /**
@@ -74,11 +81,11 @@ export function discoveryEnabled(
   return env.MCP_SWISS_MODE?.toLowerCase() === "discovery";
 }
 
-function activeMap(modules: ActiveModule[]): Map<string, ActiveModule> {
+function activeMap(modules: DiscoveryModule[]): Map<string, DiscoveryModule> {
   return new Map(modules.map((mod) => [mod.name, mod]));
 }
 
-function catalog(modules: ActiveModule[]) {
+function catalog(modules: DiscoveryModule[]) {
   return modules.map((mod) => ({
     module: mod.name,
     description: mod.description,
@@ -86,7 +93,7 @@ function catalog(modules: ActiveModule[]) {
   }));
 }
 
-export function searchTools(modules: ActiveModule[], args: Record<string, unknown>): string {
+export function searchTools(modules: DiscoveryModule[], args: Record<string, unknown>): string {
   const query = typeof args.query === "string" ? args.query.trim() : "";
   const moduleName = typeof args.module === "string" ? args.module.trim() : "";
   const requested = typeof args.limit === "number" && Number.isFinite(args.limit) ? args.limit : 8;
@@ -145,11 +152,11 @@ export function searchTools(modules: ActiveModule[], args: Record<string, unknow
   });
 }
 
-export function listModules(modules: ActiveModule[]): string {
+export function listModules(modules: DiscoveryModule[]): string {
   return JSON.stringify({ modules: catalog(modules) });
 }
 
-export async function callTool(modules: ActiveModule[], args: Record<string, unknown>): Promise<string> {
+export async function callTool(modules: DiscoveryModule[], args: Record<string, unknown>): Promise<string> {
   const name = typeof args.name === "string" ? args.name.trim() : "";
   if (!name) {
     throw new Error("name is required. Use swiss_search_tools to find a tool name.");
