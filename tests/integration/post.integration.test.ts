@@ -50,11 +50,26 @@ describe("lookup_postcode (live API)", () => {
     expect(result.canton.code).toBe("TI");
   });
 
-  it("returns found:false for fictional PLZ 9998", async () => {
+  it("reports the municipality and BFS number from the register", async () => {
     const result = JSON.parse(
-      await handlePost("lookup_postcode", { postcode: "9998" })
+      await handlePost("lookup_postcode", { postcode: "8001" })
     );
-    expect(result.found).toBe(false);
+    expect(result.municipality.name).toMatch(/Z[uü]rich/i);
+    expect(result.municipality.bfs_number).toBe(261);
+  });
+
+  it("6417 Sattel is SZ, and the register says it also reaches into ZG", async () => {
+    const result = JSON.parse(
+      await handlePost("lookup_postcode", { postcode: "6417" })
+    );
+    expect(result.canton.code).toBe("SZ");
+    expect(result.also_in_cantons).toContain("ZG");
+  });
+
+  it("rejects for the fictional PLZ 9998", async () => {
+    await expect(
+      handlePost("lookup_postcode", { postcode: "9998" })
+    ).rejects.toThrow(/No Swiss postcode 9998/);
   });
 
   it("response is under 50K chars", async () => {
@@ -133,6 +148,15 @@ describe("search_postcode (live API)", () => {
     const codes = result.results.map((r: { postcode: number }) => r.postcode);
     expect(codes.length).toBe(new Set(codes).size);
   });
+
+  it("labels Zürich results with canton ZH", async () => {
+    const result = JSON.parse(
+      await handlePost("search_postcode", { city_name: "Zürich" })
+    );
+    for (const r of result.results) {
+      expect(r.canton).toBe("ZH");
+    }
+  });
 });
 
 // ── list_postcodes_in_canton ──────────────────────────────────────────────────
@@ -146,6 +170,60 @@ describe("list_postcodes_in_canton (live API)", () => {
     expect(result.count).toBeGreaterThan(50);
     expect(Array.isArray(result.postcodes)).toBe(true);
   });
+
+  it("every postcode returned for ZG really is in ZG", async () => {
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZG" })
+    );
+    // Zug is small and hemmed in by AG, LU, SZ and ZH; its own postcodes are
+    // 6300–6345 plus Oberwil/Allenwinden. Nothing from a neighbour may appear.
+    expect(result.count).toBeGreaterThan(10);
+    expect(result.count).toBeLessThan(30);
+    for (const entry of result.postcodes) {
+      const check = JSON.parse(
+        await handlePost("lookup_postcode", { postcode: String(entry.postcode) })
+      );
+      expect(check.canton.code).toBe("ZG");
+    }
+  }, 60_000);
+
+  it("does not claim neighbouring postcodes for ZG", async () => {
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZG" })
+    );
+    const codes = result.postcodes.map((p: { postcode: number }) => p.postcode);
+    // 5642 Mühlau is AG, 6417 Sattel and 6418 Rothenthurm are SZ, 8910 Affoltern is ZH.
+    expect(codes).not.toContain(5642);
+    expect(codes).not.toContain(6417);
+    expect(codes).not.toContain(6418);
+    expect(codes).not.toContain(8910);
+    expect(codes).toContain(6300);
+  });
+
+  it("postcodes that only reach into the canton are reported separately", async () => {
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "ZG" })
+    );
+    const partly = result.partly_in_canton ?? [];
+    for (const entry of partly) {
+      expect(entry.main_canton).not.toBe("ZG");
+      expect(entry.share_percent).toBeLessThan(50);
+    }
+    const codes = result.postcodes.map((p: { postcode: number }) => p.postcode);
+    for (const entry of partly) expect(codes).not.toContain(entry.postcode);
+  });
+
+  it("every postcode returned for BS really is in BS", async () => {
+    const result = JSON.parse(
+      await handlePost("list_postcodes_in_canton", { canton: "BS" })
+    );
+    for (const entry of result.postcodes) {
+      const check = JSON.parse(
+        await handlePost("lookup_postcode", { postcode: String(entry.postcode) })
+      );
+      expect(check.canton.code).toBe("BS");
+    }
+  }, 60_000);
 
   it("postcodes are sorted ascending", async () => {
     const result = JSON.parse(
@@ -179,22 +257,25 @@ describe("list_postcodes_in_canton (live API)", () => {
     expect(result.count).toBeGreaterThan(0);
   });
 
-  it("contains Winterthur (8400) or other known ZH postcodes in results", async () => {
-    // Note: The geo.admin.ch identify API caps at ~201 results per spatial query.
-    // Not all ZH postcodes may be returned in a single call. We verify the
-    // results are plausible ZH postcodes (roughly 8000–8999 range).
-    const result = JSON.parse(
-      await handlePost("list_postcodes_in_canton", { canton: "ZH" })
-    );
-    expect(result.count).toBeGreaterThan(0);
-    const allPlausible = result.postcodes.every(
-      (p: { postcode: number }) => p.postcode >= 1000 && p.postcode <= 9999
-    );
-    expect(allPlausible).toBe(true);
-  });
+  it("covers every canton, and the 26 lists do not overlap", async () => {
+    const codes = [
+      "ZH", "BE", "LU", "UR", "SZ", "OW", "NW", "GL", "ZG", "FR", "SO", "BS", "BL",
+      "SH", "AR", "AI", "SG", "GR", "AG", "TG", "TI", "VD", "VS", "NE", "GE", "JU",
+    ];
+    const seen = new Map<number, string>();
+    for (const code of codes) {
+      const result = JSON.parse(await handlePost("list_postcodes_in_canton", { canton: code }));
+      expect(result.count).toBeGreaterThan(0);
+      for (const entry of result.postcodes) {
+        expect(seen.has(entry.postcode)).toBe(false);
+        seen.set(entry.postcode, code);
+      }
+    }
+    expect(seen.size).toBeGreaterThan(3000);
+  }, 60_000);
 
-  it("response is under 50K chars", async () => {
-    const raw = await handlePost("list_postcodes_in_canton", { canton: "ZH" });
+  it("response is under 50K chars for the largest canton", async () => {
+    const raw = await handlePost("list_postcodes_in_canton", { canton: "BE" });
     expect(raw.length).toBeLessThan(50000);
   });
 

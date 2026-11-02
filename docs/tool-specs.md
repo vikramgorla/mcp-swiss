@@ -1,9 +1,9 @@
 # mcp-swiss Tool Specifications
 
-> Complete human + machine-readable specification for all 79 MCP tools.
+> Complete human + machine-readable specification for all 82 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 79 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Module filtering:** You don't have to load all 82 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
 
 ---
 
@@ -839,7 +839,7 @@ No parameters required.
 |-----------|------|----------|-------------|
 | name | string | ✅ | Company name or partial name to search |
 | canton | string | ⬜ | Canton abbreviation (e.g. `ZH`, `BE`, `GE`, `ZG`) |
-| legal_form | string | ⬜ | Legal form code (e.g. `0106`=GmbH, `0105`=AG) |
+| legal_form | number | ⬜ | ZEFIX legal form id (`3` = AG, `4` = GmbH). From `list_legal_forms`, not the old `0106` codes |
 | limit | number | ⬜ | Maximum results (default: 20) |
 
 ### Output
@@ -868,8 +868,8 @@ No parameters required.
 - `ehraid` is the **ZEFIX internal integer ID** — use this with `get_company` (NOT the CHE-xxx.xxx.xxx UID)
 - `uid` is the official UID (CHE-xxx.xxx.xxx) for reference only
 - `deleteDate` is non-null for dissolved/deleted companies
-- Legal form codes: `0101`=Sole proprietorship, `0103`=General partnership, `0104`=LP, `0105`=AG, `0106`=GmbH, `0107`=Cooperative, `0108`=Association, `0109`=Foundation
-- Use `canton` to narrow results (e.g. `ZG` for Zug crypto/fintech scene)
+- Canton and legal form are real filters. The canton is resolved to ZEFIX registry-office ids; the legal form is the numeric id from `list_legal_forms` (`3` = AG, `4` = GmbH). The old `cantonAbbreviation` / `0106`-style codes were ignored by the search endpoint.
+- Unknown canton or legal form values are rejected instead of being silently dropped.
 
 ---
 
@@ -921,42 +921,24 @@ No parameters required.
 
 ---
 
-## `search_companies_by_address`
+## `search_companies_by_locality`
 
 **Module:** Companies  
 **API source:** `https://www.zefix.admin.ch/ZefixREST/api/v1/firm/search.json`  
-**Description:** Search Swiss companies registered at a specific address, street, or locality.
+**Description:** Companies whose registered legal seat is in a commune or town. ZEFIX has no street-address search; a street is rejected with an explanation.
 
 ### Input
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| address | string | ✅ | Address, street name, or locality to search |
-| limit | number | ⬜ | Maximum results (default: 20) |
-
-### Output
-
-```json
-{
-  "companies": [
-    {
-      "ehraid": 203847,
-      "name": "Crypto Valley AG",
-      "uid": "CHE-123.456.789",
-      "legalSeat": "Zug",
-      "cantonAbbreviation": "ZG",
-      "status": "ACTIVE"
-    }
-  ],
-  "hasMoreResults": true
-}
-```
+| locality | string | ✅ | Commune or town, accent-insensitive (`Zug`, `Geneve`) |
+| name | string | ⬜ | Optional company-name filter |
+| limit | number | ⬜ | Maximum results (default: 20, max 100) |
 
 ### Notes
 
-- Uses ZEFIX full-text search on the `name` field (which also matches address components in some cases)
-- For precise address filtering, use `search_companies` with `canton` to narrow down
-- `hasMoreResults: true` indicates more companies match than the limit
+- The locality is resolved to ZEFIX community ids (including alternate names) and sent as `legalSeatId`.
+- Replaces `search_companies_by_address`, which sent the address as the company name and did not filter by place.
 
 ---
 
@@ -1014,8 +996,8 @@ No parameters required.
 ## `list_legal_forms`
 
 **Module:** Companies  
-**API source:** Hardcoded (ZEFIX `/legalForms` endpoint returns 403)  
-**Description:** List all Swiss company legal forms (AG, GmbH, Verein, Stiftung, etc.) with their numeric codes.
+**API source:** Live `legalForm.json` (cached, expiring)  
+**Description:** Legal forms with the numeric ids `search_companies` actually filters on. `3` = AG, `4` = GmbH.
 
 ### Input
 
@@ -1025,25 +1007,15 @@ No parameters required.
 
 ```json
 [
-  { "code": "0101", "name": "Einzelunternehmen", "nameEn": "Sole proprietorship" },
-  { "code": "0103", "name": "Kollektivgesellschaft", "nameEn": "General partnership" },
-  { "code": "0104", "name": "Kommanditgesellschaft", "nameEn": "Limited partnership" },
-  { "code": "0105", "name": "Aktiengesellschaft (AG)", "nameEn": "Corporation (AG)" },
-  { "code": "0106", "name": "Gesellschaft mit beschränkter Haftung (GmbH)", "nameEn": "Limited liability company (GmbH)" },
-  { "code": "0107", "name": "Genossenschaft", "nameEn": "Cooperative" },
-  { "code": "0108", "name": "Verein", "nameEn": "Association" },
-  { "code": "0109", "name": "Stiftung", "nameEn": "Foundation" },
-  { "code": "0110", "name": "Kommanditaktiengesellschaft", "nameEn": "Partnership limited by shares" },
-  { "code": "0113", "name": "Filiale ausländischer Gesellschaft", "nameEn": "Branch of foreign company" },
-  { "code": "0114", "name": "Institut des öffentlichen Rechts", "nameEn": "Public law institution" }
+  { "id": 3, "abbr": "AG", "name": "Aktiengesellschaft", "nameEn": "Company limited by shares" },
+  { "id": 4, "abbr": "GmbH", "name": "Gesellschaft mit beschränkter Haftung", "nameEn": "Limited liability company" }
 ]
 ```
 
 ### Notes
 
-- Returns hardcoded data — the ZEFIX `/legalForms` API endpoint returns HTTP 403
-- Use `code` values with `search_companies` `legal_form` parameter
-- Most common: `0105` (AG) and `0106` (GmbH) make up the majority of registered companies
+- Ids come from ZEFIX, not the old invented `0101`–`0114` list
+- Pass `id` as `legal_form` to `search_companies`
 
 ---
 
@@ -2554,5 +2526,42 @@ List all 16 MeteoSwiss automatic pollen monitoring stations in Switzerland. Retu
 
 ---
 
+## Buildings Module (GWR)
+
+**Base API:** `https://api3.geo.admin.ch` layer `ch.bfs.gebaeude_wohnungs_register`  
+**Data source:** Federal Register of Buildings and Dwellings (BFS), no API key  
+**Requested in:** [#142](https://github.com/vikramgorla/mcp-swiss/issues/142) by khashashin
+
+## `search_buildings`
+
+Find buildings by address text. Returns EGID, address, coordinates, category, and construction year for `get_building`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| address | string | ✅ | Street, number, locality |
+| limit | number | ⬜ | Max results (default 5, max 20) |
+
+## `get_building`
+
+Full decoded record for one EGID: category, class, status, year, floors, areas, heating and hot water, parcel/EGRID, entrances, and dwellings.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| egid | number | ✅ | Federal building id |
+| max_dwellings | number | ⬜ | Dwellings to include (default 50, max 500; 0 = summary only) |
+
+## `buildings_near`
+
+Buildings around a WGS84 point, closest first. Radius is capped at 250 metres.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| lat | number | ✅ | Latitude |
+| lon | number | ✅ | Longitude |
+| radius | number | ⬜ | Metres (default 50, max 250) |
+| limit | number | ⬜ | Max results (default 10, max 50) |
+
+---
+
 *Specification generated from mcp-swiss source code.*  
-*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen)*
+*API sources: transport.opendata.ch, api.existenz.ch, api3.geo.admin.ch, zefix.admin.ch, openholidaysapi.org, ws.parlament.ch, aws.slf.ch/whiterisk.ch, geo.admin.ch (NABEL), service.post.ch, strompreis.elcom.admin.ch, pxweb.bfs.admin.ch, opendata.swiss, data.snb.ch, openerz.metaodi.ch, srf.ch, data.bs.ch, geo.admin.ch (SFOE dams), geo.admin.ch (hiking), api3.geo.admin.ch (ASTRA traffic), arclink.ethz.ch (SED earthquakes), measurement-api.slf.ch (SLF snow), data.geo.admin.ch (MeteoSwiss pollen), api3.geo.admin.ch (GWR / RegBL)*

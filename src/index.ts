@@ -1,93 +1,19 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
-import { join } from "path";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+import { discoveryEnabled } from "./discovery.js";
 import {
   defaultAllowedHosts,
   isLoopbackBind,
   publicBindProblems,
   startHttpServer,
 } from "./http-server.js";
+import { moduleRegistry, presets, resolveModules } from "./registry.js";
 import { createServer } from "./server.js";
+import { VERSION } from "./utils/http.js";
 
-import { transportTools, handleTransport } from "./modules/transport.js";
-import { weatherTools, handleWeather } from "./modules/weather.js";
-import { geodataTools, handleGeodata } from "./modules/geodata.js";
-import { companiesTools, handleCompanies } from "./modules/companies.js";
-import { holidaysTools, handleHolidays } from "./modules/holidays.js";
-import { parliamentTools, handleParliament } from "./modules/parliament.js";
-import { avalancheTools, handleAvalanche } from "./modules/avalanche.js";
-import { airqualityTools, handleAirQuality } from "./modules/airquality.js";
-import { postTools, handlePost } from "./modules/post.js";
-import { energyTools, handleEnergy } from "./modules/energy.js";
-import { statisticsTools, handleStatistics } from "./modules/statistics.js";
-import { snbTools, handleSnb } from "./modules/snb.js";
-import { recyclingTools, handleRecycling } from "./modules/recycling.js";
-import { newsTools, handleNews } from "./modules/news.js";
-import { votingTools, handleVoting } from "./modules/voting.js";
-import { damsTools, handleDams } from "./modules/dams.js";
-import { hikingTools, handleHiking } from "./modules/hiking.js";
-import { realEstateTools, handleRealEstate } from "./modules/realestate.js";
-import { trafficTools, handleTraffic } from "./modules/traffic.js";
-import { earthquakeTools, handleEarthquakes } from "./modules/earthquakes.js";
-import { snowTools, handleSnow } from "./modules/snow.js";
-import { pollenTools, handlePollen } from "./modules/pollen.js";
-
-// Single source of truth: version from package.json (dist/index.js -> ../package.json)
-function readVersion(): string {
-  try {
-    const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { version?: string };
-    return pkg.version ?? "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
-}
-const VERSION = readVersion();
-
-// ── Module Registry ──────────────────────────────────────────────────────────
-
-type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
-
-interface ModuleEntry {
-  tools: Array<{ name: string; description: string; inputSchema: object }>;
-  handler: ToolHandler;
-}
-
-export const moduleRegistry: Record<string, ModuleEntry> = {
-  transport:   { tools: transportTools,   handler: handleTransport },
-  weather:     { tools: weatherTools,     handler: handleWeather },
-  geodata:     { tools: geodataTools,     handler: handleGeodata },
-  companies:   { tools: companiesTools,   handler: handleCompanies },
-  holidays:    { tools: holidaysTools,    handler: handleHolidays },
-  parliament:  { tools: parliamentTools,  handler: handleParliament },
-  avalanche:   { tools: avalancheTools,   handler: handleAvalanche as ToolHandler },
-  airquality:  { tools: airqualityTools,  handler: handleAirQuality },
-  post:        { tools: postTools,        handler: handlePost },
-  energy:      { tools: energyTools,      handler: handleEnergy },
-  statistics:  { tools: statisticsTools,  handler: handleStatistics },
-  snb:         { tools: snbTools,         handler: handleSnb },
-  recycling:   { tools: recyclingTools,   handler: handleRecycling },
-  news:        { tools: newsTools,        handler: handleNews },
-  voting:      { tools: votingTools,      handler: handleVoting },
-  dams:        { tools: damsTools,        handler: handleDams },
-  hiking:      { tools: hikingTools,      handler: handleHiking },
-  realestate:  { tools: realEstateTools,  handler: handleRealEstate },
-  traffic:     { tools: trafficTools,     handler: handleTraffic },
-  earthquakes: { tools: earthquakeTools,  handler: handleEarthquakes as ToolHandler },
-  snow:        { tools: snowTools,        handler: handleSnow },
-  pollen:      { tools: pollenTools,     handler: handlePollen },
-};
-
-// ── Presets ───────────────────────────────────────────────────────────────────
-
-export const presets: Record<string, string[]> = {
-  commuter:  ["transport", "weather", "holidays"],
-  outdoor:   ["weather", "avalanche", "hiking", "earthquakes", "dams", "snow"],
-  business:  ["companies", "geodata", "post", "energy", "statistics", "snb"],
-  citizen:   ["parliament", "voting", "holidays", "news"],
-  minimal:   ["transport"],
-  full:      Object.keys(moduleRegistry),
-};
+export { moduleRegistry, presets, resolveModules };
+export type { ModuleEntry, ToolHandler } from "./registry.js";
 
 // ── CLI Argument Parsing ─────────────────────────────────────────────────────
 
@@ -99,6 +25,7 @@ export interface ParsedArgs {
   http: boolean;
   port: number;
   host: string;
+  discovery: boolean;
 }
 
 function flagValue(argv: string[], flag: string): string | undefined {
@@ -115,7 +42,6 @@ export function parseArgs(
 
   let selectedModules: Set<string> | null = null;
 
-  // Parse --preset
   const presetIdx = argv.indexOf("--preset");
   if (presetIdx !== -1 && argv[presetIdx + 1]) {
     const presetName = argv[presetIdx + 1];
@@ -128,7 +54,6 @@ export function parseArgs(
     selectedModules = new Set(presets[presetName]);
   }
 
-  // Parse --modules (additive with preset)
   const modulesIdx = argv.indexOf("--modules");
   if (modulesIdx !== -1 && argv[modulesIdx + 1]) {
     const moduleNames = argv[modulesIdx + 1].split(",").map((m) => m.trim());
@@ -154,7 +79,15 @@ export function parseArgs(
   }
   const host = flagValue(argv, "--host") ?? env.HOST ?? "127.0.0.1";
 
-  return { modules: selectedModules, listModules, listPresets, http, port, host };
+  return {
+    modules: selectedModules,
+    listModules,
+    listPresets,
+    http,
+    port,
+    host,
+    discovery: discoveryEnabled(argv, env),
+  };
 }
 
 function parsePositiveInt(value: string | undefined, name: string): number | undefined {
@@ -173,12 +106,10 @@ function printModules(): void {
   process.stdout.write("\nAvailable modules:\n\n");
   for (const [name, mod] of Object.entries(moduleRegistry)) {
     process.stdout.write(
-      `  ${name.padEnd(14)} ${mod.tools.length} tools\n`
+      `  ${name.padEnd(14)} ${String(mod.tools.length).padStart(2)} tools  ${mod.description}\n`
     );
   }
-  process.stdout.write(
-    "\nUsage: npx mcp-swiss --modules transport,weather\n\n"
-  );
+  process.stdout.write("\nUsage: npx mcp-swiss --modules transport,weather\n\n");
 }
 
 function printPresets(): void {
@@ -193,20 +124,7 @@ function printPresets(): void {
     );
   }
   process.stdout.write("\nUsage: npx mcp-swiss --preset commuter\n");
-  process.stdout.write(
-    "Combine: npx mcp-swiss --preset commuter --modules parliament\n\n"
-  );
-}
-
-// ── Resolve Active Modules ───────────────────────────────────────────────────
-
-export function resolveModules(
-  selected: Set<string> | null
-): Array<{ name: string } & ModuleEntry> {
-  const names = selected ? [...selected] : Object.keys(moduleRegistry);
-  return names
-    .filter((n) => moduleRegistry[n])
-    .map((n) => ({ name: n, ...moduleRegistry[n] }));
+  process.stdout.write("Combine: npx mcp-swiss --preset commuter --modules parliament\n\n");
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -223,16 +141,23 @@ if (config.listPresets) {
 }
 
 const activeModules = resolveModules(config.modules);
-const allTools = activeModules.flatMap((m) => m.tools);
-const moduleCount = activeModules.length;
-const toolCount = allTools.length;
-const summary = `${moduleCount} modules, ${toolCount} tools`;
 
 function buildMcpServer() {
-  return createServer({ version: VERSION, modules: activeModules });
+  return createServer({
+    version: VERSION,
+    modules: activeModules,
+    discovery: config.discovery,
+  });
 }
 
 async function main() {
+  const moduleCount = activeModules.length;
+  const toolCount = config.discovery
+    ? 3
+    : activeModules.reduce((sum, mod) => sum + mod.tools.length, 0);
+  const mode = config.discovery ? ", discovery" : "";
+  const summary = `${moduleCount} modules, ${toolCount} tools${mode}`;
+
   if (config.http) {
     const env = process.env;
     const allowedHosts = env.MCP_ALLOWED_HOSTS

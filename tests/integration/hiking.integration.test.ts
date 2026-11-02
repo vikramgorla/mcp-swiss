@@ -86,6 +86,29 @@ describe("Hiking Trail Closures API (live)", () => {
     expect(() => JSON.parse(raw)).not.toThrow();
   });
 
+  it("get_trail_closures_nearby stays inside the radius", async () => {
+    const radius = 5000;
+    const result = JSON.parse(
+      await handleHiking("get_trail_closures_nearby", {
+        lat: BERN_LAT,
+        lon: BERN_LON,
+        radius,
+      })
+    );
+    // The radius used to be sent as a pixel tolerance, matching the whole country.
+    for (const closure of result.closures) {
+      expect(closure.distance_m).toBeLessThanOrEqual(radius);
+    }
+    const wide = JSON.parse(
+      await handleHiking("get_trail_closures_nearby", {
+        lat: BERN_LAT,
+        lon: BERN_LON,
+        radius: 40000,
+      })
+    );
+    expect(wide.count).toBeGreaterThanOrEqual(result.count);
+  });
+
   it("get_trail_closures_nearby returns results for Bern", async () => {
     const result = JSON.parse(
       await handleHiking("get_trail_closures_nearby", { lat: BERN_LAT, lon: BERN_LON })
