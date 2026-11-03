@@ -1,6 +1,6 @@
 {
   "name": "mcp-swiss",
-  "version": "0.9.0",
+  "version": "0.9.1-dev",
   "description": "Swiss open data MCP server — 94 tools across 27 modules. Zero API keys.",
   "main": "dist/index.js",
   "bin": {
