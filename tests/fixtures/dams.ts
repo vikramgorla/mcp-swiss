@@ -6,8 +6,8 @@ const grandeDixenceDam = {
   id: 130676916,
   layerBodId: "ch.bfe.stauanlagen-bundesaufsicht",
   layerName: "Stauanlagen",
-  bbox: [597249.3, 103229.9, 597249.3, 103229.9] as [number, number, number, number],
-  geometry: { x: 597249.3, y: 103229.9, spatialReference: { wkid: 21781 } },
+  bbox: [2597249.3, 1103229.9, 2597249.3, 1103229.9] as [number, number, number, number],
+  geometry: { x: 2597249.3, y: 1103229.9, spatialReference: { wkid: 2056 } },
   attributes: {
     damname: "Grande Dixence",
     damtype_de: "Gewichtsmauer",
@@ -39,8 +39,8 @@ const spitalammDam = {
   id: 130676894,
   layerBodId: "ch.bfe.stauanlagen-bundesaufsicht",
   layerName: "Stauanlagen",
-  bbox: [668300.3, 158269.7, 668300.3, 158269.7] as [number, number, number, number],
-  geometry: { x: 668300.3, y: 158269.7, spatialReference: { wkid: 21781 } },
+  bbox: [2668300.3, 1158269.7, 2668300.3, 1158269.7] as [number, number, number, number],
+  geometry: { x: 2668300.3, y: 1158269.7, spatialReference: { wkid: 2056 } },
   attributes: {
     damname: "Spitallamm",
     damtype_de: "Bogengewichtsmauer",
@@ -72,8 +72,8 @@ const seeufereggDam = {
   id: 130676893,
   layerBodId: "ch.bfe.stauanlagen-bundesaufsicht",
   layerName: "Stauanlagen",
-  bbox: [668950.3, 158389.7, 668950.3, 158389.7] as [number, number, number, number],
-  geometry: { x: 668950.3, y: 158389.7, spatialReference: { wkid: 21781 } },
+  bbox: [2668950.3, 1158389.7, 2668950.3, 1158389.7] as [number, number, number, number],
+  geometry: { x: 2668950.3, y: 1158389.7, spatialReference: { wkid: 2056 } },
   attributes: {
     damname: "Seeuferegg",
     damtype_de: "Gewichtsmauer",
@@ -105,8 +105,8 @@ const mattmarkDam = {
   id: 130676918,
   layerBodId: "ch.bfe.stauanlagen-bundesaufsicht",
   layerName: "Stauanlagen",
-  bbox: [641000.0, 99000.0, 641000.0, 99000.0] as [number, number, number, number],
-  geometry: { x: 641000.0, y: 99000.0, spatialReference: { wkid: 21781 } },
+  bbox: [2641000.0, 1099000.0, 2641000.0, 1099000.0] as [number, number, number, number],
+  geometry: { x: 2641000.0, y: 1099000.0, spatialReference: { wkid: 2056 } },
   attributes: {
     damname: "Mattmark",
     damtype_de: "Damm",
@@ -138,7 +138,7 @@ const damNoGeometry = {
   id: 999999,
   layerBodId: "ch.bfe.stauanlagen-bundesaufsicht",
   layerName: "Stauanlagen",
-  bbox: [600000, 100000, 600000, 100000] as [number, number, number, number],
+  bbox: [2600000, 1100000, 2600000, 1100000] as [number, number, number, number],
   attributes: {
     damname: "TestDamNoGeo",
     damtype_de: "Gewichtsmauer",
@@ -222,6 +222,11 @@ export const mockCantonIdentifyBE = {
   ],
 };
 
+/** Canton identify with no hit — point outside every canton polygon */
+export const mockCantonIdentifyEmpty = {
+  results: [] as typeof mockCantonIdentifyVS["results"],
+};
+
 /** Canton find (no geometry) for VS */
 export const mockCantonFindVS = {
   results: [
@@ -246,7 +251,7 @@ export const mockCantonFindWithBboxVS = {
     {
       featureId: 23,
       id: 23,
-      bbox: [548579.4, 78560.2, 679786.8, 167428.4] as [number, number, number, number],
+      bbox: [2548579.4, 1078560.2, 2679786.8, 1167428.4] as [number, number, number, number],
       layerBodId: "ch.swisstopo.swissboundaries3d-kanton-flaeche.fill",
       layerName: "Kantonsgrenzen",
       attributes: {
