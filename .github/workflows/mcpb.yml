@@ -39,7 +39,8 @@ jobs:
           cp -r dist/ "${BUNDLE_DIR}/dist/"
           cp -r node_modules/ "${BUNDLE_DIR}/node_modules/"
           cp package.json "${BUNDLE_DIR}/"
-          cp manifest.json "${BUNDLE_DIR}/"
+          # Stamp the bundle with the release version so it can't go stale.
+          jq --arg v "$VERSION" '.version = $v' manifest.json > "${BUNDLE_DIR}/manifest.json"
           [ -d "assets" ] && cp -r assets/ "${BUNDLE_DIR}/assets/" || true
 
           cd "${BUNDLE_DIR}"

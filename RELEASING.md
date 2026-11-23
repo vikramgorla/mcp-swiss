@@ -41,19 +41,20 @@ git checkout -b release/vX.Y.Z develop
 
 ### Step 3 — Bump the version (ONE commit)
 
-Update all three files in a **single commit**:
+Update all four files in a **single commit**:
 
 1. `package.json` — set `"version": "X.Y.Z"`
 2. `package-lock.json` — set `"version": "X.Y.Z"` in the root and the `packages[""]` object
 3. `server.json` — set `"version": "X.Y.Z"` and update `packages[0].version`
+4. `manifest.json` — set `"version": "X.Y.Z"` (the `.mcpb` bundle; `mcpb.yml` also stamps it from the tag)
 
 ```bash
 # Edit all three files, then:
-git add package.json package-lock.json server.json
+git add package.json package-lock.json server.json manifest.json
 git commit -m "chore: bump version to X.Y.Z"
 ```
 
-⚠️ Do NOT make other changes in this commit. One commit, three files, version only.
+⚠️ Do NOT make other changes in this commit. One commit, four files, version only.
 
 ### Step 4 — Push and create PR to develop
 
