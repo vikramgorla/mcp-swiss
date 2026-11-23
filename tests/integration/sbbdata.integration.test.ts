@@ -11,7 +11,7 @@ describe("SBB Open Data portal (live — data.sbb.ch)", () => {
     expect(result.stations[0].station).toBe("Bern");
     expect(result.stations[0].daily_avg).toBeGreaterThan(1000);
     expect(result.stations[0].canton).toBe("BE");
-  }, 20000);
+  }, 70000);
 
   it("get_station_punctuality summarises the previous day at Bern", async () => {
     const raw = await handleSbbData("get_station_punctuality", { station: "Bern", limit: 3 });
@@ -22,7 +22,7 @@ describe("SBB Open Data portal (live — data.sbb.ch)", () => {
     expect(result.delayed_arrivals).toBeGreaterThanOrEqual(0);
     expect(result.delayed_arrivals).toBeLessThanOrEqual(result.stops);
     expect(typeof result.on_time_arrivals_pct).toBe("number");
-  }, 20000);
+  }, 70000);
 
   it("get_station_accessibility lists Bern platforms", async () => {
     const raw = await handleSbbData("get_station_accessibility", { station: "Bern" });
@@ -32,5 +32,5 @@ describe("SBB Open Data portal (live — data.sbb.ch)", () => {
     expect(result.rail_free_platforms).toBeGreaterThan(0);
     expect(result.platforms[0].station).toBe("Bern");
     expect(typeof result.platforms[0].rail_free_access).toBe("boolean");
-  }, 20000);
+  }, 70000);
 });

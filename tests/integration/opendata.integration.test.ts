@@ -13,7 +13,7 @@ describe("opendata.swiss catalogue (live — CKAN)", () => {
     expect(typeof result.results[0].id).toBe("string");
     expect(typeof result.results[0].title).toBe("string");
     expect(result.source).toContain("opendata.swiss");
-  }, 20000);
+  }, 70000);
 
   it("search_opendata can filter by publisher", async () => {
     const result = JSON.parse(
@@ -25,7 +25,7 @@ describe("opendata.swiss catalogue (live — CKAN)", () => {
     );
     expect(result.organization).toBe("bundesamt-fur-statistik-bfs");
     expect(result.returned).toBeGreaterThan(0);
-  }, 20000);
+  }, 70000);
 
   it("get_opendata_dataset returns one dataset", async () => {
     const raw = await handleOpendata("get_opendata_dataset", {
@@ -37,7 +37,7 @@ describe("opendata.swiss catalogue (live — CKAN)", () => {
     expect(result.title.length).toBeGreaterThan(0);
     expect(result.resource_count).toBeGreaterThan(0);
     expect(result.source_url).toContain("weather-station-klosters");
-  }, 20000);
+  }, 70000);
 
   it("list_opendata_resources returns download links", async () => {
     const raw = await handleOpendata("list_opendata_resources", {
@@ -48,5 +48,5 @@ describe("opendata.swiss catalogue (live — CKAN)", () => {
     expect(result.returned).toBeGreaterThan(0);
     expect(typeof result.resources[0].url).toBe("string");
     expect(result.resources[0].url.length).toBeGreaterThan(0);
-  }, 20000);
+  }, 70000);
 });
