@@ -9,6 +9,41 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-23
+
+Search mode is now the default. If you rely on all tools being listed directly, add `--mode full`.
+
+### Changed
+
+- **Search mode is now the default.** With no flags, the server lists `swiss_search_tools`, `swiss_call_tool`, `swiss_list_modules`, `get_connections` and `get_departures` (about 1,200 tokens) instead of all 94 tools (about 11,700). Every tool is still reachable through search. Use `--mode full` or `MCP_SWISS_MODE=full` for the old behaviour. Choosing modules with `--modules` or `--preset` still lists those tools directly.
+- Clients that call a tool by name in search mode (for example, one remembered from an earlier session) are still served.
+- README rewritten as a short entry point (722 → about 110 lines); per-app setup and per-tool detail moved to the site.
+
+### Added
+
+- Documentation site on GitHub Pages: install steps for each app, how search mode works, the full tool catalogue with parameters, and a question box that runs the server's own search in the browser. It's generated from the code (`npm run site`) and deployed on every push to `main`. Closes [#65](https://github.com/vikramgorla/mcp-swiss/issues/65).
+- `docs/forks.md`: which forks have been reviewed and what was ported.
+- Server `instructions` in the initialize result: how to search, plus the module catalogue.
+- The search tool's description names every active module.
+- Search fixes misspelt words against the catalogue ("wether" → weather, "trian" → train) and understands everyday words that the tool text doesn't contain ("fastest way", "raining", "MPs", "kids' autumn break").
+- `swiss_call_tool` suggests the closest tool names for a mistyped name.
+- `--pin` / `MCP_SWISS_PIN` choose which tools are listed next to the search tools (`none` for only the three meta-tools).
+- Discoverability test: 222 plain-language questions, at least two per tool. Each must find its tool in the top five search results, and every new tool must add questions.
+- `npm run docs:tokens` reports what a client actually receives in each mode.
+
+### Fixed
+
+- The `.mcpb` bundle reported version 0.8.0 since 0.9.0. `manifest.json` is now bumped with each release, and the bundle workflow stamps the release version into it.
+
+### Removed
+
+- Dead files: `test_suite.js` and `run_tests.sh` (22-tool era, hard-coded local paths), `scripts/qa-per-tool.sh` (68-tool era) and `mcp-manifest.json` (stuck at 0.1.4; `server.json` is the registry manifest). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+
+### Security
+
+- The MCP Registry publish job installs `mcp-publisher` v1.8.15 pinned by SHA-256 instead of downloading "latest" into a job that holds a publish token. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+- Dependabot no longer auto-merges `@modelcontextprotocol/sdk` bumps. It's the one runtime dependency, so its updates get their own PR and a human review. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+
 ## [0.9.1] - 2026-11-23
 
 ### Changed

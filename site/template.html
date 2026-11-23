@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mcp-swiss: Swiss public data for AI assistants</title>
+<meta name="description" content="An MCP server with {{TOOL_COUNT}} tools for Swiss public data: trains, weather, rivers, maps, companies, parliament and more. No API keys.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<a class="skip" href="#install">Skip to install</a>
+
+<header class="top">
+  <a class="brand" href="./"><img src="icon.svg" alt="" width="28" height="28"> mcp-swiss</a>
+  <nav aria-label="Sections">
+    <a href="#install">Install</a>
+    <a href="#how">How it works</a>
+    <a href="#tools">Tools</a>
+    <a href="#sources">Data sources</a>
+    <a href="https://github.com/vikramgorla/mcp-swiss">GitHub</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <div class="hero-text">
+    <h1>Ask about Switzerland.<br>Your assistant finds the data.</h1>
+    <p class="lede">An MCP server that gives Claude, Copilot, Cursor and other assistants {{TOOL_COUNT}} tools for Swiss public data: timetables, weather, river levels, maps, companies, parliament, avalanches and more. No API keys, nothing to sign up for.</p>
+    <div class="command">
+      <code id="cmd-npx">npx -y mcp-swiss</code>
+      <button class="copy" data-copy="cmd-npx" type="button">Copy</button>
+    </div>
+    <p class="facts">Version {{VERSION}}. {{MODULE_COUNT}} modules. MIT licensed.</p>
+  </div>
+
+  <div class="board" role="search">
+    <div class="board-head">
+      <label for="ask">Try a question</label>
+      <span class="board-clock" aria-hidden="true" id="clock">--:--</span>
+    </div>
+    <input id="ask" type="search" autocomplete="off" spellcheck="false"
+      value="avalanche danger Verbier" aria-describedby="board-note">
+    <ol class="board-rows" id="board-rows" aria-live="polite"></ol>
+    <p class="board-note" id="board-note">This runs the server's own search, the one your assistant uses in the default mode.</p>
+    <div class="board-examples" aria-label="Example questions">
+      <button type="button">train from Aigle to Geneva</button>
+      <button type="button">is the Aare warm enough to swim</button>
+      <button type="button">CHF to EUR</button>
+      <button type="button">companies registered in Zug</button>
+      <button type="button">when do kids have autumn break in Vaud</button>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <h2>Install</h2>
+  <p>Pick your app. Every option runs the same server; nothing else to configure.</p>
+
+  <div class="tabs" role="tablist" aria-label="Apps">
+    <button role="tab" aria-selected="true" aria-controls="tab-claude-desktop" id="t-claude-desktop">Claude Desktop</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-claude-code" id="t-claude-code">Claude Code</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-cursor" id="t-cursor">Cursor</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-vscode" id="t-vscode">VS Code</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-other" id="t-other">Other apps</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-docker" id="t-docker">Docker</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-http" id="t-http">HTTP</button>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-claude-desktop" aria-labelledby="t-claude-desktop">
+    <p><a class="button" href="https://github.com/vikramgorla/mcp-swiss/releases/latest/download/mcp-swiss.mcpb">Download mcp-swiss.mcpb</a> and open it. Claude Desktop installs it for you.</p>
+    <p>Or add this to <code>claude_desktop_config.json</code> (Settings, Developer, Edit Config) and restart Claude:</p>
+    <pre><code>{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss"]
+    }
+  }
+}</code></pre>
+    <p class="small">The file lives in <code>~/Library/Application Support/Claude/</code> on macOS, <code>%APPDATA%\Claude\</code> on Windows and <code>~/.config/Claude/</code> on Linux.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-claude-code" aria-labelledby="t-claude-code" hidden>
+    <pre><code>claude mcp add swiss -- npx -y mcp-swiss</code></pre>
+    <p>It's available from your next session.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-cursor" aria-labelledby="t-cursor" hidden>
+    <p>Add this to <code>.cursor/mcp.json</code> in your project, or <code>~/.cursor/mcp.json</code> for every project:</p>
+    <pre><code>{
+  "mcpServers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss"]
+    }
+  }
+}</code></pre>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-vscode" aria-labelledby="t-vscode" hidden>
+    <p><a class="button" href="https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522swiss%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522mcp-swiss%2522%255D%257D">Install in VS Code</a>
+    <a class="button quiet" href="https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522swiss%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522mcp-swiss%2522%255D%257D">VS Code Insiders</a></p>
+    <p>From a terminal:</p>
+    <pre><code>code --add-mcp '{"name":"swiss","command":"npx","args":["-y","mcp-swiss"]}'</code></pre>
+    <p>Or share it with your team in <code>.vscode/mcp.json</code>:</p>
+    <pre><code>{
+  "servers": {
+    "swiss": {
+      "command": "npx",
+      "args": ["-y", "mcp-swiss"]
+    }
+  }
+}</code></pre>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-other" aria-labelledby="t-other" hidden>
+    <p>Any app that speaks MCP over stdio works with this command:</p>
+    <pre><code>{
+  "command": "npx",
+  "args": ["-y", "mcp-swiss"]
+}</code></pre>
+    <p>Windsurf reads it from <code>~/.codeium/windsurf/model_config.json</code> under <code>"mcpServers"</code>. Cline reads it from VS Code settings under <code>"cline.mcpServers"</code>. Requires Node.js 20 or later.</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-docker" aria-labelledby="t-docker" hidden>
+    <pre><code>{
+  "mcpServers": {
+    "swiss": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "vikramgorla/mcp-swiss"]
+    }
+  }
+}</code></pre>
+    <p>Images are on Docker Hub (<code>vikramgorla/mcp-swiss</code>) and GitHub (<code>ghcr.io/vikramgorla/mcp-swiss</code>).</p>
+  </div>
+
+  <div class="panel" role="tabpanel" id="tab-http" aria-labelledby="t-http" hidden>
+    <pre><code>npx -y mcp-swiss --http</code></pre>
+    <p>Serves Streamable HTTP at <code>http://127.0.0.1:3000/mcp</code> with a <code>/health</code> check. Change it with <code>--port</code> and <code>--host</code>. Listening on anything other than localhost requires <code>MCP_AUTH_TOKEN</code> and <code>MCP_ALLOWED_HOSTS</code>; sessions are capped by <code>MCP_MAX_SESSIONS</code> (default 64).</p>
+  </div>
+</section>
+
+<section id="how" class="band">
+  <h2>How it works</h2>
+  <p>Listing {{TOOL_COUNT}} tool schemas would cost about {{FULL_TOKENS}} tokens in every conversation. So by default the server lists five tools, about {{SEARCH_TOKENS}} tokens, and the assistant searches for the rest:</p>
+  <dl class="pairs">
+    <dt><code>swiss_search_tools</code></dt><dd>Takes the task in plain words, typos included, and returns the best-matching tools with their parameters.</dd>
+    <dt><code>swiss_call_tool</code></dt><dd>Runs any tool by name after checking its arguments, and suggests the right name if one is mistyped.</dd>
+    <dt><code>swiss_list_modules</code></dt><dd>The whole catalogue, module by module.</dd>
+    <dt><code>get_connections</code>, <code>get_departures</code></dt><dd>The two most-used tools, ready without a search.</dd>
+  </dl>
+  <p>The server also tells the assistant, when it connects, which modules exist and to search before giving up. Every tool only reads public data, so apps can approve calls without asking you each time.</p>
+
+  <h3>Options</h3>
+  <table>
+    <thead><tr><th scope="col">Add to <code>args</code></th><th scope="col">What you get</th></tr></thead>
+    <tbody>
+      <tr><td>nothing</td><td>Search mode, as above. Recommended.</td></tr>
+      <tr><td><code>--modules transport,weather</code></td><td>Only those modules, with their tools listed directly. <code>--list-modules</code> shows all {{MODULE_COUNT}}.</td></tr>
+      <tr><td><code>--preset commuter</code></td><td>A ready-made set: {{PRESETS}}.</td></tr>
+      <tr><td><code>--mode full</code></td><td>All {{TOOL_COUNT}} tools listed directly. Fine in apps that already load tools on demand, such as Claude Code.</td></tr>
+      <tr><td><code>--pin get_weather,geocode</code></td><td>Different tools next to the search tools, or <code>--pin none</code> for only the three.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="tools" class="band">
+  <h2>Tools</h2>
+  <p>{{TOOL_COUNT}} tools in {{MODULE_COUNT}} modules. Filter by name or topic, or open a module to see each tool's parameters.</p>
+  <label class="filter-label" for="filter">Filter tools</label>
+  <input id="filter" type="search" placeholder="e.g. holiday, river, canton" autocomplete="off">
+  <p class="filter-empty" id="filter-empty" hidden>No tool matches that. Try a broader word, or the question box at the top.</p>
+  <div class="catalogue" id="catalogue">
+{{CATALOGUE}}
+  </div>
+</section>
+
+<section id="sources" class="band">
+  <h2>Data sources</h2>
+  <p>Every answer comes from an official or long-running public source. Please respect each source's licence when you reuse what your assistant finds.</p>
+{{SOURCES}}
+</section>
+</main>
+
+<footer class="foot">
+  <p><a href="https://github.com/vikramgorla/mcp-swiss">Source on GitHub</a>, <a href="https://www.npmjs.com/package/mcp-swiss">npm</a>, <a href="https://github.com/vikramgorla/mcp-swiss/blob/main/CHANGELOG.md">changelog</a>, <a href="https://github.com/vikramgorla/mcp-swiss/blob/main/CONTRIBUTING.md">contributing</a>, <a href="https://github.com/vikramgorla/mcp-swiss/issues">report a problem</a>.</p>
+  <p>MIT licence. Not affiliated with the Swiss federal administration, SBB or any data provider.</p>
+</footer>
+
+<script>{{SEARCH_RUNTIME}}</script>
+<script src="site.js"></script>
+</body>
+</html>

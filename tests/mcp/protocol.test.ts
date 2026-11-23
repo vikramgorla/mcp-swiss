@@ -110,7 +110,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     expect(response.jsonrpc).toBe('2.0');
     expect(response.id).toBe(1);
@@ -122,18 +122,18 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     expect(Array.isArray(result.tools)).toBe(true);
   });
 
-  it('returns exactly 94 tools', async () => {
+  it('returns exactly 94 tools in full mode', async () => {
     const response = await sendMcpRequest({
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     expect(result.tools).toHaveLength(94);
@@ -144,7 +144,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 41,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     expect(result.tools.length).toBeGreaterThan(0);
@@ -174,7 +174,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     for (const tool of result.tools) {
@@ -191,7 +191,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 5,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     const names = result.tools.map((t) => t.name);
@@ -207,7 +207,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 6,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     const names = result.tools.map((t) => t.name);
@@ -224,7 +224,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 7,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     const names = result.tools.map((t) => t.name);
@@ -241,7 +241,7 @@ describe('MCP protocol: tools/list', () => {
       jsonrpc: '2.0',
       id: 8,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     const names = result.tools.map((t) => t.name);
@@ -311,7 +311,7 @@ describe('MCP protocol: tools/call', () => {
       jsonrpc: '2.0',
       id: 12,
       method: 'tools/list',
-    });
+    }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
     const tool = result.tools.find((t) => t.name === 'search_companies');
@@ -337,12 +337,75 @@ describe('MCP protocol: tools/call', () => {
     expect(result.content[0].text).toContain('Error');
   });
 
-  it('discovery mode lists only the search, call, and module tools', async () => {
+  it('defaults to search mode: meta-tools plus the pinned everyday tools', async () => {
+    const response = await sendMcpRequest({ jsonrpc: '2.0', id: 31, method: 'tools/list' });
+    const result = response.result as { tools: Tool[] };
+    expect(result.tools.map((t) => t.name)).toEqual([
+      'swiss_search_tools',
+      'swiss_call_tool',
+      'swiss_list_modules',
+      'get_connections',
+      'get_departures',
+    ]);
+    const search = result.tools.find((t) => t.name === 'swiss_search_tools');
+    expect(search?.description).toContain('Modules: transport, weather');
+  });
+
+  it('tells the model how to find the other tools in the initialize instructions', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 32,
+      method: 'initialize',
+      params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0' } },
+    });
+    const result = response.result as { instructions?: string };
+    expect(result.instructions).toContain('swiss_search_tools');
+    expect(result.instructions).toContain('94 read-only tools');
+    for (const mod of ['transport', 'avalanche', 'gwr', 'sbbdata']) {
+      expect(result.instructions).toContain(`- ${mod}:`);
+    }
+  });
+
+  it('still serves a tool called directly by name in search mode', async () => {
+    const response = await sendMcpRequest({
+      jsonrpc: '2.0',
+      id: 33,
+      method: 'tools/call',
+      params: { name: 'list_cantons', arguments: {} },
+    });
+    const result = response.result as { isError?: boolean; content: Array<{ text: string }> };
+    expect(result.isError).toBeFalsy();
+    expect(result.content[0].text).toContain('VD');
+  });
+
+  it('lists every tool directly when modules are chosen', async () => {
+    const response = await new Promise<JsonRpcResponse>((resolve, reject) => {
+      const proc = spawn('node', [SERVER_PATH, '--modules', 'holidays'], { stdio: ['pipe', 'pipe', 'pipe'] });
+      let out = '';
+      const timer = setTimeout(() => { proc.kill(); reject(new Error('timeout')); }, 8000);
+      proc.stdout.on('data', (chunk: Buffer) => {
+        out += chunk.toString();
+        for (const line of out.split('\n')) {
+          try {
+            const parsed = JSON.parse(line) as JsonRpcResponse;
+            if (parsed.id === 34) { clearTimeout(timer); proc.kill(); resolve(parsed); return; }
+          } catch { /* partial line */ }
+        }
+      });
+      proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 34, method: 'tools/list' }) + '\n');
+    });
+    const result = response.result as { tools: Tool[] };
+    expect(result.tools.map((t) => t.name).sort()).toEqual(
+      ['get_public_holidays', 'get_school_holidays', 'is_holiday_today']
+    );
+  });
+
+  it('search mode with no pins lists only the search, call, and module tools', async () => {
     const response = await sendMcpRequest({
       jsonrpc: '2.0',
       id: 30,
       method: 'tools/list',
-    }, 8000, { MCP_SWISS_MODE: 'discovery' });
+    }, 8000, { MCP_SWISS_MODE: 'discovery', MCP_SWISS_PIN: 'none' });
 
     const result = response.result as { tools: Tool[] };
     expect(result.tools.map((t) => t.name)).toEqual([

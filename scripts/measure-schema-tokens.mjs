@@ -62,27 +62,27 @@ for (const [name, exportName] of modules) {
 const totalChars = JSON.stringify(allTools).length;
 const total = { module: "TOTAL", tools: allTools.length, chars: totalChars, tokens: approxTokens(totalChars) };
 
-let discovery = null;
-for (const file of ["discovery.js", "server.js"]) {
-  try {
-    const serverUrl = pathToFileURL(join(process.cwd(), "dist", file)).href;
-    const server = await import(serverUrl);
-    const meta = [server.SEARCH_TOOLS_TOOL, server.CALL_TOOL, server.LIST_MODULES_TOOL].filter(Boolean);
-    if (meta.length) {
-      const listed = server.annotationsFor
-        ? meta.map((tool) => ({ ...tool, annotations: server.annotationsFor(tool) }))
-        : meta;
-      const chars = JSON.stringify(listed).length;
-      discovery = { tools: meta.length, chars, tokens: approxTokens(chars) };
-      break;
-    }
-  } catch {
-    // This build does not export the discovery meta-tools from that file.
+// What a client actually receives (tools/list plus initialize instructions)
+// in each mode, measured from the real server code.
+let modes = null;
+try {
+  const server = await import(pathToFileURL(join(process.cwd(), "dist", "server.js")).href);
+  const registry = await import(pathToFileURL(join(process.cwd(), "dist", "registry.js")).href);
+  if (server.listing && registry.resolveModules) {
+    const active = registry.resolveModules(null);
+    const measure = (discovery) => {
+      const { tools, instructions } = server.listing(active, discovery);
+      const chars = JSON.stringify(tools).length + (instructions?.length ?? 0);
+      return { listed: tools.length, chars, tokens: approxTokens(chars) };
+    };
+    modes = { search: measure(true), full: measure(false) };
   }
+} catch {
+  // Older build without listing(): only the per-module table is shown.
 }
 
 if (process.argv.includes("--json")) {
-  console.log(JSON.stringify({ modules: rows, total, discovery }, null, 2));
+  console.log(JSON.stringify({ modules: rows, total, modes }, null, 2));
 } else {
   const pad = (s, n) => String(s).padEnd(n);
   const lpad = (s, n) => String(s).padStart(n);
@@ -90,9 +90,11 @@ if (process.argv.includes("--json")) {
   for (const r of [...rows, total]) {
     console.log(`${pad(r.module, 14)} ${lpad(r.tools, 5)} ${lpad(r.chars, 7)} ${lpad(r.tokens, 8)}`);
   }
-  if (discovery) {
-    console.log(
-      `\ndiscovery mode: ${discovery.tools} meta-tools, ${discovery.chars} chars, ~${discovery.tokens} tokens`
-    );
+  if (modes) {
+    const saved = Math.round(100 * (1 - modes.search.chars / modes.full.chars));
+    console.log(`\nWhat a client receives (tools/list + instructions, annotations included):`);
+    console.log(`  search mode (default): ${modes.search.listed} tools listed, ~${modes.search.tokens} tokens`);
+    console.log(`  full mode:             ${modes.full.listed} tools listed, ~${modes.full.tokens} tokens`);
+    console.log(`  search mode saves ${saved}%`);
   }
 }

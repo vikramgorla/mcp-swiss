@@ -1,6 +1,6 @@
 {
   "name": "mcp-swiss",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Swiss open data MCP server — 94 tools across 27 modules. Zero API keys.",
   "main": "dist/index.js",
   "bin": {
@@ -21,7 +21,8 @@
     "validate": "npm run lint && npm run build && npm test",
     "test:qa": "bash scripts/qa-smoke-test.sh",
     "docs:tools": "npm run build && node scripts/generate-tool-docs.mjs",
-    "docs:tokens": "npm run build && node scripts/measure-schema-tokens.mjs"
+    "docs:tokens": "npm run build && node scripts/measure-schema-tokens.mjs",
+    "site": "npm run build && node scripts/build-site.mjs"
   },
   "keywords": [
     "mcp",
@@ -65,7 +66,7 @@
   "bugs": {
     "url": "https://github.com/vikramgorla/mcp-swiss/issues"
   },
-  "homepage": "https://github.com/vikramgorla/mcp-swiss#readme",
+  "homepage": "https://vikramgorla.github.io/mcp-swiss/",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
