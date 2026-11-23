@@ -128,7 +128,7 @@ describe('MCP protocol: tools/list', () => {
     expect(Array.isArray(result.tools)).toBe(true);
   });
 
-  it('returns exactly 94 tools in full mode', async () => {
+  it('returns exactly 95 tools in full mode', async () => {
     const response = await sendMcpRequest({
       jsonrpc: '2.0',
       id: 3,
@@ -136,7 +136,7 @@ describe('MCP protocol: tools/list', () => {
     }, 8000, { MCP_SWISS_MODE: 'full' });
 
     const result = response.result as { tools: Tool[] };
-    expect(result.tools).toHaveLength(94);
+    expect(result.tools).toHaveLength(95);
   });
 
   it('marks every tool read-only and idempotent', async () => {
@@ -360,7 +360,7 @@ describe('MCP protocol: tools/call', () => {
     });
     const result = response.result as { instructions?: string };
     expect(result.instructions).toContain('swiss_search_tools');
-    expect(result.instructions).toContain('94 read-only tools');
+    expect(result.instructions).toContain('95 read-only tools');
     for (const mod of ['transport', 'avalanche', 'gwr', 'sbbdata']) {
       expect(result.instructions).toContain(`- ${mod}:`);
     }

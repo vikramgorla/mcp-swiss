@@ -17,6 +17,12 @@ export const DISCOVERY_QUERIES: Record<string, string[]> = {
 
   // weather
   get_weather: ["current weather in Zurich", "what's the temperature at Sion right now", "is it raining in Bern", "how windy is it on the Säntis"],
+  get_weather_forecast: [
+    "weather forecast for Aigle", "will it rain tomorrow in Lausanne", "what will the weather be like this weekend in Zermatt",
+    "temperature next week in Bern", "Wettervorhersage Zürich", "do I need an umbrella tomorrow in Geneva",
+    "is it going to snow in Davos on Saturday", "météo demain Genève", "how cold will it get tonight in Basel",
+    "should I plan the hike for Thursday or Friday weather", "rain forecast 3860",
+  ],
   list_weather_stations: ["which MeteoSwiss weather stations exist", "weather station codes"],
   get_weather_history: ["weather last week in Geneva", "past temperatures at a weather station"],
   get_water_level: ["Rhine river level in Basel", "lake Geneva water temperature", "how high is the Aare in Bern"],

@@ -14,7 +14,7 @@ import { validateArgs } from "./utils/validate.js";
  * tools/list returns three meta-tools plus a few pinned everyday tools, and the
  * initialize result carries short instructions with the module catalog. The
  * agent searches, then calls by name. This keeps every conversation about
- * 1,000 tokens lighter than listing all 94 schemas, without hiding any tool.
+ * 1,000 tokens lighter than listing every schema, without hiding any tool.
  *
  * Full listing: --mode full, --all-tools, or MCP_SWISS_MODE=full. Choosing
  * modules with --modules or --preset also lists those tools directly, because
@@ -242,7 +242,7 @@ export function searchTools(modules: DiscoveryModule[], args: Record<string, unk
 
 const STOPWORDS = new Set(
   ("a an and any are at be by can do does for from get give how i in is it me my " +
-    "next now of on or show tell the there this to tomorrow what when which " +
+    "next of on or show tell the there this to what when which " +
     "who will with").split(" ")
 );
 
@@ -264,6 +264,12 @@ const CONCEPTS: Array<[string, string[]]> = [
   // weather, water, nature
   ["forecast rain raining rainy sunny sun wind windy cold hot warm humidity temperature " +
     "temperatures degrees", ["weather"]],
+  ["tomorrow weekend outlook umbrella later upcoming tonight prognose prognosis vorhersage wettervorhersage " +
+    "wetterprognose prevision previsions meteo wetter morgen demain domani tempo " +
+    "monday tuesday wednesday thursday friday saturday sunday " +
+    "montag dienstag mittwoch donnerstag freitag samstag sonntag wochenende " +
+    "lundi mardi mercredi jeudi vendredi samedi dimanche", ["forecast", "weather"]],
+  ["now currently right live", ["current", "conditions"]],
   ["river rivers lake lakes aare rhine rhein rhone reuss limmat flood floods", ["water", "river", "hydro"]],
   ["ski skiing piste freeride offpiste", ["snow", "avalanche"]],
   ["quake quakes tremor seismic", ["earthquakes"]],
@@ -323,7 +329,9 @@ export function queryTerms(query: string): string[] {
     .filter((w) => w.length > 1 && !STOPWORDS.has(w));
   const expanded = new Set(words);
   for (const w of words) {
-    for (const alt of SYNONYMS[w] ?? SYNONYMS[baseForm(w)] ?? []) expanded.add(alt);
+    // Vocabulary lookup ignores accents, so "météo" finds "meteo".
+    const plain = w.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    for (const alt of SYNONYMS[w] ?? SYNONYMS[plain] ?? SYNONYMS[baseForm(plain)] ?? []) expanded.add(alt);
   }
   return [...expanded];
 }

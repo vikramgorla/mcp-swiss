@@ -8,6 +8,7 @@
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
+import { renderLlms } from "./llms.mjs";
 
 const root = process.cwd();
 const out = process.argv[2] ?? join(root, "site", "dist");
@@ -114,4 +115,5 @@ copyFileSync(join(root, "site", "site.css"), join(out, "site.css"));
 copyFileSync(join(root, "site", "site.js"), join(out, "site.js"));
 copyFileSync(join(root, "assets", "icon.svg"), join(out, "icon.svg"));
 writeFileSync(join(out, ".nojekyll"), "");
+writeFileSync(join(out, "llms.txt"), renderLlms(root));
 console.log(`site: ${toolCount} tools, ${modules.length} modules -> ${out}`);
