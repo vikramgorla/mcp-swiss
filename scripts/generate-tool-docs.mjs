@@ -10,48 +10,12 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const check = process.argv.includes("--check");
 
-const modules = [
-  ["transport", "transportTools"],
-  ["weather", "weatherTools"],
-  ["geodata", "geodataTools"],
-  ["companies", "companiesTools"],
-  ["holidays", "holidaysTools"],
-  ["parliament", "parliamentTools"],
-  ["avalanche", "avalancheTools"],
-  ["airquality", "airqualityTools"],
-  ["post", "postTools"],
-  ["energy", "energyTools"],
-  ["statistics", "statisticsTools"],
-  ["snb", "snbTools"],
-  ["recycling", "recyclingTools"],
-  ["news", "newsTools"],
-  ["voting", "votingTools"],
-  ["dams", "damsTools"],
-  ["hiking", "hikingTools"],
-  ["realestate", "realEstateTools"],
-  ["traffic", "trafficTools"],
-  ["earthquakes", "earthquakeTools"],
-  ["snow", "snowTools"],
-  ["pollen", "pollenTools"],
-  ["gwr", "gwrTools"],
-  ["opendata", "opendataTools"],
-  ["meteoswiss", "meteoswissTools"],
-  ["maplayers", "maplayerTools"],
-  ["sbbdata", "sbbDataTools"],
-];
-
-const tools = [];
-for (const [name, exportName] of modules) {
-  const url = pathToFileURL(join(root, "dist", "modules", `${name}.js`)).href;
-  let mod;
-  try {
-    mod = await import(url);
-  } catch (err) {
-    if (err && typeof err === "object" && "code" in err && err.code === "ERR_MODULE_NOT_FOUND") continue;
-    throw err;
-  }
-  if (Array.isArray(mod[exportName])) tools.push(...mod[exportName]);
-}
+// Read every tool from the registry, so a new tool or a tool added to an
+// existing module (as get_weather_forecast was) can't be left out.
+const { createRequire } = await import("node:module");
+const require = createRequire(join(root, "package.json"));
+const { resolveModules } = require("./dist/registry.js");
+const tools = resolveModules(null).flatMap((mod) => mod.tools);
 
 const schemaPath = join(root, "docs/tools.schema.json");
 const schemaOut = JSON.stringify({

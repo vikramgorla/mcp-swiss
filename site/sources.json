@@ -16,7 +16,7 @@
   { "name": "SFOE", "url": "https://www.bfe.admin.ch", "data": "Federally supervised dams" },
   { "name": "ASTRA", "url": "https://www.astra.admin.ch", "data": "Traffic counting stations" },
   { "name": "Swiss Seismological Service (ETH Zürich)", "url": "http://www.seismo.ethz.ch", "data": "Earthquake catalogue" },
-  { "name": "MeteoSwiss open data", "url": "https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html", "data": "Pollen and SwissMetNet station measurements (CC BY)" },
+  { "name": "MeteoSwiss open data", "url": "https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html", "data": "Local weather forecasts, pollen and SwissMetNet station measurements (Source: MeteoSwiss)" },
   { "name": "opendata.swiss", "url": "https://opendata.swiss", "data": "National open data catalogue" },
   { "name": "SBB Open Data", "url": "https://data.sbb.ch/", "data": "Station passengers, punctuality and platform accessibility" }
 ]

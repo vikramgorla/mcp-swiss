@@ -176,12 +176,12 @@ describe("search_statistics — live (opendata.swiss)", () => {
     expect(result.total_matches).toBeGreaterThan(0);
     expect(Array.isArray(result.results)).toBe(true);
     expect(result.results.length).toBeGreaterThan(0);
-  }, 20000);
+  }, 70000);
 
   it("response is under 50K chars", async () => {
     const raw = await handleStatistics("search_statistics", { query: "GDP Switzerland" });
     expect(raw.length).toBeLessThan(50000);
-  }, 20000);
+  }, 70000);
 
   it("each result has id, title, description", async () => {
     const result = JSON.parse(
@@ -193,14 +193,14 @@ describe("search_statistics — live (opendata.swiss)", () => {
       expect(typeof r.title).toBe("string");
       expect(r.title.length).toBeGreaterThan(0);
     }
-  }, 20000);
+  }, 70000);
 
   it("limits results with limit param", async () => {
     const result = JSON.parse(
       await handleStatistics("search_statistics", { query: "population", limit: 3 })
     );
     expect(result.results.length).toBeLessThanOrEqual(3);
-  }, 20000);
+  }, 70000);
 
   it("descriptions are truncated (max 203 chars with ellipsis)", async () => {
     const result = JSON.parse(
@@ -209,7 +209,7 @@ describe("search_statistics — live (opendata.swiss)", () => {
     for (const r of result.results) {
       expect(r.description.length).toBeLessThanOrEqual(203);
     }
-  }, 20000);
+  }, 70000);
 
   it("has source and source_url", async () => {
     const result = JSON.parse(
@@ -217,7 +217,7 @@ describe("search_statistics — live (opendata.swiss)", () => {
     );
     expect(result.source).toBeTruthy();
     expect(result.source_url).toContain("opendata.swiss");
-  }, 20000);
+  }, 70000);
 });
 
 // ── get_statistic ─────────────────────────────────────────────────────────────
@@ -232,14 +232,14 @@ describe("get_statistic — live (opendata.swiss)", () => {
     expect(result.id).toBe("bevolkerungsstatistik-einwohner");
     expect(result.title).toBeTruthy();
     expect(result.title.length).toBeGreaterThan(0);
-  }, 20000);
+  }, 70000);
 
   it("response is under 50K chars", async () => {
     const raw = await handleStatistics("get_statistic", {
       dataset_id: "bevolkerungsstatistik-einwohner",
     });
     expect(raw.length).toBeLessThan(50000);
-  }, 20000);
+  }, 70000);
 
   it("has resources array with url and format", async () => {
     const result = JSON.parse(
@@ -252,7 +252,7 @@ describe("get_statistic — live (opendata.swiss)", () => {
       expect(result.resources[0].url).toBeTruthy();
       expect(result.resources[0].format).toBeTruthy();
     }
-  }, 20000);
+  }, 70000);
 
   it("has organization field", async () => {
     const result = JSON.parse(
@@ -261,7 +261,7 @@ describe("get_statistic — live (opendata.swiss)", () => {
       })
     );
     expect(result.organization).toBeTruthy();
-  }, 20000);
+  }, 70000);
 
   it("has source_url pointing to dataset page", async () => {
     const result = JSON.parse(
@@ -271,7 +271,7 @@ describe("get_statistic — live (opendata.swiss)", () => {
     );
     expect(result.source_url).toContain("opendata.swiss");
     expect(result.source_url).toContain("bevolkerungsstatistik-einwohner");
-  }, 20000);
+  }, 70000);
 
   it("throws on nonexistent dataset", async () => {
     await expect(
@@ -279,5 +279,5 @@ describe("get_statistic — live (opendata.swiss)", () => {
         dataset_id: "this-dataset-does-not-exist-xyz-999",
       })
     ).rejects.toThrow();
-  }, 20000);
+  }, 70000);
 });

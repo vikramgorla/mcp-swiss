@@ -30,9 +30,15 @@ describe.runIf(existsSync(DIST))("documentation site", () => {
 
   it("fills every placeholder and ships its assets", () => {
     expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
-    for (const file of ["site.css", "site.js", "icon.svg", ".nojekyll"]) {
+    for (const file of ["site.css", "site.js", "icon.svg", ".nojekyll", "llms.txt"]) {
       expect(existsSync(join(out, file)), file).toBe(true);
     }
+  });
+
+  it("keeps the repository's llms.txt in step with the code", () => {
+    const fresh = readFileSync(join(out, "llms.txt"), "utf8");
+    const committed = readFileSync(join(process.cwd(), "llms.txt"), "utf8");
+    expect(committed, "run: npm run build && node scripts/llms.mjs").toBe(fresh);
   });
 
   it("runs the server's own search in the page", () => {

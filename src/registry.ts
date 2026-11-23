@@ -1,5 +1,6 @@
 import { transportTools, handleTransport } from "./modules/transport.js";
 import { weatherTools, handleWeather } from "./modules/weather.js";
+import { forecastTools, handleForecast } from "./modules/forecast.js";
 import { geodataTools, handleGeodata } from "./modules/geodata.js";
 import { companiesTools, handleCompanies } from "./modules/companies.js";
 import { holidaysTools, handleHolidays } from "./modules/holidays.js";
@@ -43,7 +44,11 @@ export interface ModuleEntry {
 
 export const moduleRegistry: Record<string, ModuleEntry> = {
   transport:   { description: "SBB and public transport: stations, connections, departures, arrivals", tools: transportTools, handler: handleTransport },
-  weather:     { description: "MeteoSwiss weather stations and BAFU river and lake levels", tools: weatherTools, handler: handleWeather },
+  weather:     {
+    description: "MeteoSwiss weather forecast and current conditions, BAFU river and lake levels",
+    tools: [...weatherTools, ...forecastTools],
+    handler: (name, args) => (name === "get_weather_forecast" ? handleForecast(name, args) : handleWeather(name, args)),
+  },
   geodata:     { description: "swisstopo geocoding, places, municipalities, solar potential", tools: geodataTools, handler: handleGeodata },
   companies:   { description: "ZEFIX commercial register: companies, cantons, legal forms", tools: companiesTools, handler: handleCompanies },
   holidays:    { description: "Public and school holidays by canton", tools: holidaysTools, handler: handleHolidays },

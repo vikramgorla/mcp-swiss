@@ -16,10 +16,10 @@
 
 </div>
 
-An [MCP](https://modelcontextprotocol.io) server that gives Claude, Copilot, Cursor and other assistants 94 tools across 27 modules for Swiss public data:
+An [MCP](https://modelcontextprotocol.io) server that gives Claude, Copilot, Cursor and other assistants 95 tools across 27 modules for Swiss public data:
 
 - **Getting around:** SBB and PostBus timetables, live departures, station passengers, punctuality and step-free access, road traffic counts
-- **Weather and nature:** MeteoSwiss weather and measurements, river and lake levels, avalanche bulletins, snow, pollen, air quality, earthquakes, dams, hiking trail closures
+- **Weather and nature:** MeteoSwiss forecasts, current weather and measurements, river and lake levels, avalanche bulletins, snow, pollen, air quality, earthquakes, dams, hiking trail closures
 - **Places:** geocoding, places, municipalities, postcodes, rooftop solar potential, the federal buildings register, every geo.admin map layer
 - **Society and economy:** the commercial register, public and school holidays, federal and cantonal parliament, popular votes, population, property and consumer prices, SNB exchange rates, electricity tariffs, SRF news, Zurich waste collection, the opendata.swiss catalogue
 
@@ -52,7 +52,7 @@ Requires Node.js 20 or later. Per-app steps, Docker images and the Streamable HT
 
 ## How tools are listed
 
-**You don't need to configure anything.** Out of the box, mcp-swiss lists five tools instead of 94 and tells the model how to reach the rest. That costs about 1,200 tokens per conversation instead of about 11,700.
+**You don't need to configure anything.** Out of the box, mcp-swiss lists five tools instead of 95 and tells the model how to reach the rest. That costs about 1,200 tokens per conversation instead of about 11,700.
 
 | Listed by default | What it does |
 |---|---|
@@ -68,13 +68,14 @@ The server's `instructions` (which apps add to the model's context) list every m
 | *(nothing)* | Search mode, as above |
 | `--modules transport,weather` | Only those modules, listed directly (`--list-modules` shows all 27) |
 | `--preset commuter` | A ready-made set: `commuter`, `outdoor`, `business`, `citizen`, `minimal` (`--list-presets`) |
-| `--mode full` or `MCP_SWISS_MODE=full` | All 94 tools listed directly. Fine in apps that already load tools on demand, such as Claude Code |
+| `--mode full` or `MCP_SWISS_MODE=full` | All 95 tools listed directly. Fine in apps that already load tools on demand, such as Claude Code |
 | `--discovery` | Search mode even when modules are chosen |
 | `--pin get_weather,geocode` / `--pin none` | Different tools next to the search tools, or only the three |
 
 ## Try asking
 
 - *Next trains from Aigle to Geneva airport*
+- *Do I need an umbrella in Lausanne tomorrow?*
 - *Is the Aare in Bern warm enough to swim?*
 - *What's the avalanche danger around Verbier today?*
 - *Find companies registered in Zug with "blockchain" in the name*

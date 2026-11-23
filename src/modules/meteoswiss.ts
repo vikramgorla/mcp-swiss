@@ -11,7 +11,7 @@
  *   - get_ogd_history: measurements for a date range from historical or recent CSVs
  */
 
-import { fetchJSON } from "../utils/http.js";
+import { fetchBody, fetchJSON } from "../utils/http.js";
 
 const STAC_BASE = "https://data.geo.admin.ch/api/stac/v1";
 const SOURCE = "MeteoSwiss Open Government Data";
@@ -301,18 +301,10 @@ function findAsset(assets: NamedAsset[], pattern: RegExp): NamedAsset | undefine
 }
 
 async function fetchCsv(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      Accept: "text/csv,text/plain,*/*",
-      "User-Agent": "mcp-swiss/0.8.3-dev",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} — ${url}`);
-  }
-  // MeteoSwiss CSV assets are ISO-8859-1. fetch().text() would decode them as UTF-8.
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  return Buffer.from(bytes).toString("latin1");
+  // MeteoSwiss CSV assets are ISO-8859-1; response.text() would decode them as UTF-8.
+  return fetchBody(url, { headers: { Accept: "text/csv,text/plain,*/*" } }, async (response) =>
+    Buffer.from(new Uint8Array(await response.arrayBuffer())).toString("latin1")
+  );
 }
 
 function parseSemicolonCsv(text: string): Record<string, string>[] {
