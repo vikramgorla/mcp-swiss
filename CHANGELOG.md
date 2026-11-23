@@ -9,6 +9,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Security
+
+- The MCP Registry publish job installs `mcp-publisher` v1.8.15 pinned by SHA-256 instead of downloading "latest" into a job that holds a publish token. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+- Dependabot no longer auto-merges `@modelcontextprotocol/sdk` bumps. It's the one runtime dependency, so its updates get their own PR and a human review. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+
 ## [0.9.1] - 2026-11-23
 
 ### Changed
