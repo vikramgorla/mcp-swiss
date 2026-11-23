@@ -380,12 +380,14 @@ Update the expected tool count assertion:
 expect(tools.length).toBe(<new_total>);  // was <old_total>, added X for <name>
 ```
 
-### `README.md`
+### `README.md` and the site
 
-- Add a feature box in the top emoji list (e.g. `🆕 Module Name — description`)
-- Add a detailed tools table section (`### 🆕 Module Name (X tools)`)
-- Update the total tool count in the header ("**68 tools**" → "**76 tools**")
-- Add the data source to the Data Sources table
+- Update the tool and module counts in the README intro and mention the topic in its list. Per-tool documentation is generated: the GitHub Pages site (`npm run site`) builds its catalogue from the code.
+- Add the data source to `site/sources.json`.
+
+### `tests/fixtures/discovery-queries.ts`
+
+- Add at least two questions per new tool, phrased the way a user would ask. The discovery test fails until every tool is found in the top five search results.
 
 ### `server.json`
 
@@ -492,7 +494,7 @@ Every PR must satisfy the checklist in [`.github/PULL_REQUEST_TEMPLATE.md`](.git
 - [ ] npm run test:unit passes
 - [ ] New module? Added to src/index.ts routing
 - [ ] New module? Added to tests/mcp/protocol.test.ts tool count
-- [ ] New tools? Updated README.md tool count and module section
+- [ ] New tools? Updated README.md counts and added questions to `tests/fixtures/discovery-queries.ts`
 - [ ] New tools? Updated docs/tool-specs.md
 - [ ] New tools? Updated docs/tools.schema.json
 - [ ] New tools? Updated server.json description (≤100 chars)
