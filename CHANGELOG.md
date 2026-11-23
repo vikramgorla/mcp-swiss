@@ -9,6 +9,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-23
+
 ### Changed
 
 - Discovery mode: `swiss_search_tools` now ranks tools by plain-language queries instead of requiring every word to match. "train from Aigle to Geneva" used to return nothing; it now returns `get_connections` first. Tool names, module names, descriptions and parameter names are weighted in that order, with stopwords dropped and a small synonym list (train → SBB, CHF → exchange rate, referendum → vote).
