@@ -27,7 +27,7 @@ describe("get_avalanche_bulletin (live)", () => {
       expect(result.season).toMatch(/winter season/i);
       expect(result.last_bulletin.valid_until).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     }
-  }, 60000);
+  }, 70000);
 
   it("returns the archived bulletin for a region", async () => {
     const result = JSON.parse(
@@ -42,7 +42,7 @@ describe("get_avalanche_bulletin (live)", () => {
     expect(result.valid.startTime.slice(0, 10)).toBe(WINTER_DAY);
     expect(result.covers_regions).toContain("CH-5123");
     expect(result.danger_scale["3"]).toMatch(/considerable/i);
-  }, 60000);
+  }, 70000);
 
   it("gives problems with a type, and an elevation or aspect where SLF sets one", async () => {
     const result = JSON.parse(
@@ -58,7 +58,7 @@ describe("get_avalanche_bulletin (live)", () => {
     }
     // at least one problem carries the prose advice
     expect(result.problems.some((p: { advice?: string }) => (p.advice ?? "").length > 40)).toBe(true);
-  }, 60000);
+  }, 70000);
 
   it("resolves a coordinate to the bulletin covering it", async () => {
     // Jungfraujoch
@@ -70,7 +70,7 @@ describe("get_avalanche_bulletin (live)", () => {
     expect(result.point).toEqual({ lat: 46.5475, lon: 7.9806 });
     expect(result.covers_regions.length).toBeGreaterThan(0);
     expect(result.danger.level).toBeGreaterThanOrEqual(1);
-  }, 60000);
+  }, 70000);
 
   it("reports a coordinate outside the bulletin area", async () => {
     // Geneva city, far from any warning region
@@ -78,7 +78,7 @@ describe("get_avalanche_bulletin (live)", () => {
       await handleAvalanche("get_avalanche_bulletin", { lat: 46.2044, lon: 6.1432, date: WINTER_DAY })
     );
     expect(result.note).toContain("No warning region covers");
-  }, 60000);
+  }, 70000);
 
   it("serves all four languages", async () => {
     for (const language of ["de", "en", "fr", "it"]) {
@@ -95,13 +95,13 @@ describe("get_avalanche_bulletin (live)", () => {
     const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { date: "2026-07-15" }));
     expect(result.bulletin_in_force).toBe(false);
     expect(result.season).toMatch(/summer/i);
-  }, 60000);
+  }, 70000);
 
   it("keeps a national bulletin slim", async () => {
     const raw = await handleAvalanche("get_avalanche_bulletin", { date: WINTER_DAY });
     expect(raw.length).toBeLessThan(50000);
     expect(JSON.parse(raw).areas.length).toBeGreaterThan(3);
-  }, 60000);
+  }, 70000);
 });
 
 describe("list_avalanche_regions (live)", () => {
@@ -112,7 +112,7 @@ describe("list_avalanche_regions (live)", () => {
 
     expect(ids.length).toBeGreaterThan(100);
     expect(ids.filter((id) => !known.has(id))).toEqual([]);
-  }, 60000);
+  }, 70000);
 
   it("names regions the way the bulletin names them", async () => {
     const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { date: WINTER_DAY }));
@@ -120,5 +120,5 @@ describe("list_avalanche_regions (live)", () => {
     for (const area of result.areas) {
       for (const region of area.regions) expect(byId.get(region.id)).toBe(region.name);
     }
-  }, 60000);
+  }, 70000);
 });
