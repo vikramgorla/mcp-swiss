@@ -6,7 +6,7 @@ The recurring maintenance routine is in `.claude/agents/maintainer.md`.
 
 ## What this project is
 
-A zero-API-key MCP server for Swiss open data: 27 modules and 94 tools as of 0.9.x, published to npm (`mcp-swiss`), the MCP Registry (`server.json`), Docker and `.mcpb`. Every tool is a read-only lookup against a public Swiss source.
+A zero-API-key MCP server for Swiss open data: 27 modules and 95 tools as of 0.10.x, published to npm (`mcp-swiss`), the MCP Registry (`server.json`), Docker and `.mcpb`. Every tool is a read-only lookup against a public Swiss source.
 
 ## Hard rules
 
@@ -20,11 +20,11 @@ A zero-API-key MCP server for Swiss open data: 27 modules and 94 tools as of 0.9
 
 ## Tool design (token budget matters)
 
-The full tool list costs about 9,300 tokens. Every new tool makes every conversation more expensive, so:
+Search mode (the default) costs about 1,200 tokens and the full list (`--mode full`) about 11,700. Every new tool adds to the full list and to search results, so:
 
 - **Prefer extending a tool** (a new optional parameter) over adding a near-duplicate.
 - **Descriptions:** one or two plain sentences, at most about 300 characters. Say what it returns and when to use it instead of its sibling. No marketing, no long examples. Put detail in parameter descriptions.
-- **Discoverable by plain words.** Discovery mode (`--discovery`) ranks tools by the words an agent types. Use everyday words in the description ("trains", "exchange rate", "public holiday"). If users will say something the text can't contain, add it to `SYNONYMS` in `src/discovery.ts` and add a case to the plain-language test.
+- **Discoverable by plain words.** Discovery mode (`--discovery`) ranks tools by the words an agent types. Use everyday words in the description ("trains", "exchange rate", "public holiday"). If users will say something the text can't contain, add it to `CONCEPTS` in `src/discovery.ts` and add questions to `tests/fixtures/discovery-queries.ts`.
 - **Run `npm run docs:tokens`** after changing any tool and put the before and after total in the PR. A PR that adds more than about 400 tokens per tool needs a reason.
 - **Responses** stay under 50,000 characters (tested), with long text truncated and a hint to narrow the query.
 - **Use the shared helpers:** `src/utils/http.ts` (timeouts, retry, User-Agent), `src/utils/cache.ts` and `src/utils/validate.ts`. No ad-hoc `fetch`.

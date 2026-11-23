@@ -1,36 +1,49 @@
 # mcp-swiss
-> Swiss open data MCP server — 68 tools, 20 modules, zero API keys
 
-## What
-MCP (Model Context Protocol) server providing Swiss public data to AI assistants.
+> Swiss public data MCP server: 95 read-only tools in 27 modules, no API keys.
 
-## Tools (68 across 20 modules)
-- Transport: train/bus connections, departures, stations (SBB/PostBus)
-- Weather: MeteoSwiss live conditions, history
-- Hydrology: river/lake levels and temperatures (BAFU)
-- Geodata: geocoding, solar potential, municipalities (swisstopo)
-- Companies: business registry search (ZEFIX)
-- Holidays: public & school holidays by canton
-- Parliament: votes, councillors, sessions
-- Avalanche: SLF danger bulletins
-- Air Quality: NABEL station measurements
-- Swiss Post: postcode lookup, parcel tracking
-- Energy: electricity tariffs by municipality (ElCom)
-- Statistics: BFS population & demographic data
-- SNB Rates: CHF exchange rates, historical
-- Recycling: waste collection schedules (OpenERZ)
-- News: SRF headlines and search
-- Voting: popular vote results
-- Dams: federal dam registry
-- Hiking: trail closures and alerts
-- Real Estate: property prices, rent index
-- Traffic: ASTRA counting stations
-- Earthquakes: Swiss Seismological Service (SED)
+By default the server lists swiss_search_tools, swiss_call_tool, swiss_list_modules, get_connections and get_departures. Search for any other tool in plain words, then call it with swiss_call_tool. Use --mode full to list every tool directly.
 
 ## Install
-npx mcp-swiss
 
-## Links
-- npm: https://www.npmjs.com/package/mcp-swiss
-- GitHub: https://github.com/vikramgorla/mcp-swiss
-- Docs: https://github.com/vikramgorla/mcp-swiss/blob/main/docs/tool-specs.md
+- `npx -y mcp-swiss` (stdio; any MCP client)
+- `claude mcp add swiss -- npx -y mcp-swiss` (Claude Code)
+- `npx -y mcp-swiss --http` (Streamable HTTP on 127.0.0.1:3000/mcp)
+
+## Modules (27)
+
+- transport (5): SBB and public transport: stations, connections, departures, arrivals. Tools: search_stations, get_connections, get_departures, get_arrivals, get_nearby_stations
+- weather (7): MeteoSwiss weather forecast and current conditions, BAFU river and lake levels. Tools: get_weather, list_weather_stations, get_weather_history, get_water_level, list_hydro_stations, get_water_history, get_weather_forecast
+- geodata (6): swisstopo geocoding, places, municipalities, solar potential. Tools: geocode, reverse_geocode, search_places, get_solar_potential, identify_location, get_municipality
+- companies (5): ZEFIX commercial register: companies, cantons, legal forms. Tools: search_companies, get_company, search_companies_by_locality, list_cantons, list_legal_forms
+- holidays (3): Public and school holidays by canton. Tools: get_public_holidays, get_school_holidays, is_holiday_today
+- parliament (9): Federal and cantonal parliament: affairs, members, votes, speeches. Tools: search_parliament_business, get_parliament_members, get_parliament_votes, get_session_schedule, search_parliament_speeches, get_politician_interests, search_cantonal_affairs, get_parliamentary_documents, get_committee_meetings
+- avalanche (2): SLF avalanche bulletins and warning regions. Tools: get_avalanche_bulletin, list_avalanche_regions
+- airquality (2): NABEL air-quality stations and legal limits. Tools: list_air_quality_stations, get_air_quality
+- post (4): Swiss Post postcodes and parcel tracking. Tools: lookup_postcode, search_postcode, list_postcodes_in_canton, track_parcel
+- energy (3): ElCom electricity tariffs by municipality. Tools: get_electricity_tariff, compare_electricity_tariffs, search_municipality_energy
+- statistics (3): BFS statistics: population and datasets. Tools: get_population, search_statistics, get_statistic
+- snb (3): SNB exchange rates and history. Tools: list_currencies, get_exchange_rate, get_exchange_rate_history
+- recycling (3): Zurich waste collection dates and types. Tools: get_waste_collection, list_waste_types, get_waste_calendar
+- news (2): SRF news headlines and search. Tools: get_swiss_news, search_swiss_news
+- voting (3): Popular vote results from Basel-Stadt open data. Tools: get_voting_results, search_votes, get_vote_details
+- dams (3): Swiss dams and reservoirs. Tools: search_dams, get_dams_by_canton, get_dam_details
+- hiking (2): Hiking trail closures. Tools: get_trail_closures, get_trail_closures_nearby
+- realestate (3): Property price and rent indices, real-estate datasets. Tools: get_property_price_index, search_real_estate_data, get_rent_index
+- traffic (3): ASTRA road traffic counts. Tools: get_traffic_count, get_traffic_by_canton, get_traffic_nearby
+- earthquakes (3): SED earthquakes: recent events, details, nearby search. Tools: get_recent_earthquakes, get_earthquake_details, search_earthquakes_by_location
+- snow (3): SLF snow depth from IMIS and study-plot stations. Tools: get_snow_conditions, list_snow_stations, get_snow_measurements
+- pollen (3): MeteoSwiss pollen concentrations. Tools: get_pollen_current, get_pollen_daily, list_pollen_stations
+- gwr (3): Federal building register (GWR): buildings and dwellings by address or EGID. Tools: search_buildings, get_building, buildings_near
+- opendata (3): opendata.swiss catalogue: datasets, metadata, and downloads. Tools: search_opendata, get_opendata_dataset, list_opendata_resources
+- meteoswiss (3): MeteoSwiss OGD measurements from SwissMetNet stations. Tools: list_ogd_stations, get_ogd_recent, get_ogd_history
+- maplayers (3): geo.admin map layers: search, identify, and attribute find. Tools: search_map_layers, identify_map_layer, find_map_features
+- sbbdata (3): SBB open data: station passengers, punctuality, and step-free access. Tools: get_station_passengers, get_station_punctuality, get_station_accessibility
+
+## Docs
+
+- [Documentation and tool catalogue](https://vikramgorla.github.io/mcp-swiss/): every tool with its parameters
+- [Machine-readable tool schemas](https://github.com/vikramgorla/mcp-swiss/blob/main/docs/tools.schema.json)
+- [Install guide for AI agents](https://github.com/vikramgorla/mcp-swiss/blob/main/llms-install.md)
+- [npm](https://www.npmjs.com/package/mcp-swiss)
+- [Source](https://github.com/vikramgorla/mcp-swiss)

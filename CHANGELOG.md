@@ -9,6 +9,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- `get_weather_forecast`: the official MeteoSwiss local forecast (the same one the MeteoSwiss app shows) for any Swiss postcode, town, weather station or coordinates. It gives up to 9 days of daily high and low temperature, rain in mm and the expected weather, in English, German, French or Italian. Data: Open Government Data, Source: MeteoSwiss. Weather descriptions come from the MeteoSwiss pictogram reference (BSD 3-Clause, © MeteoSwiss).
+- Search understands forecast questions in everyday and mixed-language phrasing ("do I need an umbrella tomorrow", "météo demain Genève", "on Saturday").
+
+### Changed
+
+- `llms.txt` is generated from the code (`npm run docs:tools`) and also served on the documentation site. It had been stuck at 68 tools.
+
 ## [0.10.0] - 2026-11-23
 
 Search mode is now the default. If you rely on all tools being listed directly, add `--mode full`.

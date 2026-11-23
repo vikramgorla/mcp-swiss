@@ -3,14 +3,14 @@
 > Complete human + machine-readable specification for all 94 MCP tools.
 > Generated from source
 
-> **Module filtering:** You don't have to load all 94 tools. Use `--modules transport,weather` to pick specific modules, or `--preset commuter` for curated bundles. See [Module Filtering](../README.md#module-filtering) in the README.
+> **Tool listing:** by default the server lists a search tool and a few everyday tools, and the model searches for the rest. Use `--modules transport,weather`, `--preset commuter` or `--mode full` to list tools directly. See [How tools are listed](../README.md#how-tools-are-listed).
 
 ---
 
 ## Table of Contents
 
 - [Transport Module (5 tools)](#transport-module)
-- [Weather & Hydrology Module (6 tools)](#weather--hydrology-module)
+- [Weather & Hydrology Module (7 tools)](#weather--hydrology-module)
 - [Geodata Module (6 tools)](#geodata-module)
 - [Companies Module (5 tools)](#companies-module)
 - [Holidays Module (3 tools)](#holidays-module)
@@ -564,6 +564,44 @@ No parameters required.
 - Same parameter set as `get_water_level` but over a date range
 - Useful for seasonal analysis (e.g., summer swimming conditions year over year)
 - Data typically available from the early 2000s onwards
+
+---
+
+## `get_weather_forecast`
+
+**Module:** Weather / Hydrology  
+**API source:** `https://data.geo.admin.ch/api/stac/v1/collections/ch.meteoschweiz.ogd-local-forecasting` (MeteoSwiss local forecast, Open Government Data)  
+**Description:** The official MeteoSwiss local forecast (the same one the MeteoSwiss app shows) for a Swiss postcode, town, weather station or coordinates: up to 9 days of daily high and low temperature, rain and expected weather.
+
+### Input
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| location | string | ❌ | Postcode (`1860`), town (`Aigle`), weather station code (`AIG`) or mountain point name. Required unless `lat`/`lon` are given |
+| lat | number | ❌ | Latitude; uses the nearest postcode centre or station |
+| lon | number | ❌ | Longitude, with `lat` |
+| days | number | ❌ | Days to return, today included (1–9, default 5) |
+| language | string | ❌ | Weather descriptions in `en` (default), `de`, `fr` or `it` |
+
+### Output
+
+```json
+{
+  "location": { "name": "Aigle", "type": "postcode", "postcode": "1860", "height_m": 402, "lat": 46.317703, "lon": 6.961572 },
+  "forecast_issued": "2026-11-23T15:00:00Z",
+  "days": [
+    { "date": "2026-11-23", "weather": "very cloudy, intermittent rain", "symbol_code": 17, "temp_max_c": 8.5, "temp_min_c": 4.1, "precipitation_mm": 16 }
+  ],
+  "note": "Days are Swiss local calendar days. ...",
+  "source": "Source: MeteoSwiss (local forecast, Open Government Data)"
+}
+```
+
+### Notes
+
+- About 5,800 forecast points: every postcode centre, ~170 SwissMetNet stations and selected mountain points. A town name resolves to its postcode centre first.
+- Uses the newest hourly run that has all four daily files (`tre200px`, `tre200pn`, `rka150p0`, `jp2000d0`); files are cached until the next run, so the first call takes a few seconds and later ones are instant.
+- `symbol_code` is the MeteoSwiss weather symbol (1–42 day, 101–142 night). Descriptions are the official MeteoSwiss texts (BSD 3-Clause, © MeteoSwiss); the MeteoSwiss pictograms themselves may not be reused.
 
 ---
 
