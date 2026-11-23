@@ -11,7 +11,7 @@ describe("geo.admin ech MapServer (live)", () => {
     const result = JSON.parse(raw);
     expect(result.total_matches).toBeGreaterThan(0);
     expect(result.layers.some((layer: { layer_id: string }) => layer.layer_id === LAYER)).toBe(true);
-  }, 30000);
+  }, 70000);
 
   it("identify_map_layer returns the current municipality at a point", async () => {
     const raw = await handleMaplayers("identify_map_layer", {
@@ -25,7 +25,7 @@ describe("geo.admin ech MapServer (live)", () => {
     expect(result.returned).toBeGreaterThan(0);
     expect(result.results[0].attributes.gemname).toBe("Bern");
     expect(result.current_only).toBe(true);
-  }, 30000);
+  }, 70000);
 
   it("find_map_features finds Bern by municipality name", async () => {
     const raw = await handleMaplayers("find_map_features", {
@@ -40,5 +40,5 @@ describe("geo.admin ech MapServer (live)", () => {
     expect(result.returned).toBeGreaterThan(0);
     expect(result.results[0].attributes.gemname).toBe("Bern");
     expect(result.results[0].attributes.is_current_jahr).toBe(true);
-  }, 30000);
+  }, 70000);
 });

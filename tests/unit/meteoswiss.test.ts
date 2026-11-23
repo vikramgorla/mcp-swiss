@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { handleMeteoswiss, meteoswissTools } from "../../src/modules/meteoswiss.js";
+import { VERSION } from "../../src/utils/http.js";
 import {
   mockCollection,
   mockCollectionNoStations,
@@ -115,6 +116,17 @@ describe("list_ogd_stations", () => {
     );
     expect(result.stations.find((station: { code: string }) => station.code === "GUE").name).toBe("Güttingen");
     expect(result.source).toContain("MeteoSwiss");
+  });
+
+  it("fetches CSVs through the shared client with the package User-Agent", async () => {
+    meteoRoutes();
+    await handleMeteoswiss("list_ogd_stations", { limit: 5 });
+    const csvCalls = vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith(".csv"));
+    expect(csvCalls.length).toBeGreaterThan(0);
+    for (const [, init] of csvCalls) {
+      const headers = new Headers((init as RequestInit | undefined)?.headers);
+      expect(headers.get("User-Agent")).toBe(`mcp-swiss/${VERSION}`);
+    }
   });
 
   it("filters by canton and query", async () => {
