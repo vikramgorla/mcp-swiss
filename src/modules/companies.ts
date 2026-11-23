@@ -70,7 +70,7 @@ export const companiesTools = [
   },
   {
     name: "list_legal_forms",
-    description: "List company legal forms (AG, GmbH, ...) with the ids used by search_companies",
+    description: "List company legal forms / company types (AG, GmbH, ...) with the ids used by search_companies",
     inputSchema: {
       type: "object",
       properties: {},
