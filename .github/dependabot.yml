@@ -17,8 +17,12 @@ updates:
       prefix: "deps"
       include: "scope"
     groups:
-      # Group all minor and patch updates into a single PR
+      # Group all minor and patch updates into a single PR, except the MCP SDK:
+      # it ships in the running server, so its minor bumps get their own PR and
+      # a human reviewer (see dependabot-auto-merge.yml).
       minor-and-patch:
+        exclude-patterns:
+          - "@modelcontextprotocol/sdk"
         update-types:
           - "minor"
           - "patch"

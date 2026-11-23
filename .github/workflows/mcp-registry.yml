@@ -45,10 +45,21 @@ jobs:
           sleep 20
 
       - name: Install mcp-publisher
+        env:
+          # Pinned and checksummed (from registry_1.8.15_checksums.txt on the
+          # release) instead of running "latest" in a job that holds an OIDC
+          # publish token. Bump both together when upgrading.
+          PUBLISHER_VERSION: v1.8.15
+          PUBLISHER_SHA256: 8beca8143ae8a034c87c99a57e8cb1b6c2cee7874fcf8a20a8adbda84b291b5e
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
-            | tar xz mcp-publisher
-          sudo mv mcp-publisher /usr/local/bin/
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+          chmod +x mcp-publisher
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Authenticate with MCP Registry (GitHub OIDC)
         run: mcp-publisher login github-oidc

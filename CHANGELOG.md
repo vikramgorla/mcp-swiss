@@ -24,6 +24,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Discoverability test: 222 plain-language questions, at least two per tool. Each must find its tool in the top five search results, and every new tool must add questions.
 - `npm run docs:tokens` reports what a client actually receives in each mode.
 
+### Removed
+
+- Dead files: `test_suite.js` and `run_tests.sh` (22-tool era, hard-coded local paths), `scripts/qa-per-tool.sh` (68-tool era) and `mcp-manifest.json` (stuck at 0.1.4; `server.json` is the registry manifest). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+
+### Security
+
+- The MCP Registry publish job installs `mcp-publisher` v1.8.15 pinned by SHA-256 instead of downloading "latest" into a job that holds a publish token. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+- Dependabot no longer auto-merges `@modelcontextprotocol/sdk` bumps. It's the one runtime dependency, so its updates get their own PR and a human review. Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+
 ## [0.9.1] - 2026-11-23
 
 ### Changed
