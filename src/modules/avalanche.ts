@@ -347,6 +347,10 @@ function featureContains(feature: CaamlFeature, lon: number, lat: number): boole
   return false;
 }
 
+function hasBulletinData(b: CaamlBulletin | undefined): boolean {
+  return Boolean(b && (b.bulletinID || b.validTime || b.dangerRatings?.length));
+}
+
 function findRegion(query: string) {
   const needle = query.trim().toLowerCase();
   return (
@@ -481,7 +485,9 @@ async function getAvalancheBulletin(args: Record<string, unknown>): Promise<stri
   const url = buildUrl(`${BASE}/bulletin/${path}`, { activeAt });
   const payload = await fetchJSON<CaamlCollection & CaamlFeatureCollection>(url, { timeoutMs: 45_000 });
 
-  const features = payload.features ?? [];
+  // The geojson also carries outline-only polygons (just `fill` and `regions`)
+  // for areas SLF does not rate, e.g. the Plateau around Geneva. Ignore them.
+  const features = (payload.features ?? []).filter((f) => hasBulletinData(f.properties));
   const bulletins = hasPoint
     ? features.map((f) => f.properties).filter((b): b is CaamlBulletin => Boolean(b))
     : payload.bulletins ?? [];

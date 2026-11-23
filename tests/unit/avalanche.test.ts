@@ -181,6 +181,22 @@ describe("get_avalanche_bulletin in season", () => {
     expect(result.note).toContain("No warning region covers");
   });
 
+  it("ignores outline-only polygons SLF does not rate", async () => {
+    // SLF's geojson also outlines unrated areas (only `fill` and `regions`).
+    const unrated = {
+      type: "Feature",
+      properties: { fill: "#ffffff", regions: [{ regionID: "CH-9111" }] },
+      geometry: {
+        type: "Polygon",
+        coordinates: [[[6.0, 46.1], [6.3, 46.1], [6.3, 46.3], [6.0, 46.3], [6.0, 46.1]]],
+      },
+    };
+    mockFetch({ ...winterGeojson, features: [...winterGeojson.features, unrated] });
+    const result = JSON.parse(await handleAvalanche("get_avalanche_bulletin", { lat: 46.2044, lon: 6.1432 }));
+    expect(result.note).toContain("No warning region covers");
+    expect(result.covers_regions).toBeUndefined();
+  });
+
   it("passes the requested language and date to the API", async () => {
     const urls = mockFetch(winterBulletins);
     await handleAvalanche("get_avalanche_bulletin", { region: "CH-5123", language: "de", date: "2026-02-10" });
