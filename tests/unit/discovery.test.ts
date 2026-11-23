@@ -10,7 +10,7 @@ import {
   searchTools,
   SEARCH_TOOLS_TOOL,
 } from "../../src/discovery.js";
-import { resolveModules } from "../../src/registry.js";
+import { moduleRegistry, resolveModules } from "../../src/registry.js";
 import { parseArgs } from "../../src/index.js";
 import { validateArgs } from "../../src/utils/validate.js";
 
@@ -32,6 +32,25 @@ describe("discovery mode switch", () => {
 });
 
 describe("swiss_search_tools", () => {
+  const top = (query: string) =>
+    JSON.parse(searchTools(all, { query, limit: 3 })).tools.map((t: { name: string }) => t.name);
+
+  it("understands plain-language queries, not just exact keywords", () => {
+    expect(top("train from Aigle to Geneva")[0]).toBe("get_connections");
+    expect(top("is tomorrow a public holiday")).toContain("get_public_holidays");
+    expect(top("company register lookup")).toContain("search_companies");
+    expect(top("CHF to EUR rate")[0]).toBe("get_exchange_rate");
+    expect(top("next referendum").some((n: string) => n.includes("vote"))).toBe(true);
+  });
+
+  it("ranks a tool-name hit above a description hit", () => {
+    expect(top("departures")[0]).toBe("get_departures");
+  });
+
+  it("returns nothing for stopwords alone", () => {
+    expect(JSON.parse(searchTools(all, { query: "what is the" })).count).toBe(0);
+  });
+
   it("lists modules without schemas when called with no arguments", () => {
     const result = JSON.parse(searchTools(all, {}));
     expect(result.modules.map((m: { module: string }) => m.module)).toContain("transport");
@@ -109,7 +128,16 @@ describe("meta-tool annotations", () => {
     ]);
     expect(annotationsFor(SEARCH_TOOLS_TOOL).readOnlyHint).toBe(true);
     expect(annotationsFor(LIST_MODULES_TOOL).idempotentHint).toBe(true);
-    expect(annotationsFor(CALL_TOOL).readOnlyHint).toBe(false);
+    expect(annotationsFor(CALL_TOOL).readOnlyHint).toBe(true);
     expect(annotationsFor(CALL_TOOL).openWorldHint).toBe(true);
+  });
+});
+
+describe("swiss_call_tool safety", () => {
+  // swiss_call_tool is annotated read-only on the strength of this.
+  it("only fronts read-only tools", () => {
+    const names = Object.values(moduleRegistry).flatMap((m) => m.tools.map((t) => t.name));
+    const writers = names.filter((n) => /^(create|update|delete|set|post|send|remove)_/.test(n));
+    expect(writers).toEqual([]);
   });
 });

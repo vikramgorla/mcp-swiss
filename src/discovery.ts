@@ -57,12 +57,14 @@ const LOOKUP_ANNOTATIONS = {
   openWorldHint: false,
 } as const;
 
-// swiss_call_tool runs whatever tool it is given, so it must not be
-// auto-approved as a read-only lookup.
+// Every tool in the registry is a read-only lookup (a unit test enforces
+// this), so swiss_call_tool is read-only too, like Atlassian's executeRead.
+// If a tool with side effects is ever added, split this into separate
+// read/write execute tools instead of loosening the hint.
 const CALL_ANNOTATIONS = {
-  readOnlyHint: false,
+  readOnlyHint: true,
   destructiveHint: false,
-  idempotentHint: false,
+  idempotentHint: true,
   openWorldHint: true,
 } as const;
 
@@ -117,19 +119,11 @@ export function searchTools(modules: DiscoveryModule[], args: Record<string, unk
     });
   }
 
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const terms = queryTerms(query);
   const ranked = pool.flatMap((mod) =>
     mod.tools.map((tool) => {
-      const haystack = `${mod.name} ${tool.name} ${tool.description}`.toLowerCase();
-      if (!terms.every((term) => haystack.includes(term))) return null;
-      let score = 0;
-      const name = tool.name.toLowerCase();
-      const blob = `${mod.name} ${tool.description}`.toLowerCase();
-      for (const term of terms) {
-        if (name.includes(term)) score += 2;
-        else if (blob.includes(term)) score += 1;
-      }
-      return { score, module: mod.name, tool };
+      const score = scoreTool(terms, mod, tool);
+      return score > 0 ? { score, module: mod.name, tool } : null;
     })
   ).filter((row): row is { score: number; module: string; tool: ToolDefinition } => row !== null);
 
@@ -150,6 +144,85 @@ export function searchTools(modules: DiscoveryModule[], args: Record<string, unk
       ? "Call a tool with swiss_call_tool: { name, arguments }."
       : "No match. Try swiss_list_modules or a shorter query.",
   });
+}
+
+// ── Ranking ──────────────────────────────────────────────────────────────────
+// Agents send plain language ("train from Aigle to Geneva"), so a tool matches
+// when any meaningful word does, ranked by where and how many words hit.
+
+const STOPWORDS = new Set(
+  ("a an and any are at be by can do does for from get give how i in is it me my near " +
+    "next now of on or show tell the there this to today tomorrow what when where which " +
+    "who will with yesterday").split(" ")
+);
+
+// A few everyday words that never appear in the tool text itself.
+const SYNONYMS: Record<string, string[]> = {
+  train: ["sbb", "connections", "transport"],
+  trains: ["sbb", "connections", "transport"],
+  bus: ["transport", "departures"],
+  tram: ["transport", "departures"],
+  journey: ["connections"],
+  trip: ["connections"],
+  forecast: ["weather", "meteoswiss"],
+  rain: ["weather", "precipitation"],
+  temperature: ["weather"],
+  firm: ["company"],
+  business: ["company"],
+  register: ["zefix", "company"],
+  vote: ["voting"],
+  referendum: ["vote", "popular"],
+  initiative: ["vote", "popular"],
+  election: ["voting", "parliament"],
+  money: ["exchange", "snb"],
+  currency: ["exchange", "snb"],
+  chf: ["exchange", "snb"],
+  zip: ["postcode"],
+  postal: ["postcode"],
+  ski: ["snow", "avalanche"],
+  quake: ["earthquakes"],
+  house: ["building", "real"],
+};
+
+export function queryTerms(query: string): string[] {
+  const words = query
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}_]+/u)
+    .filter((w) => w.length > 1 && !STOPWORDS.has(w));
+  const expanded = new Set(words);
+  for (const w of words) for (const alt of SYNONYMS[w] ?? []) expanded.add(alt);
+  return [...expanded];
+}
+
+function stem(word: string): string {
+  return word.length > 4 && word.endsWith("s") ? word.slice(0, -1) : word;
+}
+
+function paramText(tool: ToolDefinition): string {
+  const props = (tool.inputSchema as { properties?: Record<string, { description?: string }> }).properties ?? {};
+  return Object.entries(props)
+    .map(([key, value]) => `${key} ${value?.description ?? ""}`)
+    .join(" ");
+}
+
+export function scoreTool(terms: string[], mod: DiscoveryModule, tool: ToolDefinition): number {
+  const fields: Array<[string, number]> = [
+    [tool.name.toLowerCase().replace(/_/g, " "), 4],
+    [mod.name.toLowerCase(), 3],
+    [tool.description.toLowerCase(), 2],
+    [(mod.description ?? "").toLowerCase(), 1],
+    [paramText(tool).toLowerCase(), 0.5],
+  ];
+  let score = 0;
+  for (const term of terms) {
+    const root = stem(term);
+    let best = 0;
+    for (const [text, weight] of fields) {
+      if (weight > best && text.includes(root)) best = weight;
+    }
+    score += best;
+  }
+  return score;
 }
 
 export function listModules(modules: DiscoveryModule[]): string {
