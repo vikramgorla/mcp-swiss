@@ -351,7 +351,7 @@ describe('MCP protocol: tools/call', () => {
       'swiss_list_modules',
     ]);
     const call = result.tools.find((t) => t.name === 'swiss_call_tool');
-    expect(call?.annotations?.readOnlyHint).toBe(false);
+    expect(call?.annotations?.readOnlyHint).toBe(true);
     const search = result.tools.find((t) => t.name === 'swiss_search_tools');
     expect(search?.annotations?.readOnlyHint).toBe(true);
   });

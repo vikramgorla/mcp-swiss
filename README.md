@@ -321,7 +321,11 @@ Search, then execute. The server lists three meta-tools instead of every schema 
 }
 ```
 
-`MCP_SWISS_MODE=discovery` and `--mode discovery` do the same thing. `swiss_search_tools` finds tools by keyword or module and returns their input schemas. `swiss_call_tool` checks those arguments, then runs the tool. `swiss_list_modules` is the catalog. The default, with no flag, is still the full tool list.
+`MCP_SWISS_MODE=discovery` and `--mode discovery` do the same thing. `swiss_search_tools` takes plain language ("train from Aigle to Geneva", "CHF to EUR rate") or a module name and returns the best-matching tools with their input schemas. `swiss_call_tool` checks those arguments, then runs the tool. `swiss_list_modules` is the catalog. All three are read-only, so clients can auto-approve them. This is the same search-then-execute shape as Atlassian's Rovo MCP server (`discover` + `executeRead`) and Cloudflare's search/execute servers.
+
+Discovery mode combines with `--modules` and `--preset`: search only covers the modules you loaded. The default, with no flag, is still the full tool list.
+
+**Which to pick:** use the full list when you only need a few modules (load just those). Use discovery mode when you want everything available but don't want ~9,300 tokens of schemas in every conversation.
 
 ### Select specific modules
 ```json
