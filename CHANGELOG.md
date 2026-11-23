@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- MeteoSwiss open-data downloads (`list_ogd_stations`, `get_ogd_recent`, `get_ogd_history`) now go through the shared HTTP client, so they time out after 30 seconds and retry once instead of hanging, and send the current version in their User-Agent instead of `0.8.3-dev`.
+
 ## [0.10.0] - 2026-11-23
 
 Search mode is now the default. If you rely on all tools being listed directly, add `--mode full`.
