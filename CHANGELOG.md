@@ -9,6 +9,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Removed
+
+- Dead files: `test_suite.js` and `run_tests.sh` (22-tool era, hard-coded local paths), `scripts/qa-per-tool.sh` (68-tool era) and `mcp-manifest.json` (stuck at 0.1.4; `server.json` is the registry manifest). Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) by Pierre Christen.
+
 ## [0.9.1] - 2026-11-23
 
 ### Changed
