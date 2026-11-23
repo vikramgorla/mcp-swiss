@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-import { discoveryEnabled } from "./discovery.js";
+import { discoveryEnabled, resolvePinned } from "./discovery.js";
 import {
   defaultAllowedHosts,
   isLoopbackBind,
@@ -9,7 +9,7 @@ import {
   startHttpServer,
 } from "./http-server.js";
 import { moduleRegistry, presets, resolveModules } from "./registry.js";
-import { createServer } from "./server.js";
+import { createServer, listing } from "./server.js";
 import { VERSION } from "./utils/http.js";
 
 export { moduleRegistry, presets, resolveModules };
@@ -25,7 +25,9 @@ export interface ParsedArgs {
   http: boolean;
   port: number;
   host: string;
+  /** Search-then-execute listing; the default unless modules were chosen. */
   discovery: boolean;
+  pinned: string[];
 }
 
 function flagValue(argv: string[], flag: string): string | undefined {
@@ -86,7 +88,8 @@ export function parseArgs(
     http,
     port,
     host,
-    discovery: discoveryEnabled(argv, env),
+    discovery: discoveryEnabled(argv, env, selectedModules !== null),
+    pinned: resolvePinned(argv, env),
   };
 }
 
@@ -147,15 +150,17 @@ function buildMcpServer() {
     version: VERSION,
     modules: activeModules,
     discovery: config.discovery,
+    pinned: config.pinned,
   });
 }
 
 async function main() {
   const moduleCount = activeModules.length;
-  const toolCount = config.discovery
-    ? 3
-    : activeModules.reduce((sum, mod) => sum + mod.tools.length, 0);
-  const mode = config.discovery ? ", discovery" : "";
+  const toolCount = activeModules.reduce((sum, mod) => sum + mod.tools.length, 0);
+  const listed = listing(activeModules, config.discovery, config.pinned).tools.length;
+  const mode = config.discovery
+    ? `, search mode: ${listed} listed (use --mode full to list all)`
+    : "";
   const summary = `${moduleCount} modules, ${toolCount} tools${mode}`;
 
   if (config.http) {

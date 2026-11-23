@@ -3,23 +3,57 @@ import {
   annotationsFor,
   callTool,
   CALL_TOOL,
+  correctTerm,
+  DEFAULT_PINNED,
   discoveryEnabled,
   DISCOVERY_TOOLS,
+  editDistance,
   listModules,
   LIST_MODULES_TOOL,
+  pinnedTools,
+  resolveMode,
+  resolvePinned,
+  searchToolFor,
   searchTools,
   SEARCH_TOOLS_TOOL,
+  serverInstructions,
+  suggestTools,
 } from "../../src/discovery.js";
+import { listing } from "../../src/server.js";
+import { DISCOVERY_QUERIES } from "../fixtures/discovery-queries.js";
 import { moduleRegistry, resolveModules } from "../../src/registry.js";
 import { parseArgs } from "../../src/index.js";
 import { validateArgs } from "../../src/utils/validate.js";
 
 const all = resolveModules(null);
 
-describe("discovery mode switch", () => {
-  it("stays off by default", () => {
-    expect(discoveryEnabled([])).toBe(false);
-    expect(parseArgs([]).discovery).toBe(false);
+describe("mode selection", () => {
+  it("is search mode by default, so nobody has to configure it", () => {
+    expect(resolveMode([], {})).toBe("discovery");
+    expect(discoveryEnabled([], {})).toBe(true);
+    expect(parseArgs([], {}).discovery).toBe(true);
+  });
+
+  it("lists tools directly when the user picked modules or a preset", () => {
+    expect(parseArgs(["--modules", "transport"], {}).discovery).toBe(false);
+    expect(parseArgs(["--preset", "commuter"], {}).discovery).toBe(false);
+    expect(parseArgs(["--modules", "transport", "--discovery"], {}).discovery).toBe(true);
+    expect(parseArgs(["--preset", "outdoor"], { MCP_SWISS_MODE: "discovery" }).discovery).toBe(true);
+  });
+
+  it("lists everything with --mode full, --all-tools, or MCP_SWISS_MODE=full", () => {
+    expect(resolveMode(["--mode", "full"], {})).toBe("full");
+    expect(resolveMode(["--all-tools"], {})).toBe("full");
+    expect(resolveMode([], { MCP_SWISS_MODE: "full" })).toBe("full");
+    expect(resolveMode([], { MCP_SWISS_MODE: "FULL" })).toBe("full");
+  });
+
+  it("pins get_connections and get_departures unless told otherwise", () => {
+    expect(resolvePinned([], {})).toEqual(DEFAULT_PINNED);
+    expect(resolvePinned(["--pin", "none"], {})).toEqual([]);
+    expect(resolvePinned([], { MCP_SWISS_PIN: "get_weather, geocode" })).toEqual(["get_weather", "geocode"]);
+    // A pin from a module that isn't loaded is skipped, not an error.
+    expect(pinnedTools(resolveModules(new Set(["weather"])), DEFAULT_PINNED)).toEqual([]);
   });
 
   it("turns on from the CLI flag, --mode, or MCP_SWISS_MODE", () => {
@@ -139,5 +173,73 @@ describe("swiss_call_tool safety", () => {
     const names = Object.values(moduleRegistry).flatMap((m) => m.tools.map((t) => t.name));
     const writers = names.filter((n) => /^(create|update|delete|set|post|send|remove)_/.test(n));
     expect(writers).toEqual([]);
+  });
+});
+
+// ── Nobody misses a tool ─────────────────────────────────────────────────────
+
+describe("every tool is findable in search mode", () => {
+  const allNames = all.flatMap((mod) => mod.tools.map((tool) => tool.name));
+
+  it("has plain-language questions for every registered tool", () => {
+    const missing = allNames.filter((name) => !DISCOVERY_QUERIES[name]?.length);
+    expect(missing, "add questions to tests/fixtures/discovery-queries.ts").toEqual([]);
+    const stale = Object.keys(DISCOVERY_QUERIES).filter((name) => !allNames.includes(name));
+    expect(stale).toEqual([]);
+  });
+
+  // Agents see 8 results by default; demand the top 5 to leave headroom.
+  const cases = Object.entries(DISCOVERY_QUERIES).flatMap(([tool, questions]) =>
+    questions.map((question) => [tool, question] as const)
+  );
+  it.each(cases)("%s is found for %j", (tool, question) => {
+    const found = JSON.parse(searchTools(all, { query: question, limit: 5 })).tools.map(
+      (t: { name: string }) => t.name
+    );
+    expect(found).toContain(tool);
+  });
+
+  it("finds a module's whole tool list by module name", () => {
+    for (const mod of all) {
+      const listed = JSON.parse(searchTools(all, { module: mod.name })).modules[0].tools;
+      expect(listed).toEqual(mod.tools.map((t) => t.name));
+    }
+  });
+
+  it("names every module in the instructions and the search tool", () => {
+    const instructions = serverInstructions(all, pinnedTools(all, DEFAULT_PINNED));
+    const description = searchToolFor(all).description;
+    for (const mod of all) {
+      expect(instructions).toContain(`- ${mod.name}:`);
+      expect(description).toContain(mod.name);
+    }
+  });
+
+  it("keeps search mode at least 80% cheaper than listing everything", () => {
+    const size = (discovery: boolean) => {
+      const { tools, instructions } = listing(all, discovery);
+      return JSON.stringify(tools).length + (instructions?.length ?? 0);
+    };
+    expect(size(true)).toBeLessThan(size(false) * 0.2);
+  });
+});
+
+describe("typos", () => {
+  it("corrects misspelt words to catalogue words", () => {
+    expect(correctTerm("wether", all)).toBe("weather");
+    expect(correctTerm("avalnche", all)).toBe("avalanche");
+    expect(correctTerm("avalanch", all)).toBe("avalanch"); // already a prefix: matches as is
+    expect(correctTerm("conections", all)).toBe("connections");
+    expect(correctTerm("trian", all)).toBe("train");
+  });
+
+  it("counts a swap of neighbouring letters as one edit", () => {
+    expect(editDistance("trian", "train")).toBe(1);
+    expect(editDistance("abc", "xyz", 1)).toBe(2);
+  });
+
+  it("suggests the right tool for a mistyped name", async () => {
+    expect(suggestTools(all, "get_conections")[0]).toBe("get_connections");
+    await expect(callTool(all, { name: "get_wether" })).rejects.toThrow(/Did you mean: get_weather/);
   });
 });

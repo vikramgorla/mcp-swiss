@@ -302,30 +302,30 @@ A bind that is not loopback (`127.0.0.1`, `localhost`, or `::1`) refuses to star
 
 ---
 
-## Module Filtering
+## How tools are listed
 
-By default, mcp-swiss loads all 27 modules (94 tools). The full `tools/list` schema is about 9,300 tokens (37,011 characters). For a smaller startup list, load only the modules you need.
+**You don't need to configure anything.** Out of the box, mcp-swiss lists five tools instead of 94 and tells the model how to reach the rest. That costs about 1,200 tokens per conversation instead of about 11,700.
 
-### Discovery mode
+| Listed by default | What it does |
+|---|---|
+| `swiss_search_tools` | Finds the right tool from plain words ("train from Aigle to Geneva", "avalanche danger Verbier", "CHF to EUR"), typos included, and returns its input schema |
+| `swiss_call_tool` | Runs any tool by name after checking its arguments |
+| `swiss_list_modules` | The full catalogue, module by module |
+| `get_connections`, `get_departures` | The two most-used tools, callable directly |
 
-Search, then execute. The server lists three meta-tools instead of every schema (about 330 tokens versus about 9,300):
+The server's `instructions` (which clients add to the model's context) list every module, so the model knows what exists before it searches. All tools are read-only, so clients can auto-approve them. This is the search-then-execute pattern used by [Atlassian's Rovo MCP server](https://developer.atlassian.com/cloud/rovo-mcp/guides/supported-tools/) and [Cloudflare](https://developers.cloudflare.com/agents/model-context-protocol/codemode/), with [Anthropic's advice](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) to keep a few frequent tools loaded.
 
-```json
-{
-  "mcpServers": {
-    "swiss": {
-      "command": "npx",
-      "args": ["-y", "mcp-swiss", "--discovery"]
-    }
-  }
-}
-```
+A test asks more than 200 plain-language questions, at least two per tool, and fails if any tool doesn't come up in the top five search results, so new tools can't become invisible.
 
-`MCP_SWISS_MODE=discovery` and `--mode discovery` do the same thing. `swiss_search_tools` takes plain language ("train from Aigle to Geneva", "CHF to EUR rate") or a module name and returns the best-matching tools with their input schemas. `swiss_call_tool` checks those arguments, then runs the tool. `swiss_list_modules` is the catalog. All three are read-only, so clients can auto-approve them. This is the same search-then-execute shape as Atlassian's Rovo MCP server (`discover` + `executeRead`) and Cloudflare's search/execute servers.
+| Option | Effect |
+|---|---|
+| *(nothing)* | Search mode: the five tools above |
+| `--modules transport,weather` or `--preset commuter` | Lists the chosen modules' tools directly |
+| `--mode full` (or `MCP_SWISS_MODE=full`) | Lists all 94 tools directly |
+| `--discovery` | Search mode even when modules are chosen (search covers only those modules) |
+| `--pin get_weather,geocode` / `--pin none` | Changes which tools are listed next to the search tools |
 
-Discovery mode combines with `--modules` and `--preset`: search only covers the modules you loaded. The default, with no flag, is still the full tool list.
-
-**Which to pick:** use the full list when you only need a few modules (load just those). Use discovery mode when you want everything available but don't want ~9,300 tokens of schemas in every conversation.
+If your client already defers tools on its own (Claude Code's tool search, for example), `--mode full` costs nothing extra there.
 
 ### Select specific modules
 ```json
@@ -358,7 +358,7 @@ Discovery mode combines with `--modules` and `--preset`: search only covers the 
 | `business` | companies, geodata, post, energy, statistics, snb, gwr | 27 | 68% |
 | `citizen` | parliament, voting, holidays, news | 17 | 80% |
 | `minimal` | transport | 5 | 94% |
-| `full` | all 27 modules (default) | 94 | — |
+| `full` | all 27 modules | 94 | — |
 
 Combine preset + modules: `--preset commuter --modules parliament`
 

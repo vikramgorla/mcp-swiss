@@ -9,6 +9,21 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- **Search mode is now the default.** With no flags, the server lists `swiss_search_tools`, `swiss_call_tool`, `swiss_list_modules`, `get_connections` and `get_departures` (about 1,200 tokens) instead of all 94 tools (about 11,700). Every tool is still reachable through search. Use `--mode full` or `MCP_SWISS_MODE=full` for the old behaviour. Choosing modules with `--modules` or `--preset` still lists those tools directly.
+- Clients that call a tool by name in search mode (for example, one remembered from an earlier session) are still served.
+
+### Added
+
+- Server `instructions` in the initialize result: how to search, plus the module catalogue.
+- The search tool's description names every active module.
+- Search fixes misspelt words against the catalogue ("wether" → weather, "trian" → train) and understands everyday words that the tool text doesn't contain ("fastest way", "raining", "MPs", "kids' autumn break").
+- `swiss_call_tool` suggests the closest tool names for a mistyped name.
+- `--pin` / `MCP_SWISS_PIN` choose which tools are listed next to the search tools (`none` for only the three meta-tools).
+- Discoverability test: 222 plain-language questions, at least two per tool. Each must find its tool in the top five search results, and every new tool must add questions.
+- `npm run docs:tokens` reports what a client actually receives in each mode.
+
 ## [0.9.1] - 2026-11-23
 
 ### Changed
