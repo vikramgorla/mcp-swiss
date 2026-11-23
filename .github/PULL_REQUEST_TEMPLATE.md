@@ -13,7 +13,7 @@
 - [ ] `npm run test:unit` passes
 - [ ] New module? Added to `src/index.ts` routing
 - [ ] New module? Added to `tests/mcp/protocol.test.ts` tool count
-- [ ] New tools? Updated `README.md` tool count and module section
+- [ ] New tools? Updated `README.md` counts and added questions to `tests/fixtures/discovery-queries.ts`
 - [ ] New tools? Updated `docs/tool-specs.md`
 - [ ] New tools? Updated `docs/tools.schema.json`
 - [ ] New tools? Updated `server.json` description (≤100 chars)

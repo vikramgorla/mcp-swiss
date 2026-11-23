@@ -1,0 +1,22 @@
+[
+  { "name": "transport.opendata.ch", "url": "https://transport.opendata.ch", "data": "SBB, PostBus and tram timetables and live departures" },
+  { "name": "api.existenz.ch", "url": "https://api.existenz.ch", "data": "MeteoSwiss weather and BAFU river and lake levels" },
+  { "name": "geo.admin.ch (swisstopo)", "url": "https://api3.geo.admin.ch/api/doc.html", "data": "Geocoding, places, municipalities, solar potential, map layers, postcodes, trail closures" },
+  { "name": "ZEFIX", "url": "https://www.zefix.admin.ch", "data": "Federal commercial register" },
+  { "name": "OpenHolidays API", "url": "https://openholidaysapi.org", "data": "Public and school holidays by canton" },
+  { "name": "OpenParlData.ch", "url": "https://openparldata.ch", "data": "Federal and cantonal parliament data (CC BY 4.0)" },
+  { "name": "SLF / WSL", "url": "https://www.slf.ch/en/avalanche-bulletin-and-snow-situation.html", "data": "Avalanche bulletins and snow measurements (CC BY 4.0)" },
+  { "name": "BAFU NABEL", "url": "https://www.bafu.admin.ch/bafu/en/home/topics/air/state/data/nabel.html", "data": "Air-quality monitoring stations" },
+  { "name": "ElCom", "url": "https://strompreis.elcom.admin.ch", "data": "Electricity tariffs by municipality" },
+  { "name": "BFS (Federal Statistical Office)", "url": "https://www.bfs.admin.ch", "data": "Population, property price index, consumer price index, building register" },
+  { "name": "Swiss National Bank", "url": "https://data.snb.ch/en", "data": "CHF exchange rates" },
+  { "name": "OpenERZ", "url": "https://openerz.metaodi.ch", "data": "Zurich city waste collection calendar" },
+  { "name": "SRF", "url": "https://www.srf.ch/news", "data": "News headlines" },
+  { "name": "Open Data Basel-Stadt", "url": "https://data.bs.ch", "data": "Popular vote results" },
+  { "name": "SFOE", "url": "https://www.bfe.admin.ch", "data": "Federally supervised dams" },
+  { "name": "ASTRA", "url": "https://www.astra.admin.ch", "data": "Traffic counting stations" },
+  { "name": "Swiss Seismological Service (ETH Zürich)", "url": "http://www.seismo.ethz.ch", "data": "Earthquake catalogue" },
+  { "name": "MeteoSwiss open data", "url": "https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html", "data": "Pollen and SwissMetNet station measurements (CC BY)" },
+  { "name": "opendata.swiss", "url": "https://opendata.swiss", "data": "National open data catalogue" },
+  { "name": "SBB Open Data", "url": "https://data.sbb.ch/", "data": "Station passengers, punctuality and platform accessibility" }
+]

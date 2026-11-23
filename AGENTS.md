@@ -35,9 +35,11 @@ The full tool list costs about 9,300 tokens. Every new tool makes every conversa
 
 - Unit tests with fixtures in `tests/fixtures/` (no network), plus an integration test in `tests/integration/`.
 - `src/index.ts` and `tests/mcp/protocol.test.ts` tool counts.
-- `README.md` (the tool and module counts in the intro and badges, the module section, examples), `docs/tool-specs.md` and `docs/tools.schema.json` (`npm run docs:tools`).
-- `server.json` and `manifest.json` / `mcp-manifest.json` descriptions and counts (the `server.json` description is at most 100 characters), `llms.txt` and `llms-install.md`.
-- The GitHub Pages site (`site/`, once it exists), which must match the README's tool list and counts.
+- `README.md`: the tool and module counts and the topic list in the intro. Per-tool docs are not in the README; the site generates them.
+- `docs/tool-specs.md` and `docs/tools.schema.json` (`npm run docs:tools`).
+- `server.json` and `manifest.json` descriptions and counts (the `server.json` description is at most 100 characters), `llms.txt` and `llms-install.md`.
+- The GitHub Pages site builds itself from the code (`npm run site`, deployed by `pages.yml` on every push to `main`) and `tests/unit/site.test.ts` checks it lists every tool. Edit `site/template.html` only for wording, install steps or layout, and `site/sources.json` when a data source is added.
+- `tests/fixtures/discovery-queries.ts`: at least two plain-language questions per new tool, written the way a user would ask.
 - `CHANGELOG.md` under `[Unreleased]` (Added, Changed, Fixed, Security, Removed), in user-facing language.
 
 ## Validation before any PR

@@ -9,6 +9,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- Documentation site on GitHub Pages: install steps for each app, how search mode works, the full tool catalogue with parameters, and a question box that runs the server's own search in the browser. It's generated from the code (`npm run site`) and deployed on every push to `main`. Closes [#65](https://github.com/vikramgorla/mcp-swiss/issues/65).
+- `docs/forks.md`: which forks have been reviewed and what was ported.
+
+### Changed
+
+- README rewritten as a short entry point (722 → about 110 lines); per-app setup and per-tool detail moved to the site.
+
 ### Changed
 
 - **Search mode is now the default.** With no flags, the server lists `swiss_search_tools`, `swiss_call_tool`, `swiss_list_modules`, `get_connections` and `get_departures` (about 1,200 tokens) instead of all 94 tools (about 11,700). Every tool is still reachable through search. Use `--mode full` or `MCP_SWISS_MODE=full` for the old behaviour. Choosing modules with `--modules` or `--preset` still lists those tools directly.

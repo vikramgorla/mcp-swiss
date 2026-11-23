@@ -153,8 +153,8 @@ gh pr merge $DEV_BUMP_PR --merge --delete-branch
 Complete **before** creating the develop → main PR.
 
 ### Documentation
-- [ ] README tool count matches actual tool count in `src/index.ts`
-- [ ] README has a section for every module
+- [ ] README tool and module counts match `node dist/index.js --list-modules`
+- [ ] `npm run site` builds (the Pages site lists every tool; `tests/unit/site.test.ts` checks this)
 - [ ] `server.json` description is ≤100 characters (count carefully)
 - [ ] `server.json` version matches `package.json`
 - [ ] `docs/tool-specs.md` documents all new tools
