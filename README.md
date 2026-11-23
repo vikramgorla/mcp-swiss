@@ -19,7 +19,7 @@
 An [MCP](https://modelcontextprotocol.io) server that gives Claude, Copilot, Cursor and other assistants 95 tools across 27 modules for Swiss public data:
 
 - **Getting around:** SBB and PostBus timetables, live departures, station passengers, punctuality and step-free access, road traffic counts
-- **Weather and nature:** MeteoSwiss weather and measurements, river and lake levels, avalanche bulletins, snow, pollen, air quality, earthquakes, dams, hiking trail closures
+- **Weather and nature:** MeteoSwiss forecasts, current weather and measurements, river and lake levels, avalanche bulletins, snow, pollen, air quality, earthquakes, dams, hiking trail closures
 - **Places:** geocoding, places, municipalities, postcodes, rooftop solar potential, the federal buildings register, every geo.admin map layer
 - **Society and economy:** the commercial register, public and school holidays, federal and cantonal parliament, popular votes, population, property and consumer prices, SNB exchange rates, electricity tariffs, SRF news, Zurich waste collection, the opendata.swiss catalogue
 
@@ -75,6 +75,7 @@ The server's `instructions` (which apps add to the model's context) list every m
 ## Try asking
 
 - *Next trains from Aigle to Geneva airport*
+- *Do I need an umbrella in Lausanne tomorrow?*
 - *Is the Aare in Bern warm enough to swim?*
 - *What's the avalanche danger around Verbier today?*
 - *Find companies registered in Zug with "blockchain" in the name*
