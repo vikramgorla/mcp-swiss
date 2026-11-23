@@ -9,6 +9,19 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Changed
+
+- Discovery mode: `swiss_search_tools` now ranks tools by plain-language queries instead of requiring every word to match. "train from Aigle to Geneva" used to return nothing; it now returns `get_connections` first. Tool names, module names, descriptions and parameter names are weighted in that order, with stopwords dropped and a small synonym list (train → SBB, CHF → exchange rate, referendum → vote).
+- Discovery mode: `swiss_call_tool` is annotated read-only, like Atlassian's `executeRead`, since every tool it can run is read-only. A unit test keeps it that way. Clients no longer ask for approval on every call.
+
+### Fixed
+
+- `get_avalanche_bulletin` with a coordinate no longer reports an empty bulletin in force for unrated areas such as Geneva. SLF's geojson now includes outline-only polygons for them.
+
+### Security
+
+- `@hono/node-server` 2.1.5 → 2.1.8 (two medium Dependabot alerts).
+
 ## [0.9.0] - 2026-11-02
 
 Ported from [netadvanced/mcp-swiss-ng](https://github.com/netadvanced/mcp-swiss-ng) (netadvanced). The federal building register was requested by khashashin.
